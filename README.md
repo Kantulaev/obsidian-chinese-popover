@@ -34,7 +34,7 @@ An elegant Apple Liquid Glass Chinese popover dictionary for Obsidian. Look up C
 4. Click **Install**, then **Enable**.
 
 ### Manual Installation
-1. Download `main.js`, `manifest.json`, `styles.css`, and `cedict.json` from the latest [GitHub Release](https://github.com/Kantulaev/obsidian-plugin/releases).
+1. Download `main.js`, `manifest.json`, `styles.css`, and `cedict.json` from the latest [GitHub Release](https://github.com/Kantulaev/obsidian-chinese-popover/releases).
 2. Create a folder named `chinese-popover-dict` in your vault's plugin directory:
    `<vault>/.obsidian/plugins/chinese-popover-dict/`
 3. Copy the four downloaded files into that folder.
@@ -98,7 +98,7 @@ This plugin respects user privacy and complies with the Obsidian Developer Polic
 - **No Telemetry**: There is zero tracking, analytics, or data collection.
 - **Remote Services**:
   - **Google Translate TTS API** (`translate.google.com`): When the audio button or auto-pronounce feature is triggered, an audio stream for the selected word is requested to provide native Cantonese and Mandarin pronunciation. You can switch the audio engine to **Web Speech API** in settings to use offline system speech synthesis without any internet connection.
-  - **Dictionary Database Download**: On initial installation, the plugin downloads the pre-built `cedict.json` (42 MB) database from the GitHub Release assets (`github.com/Kantulaev/obsidian-plugin/releases`) and caches it in the plugin directory for local offline use.
+  - **Dictionary Database Download**: On initial installation, the plugin downloads the pre-built `cedict.json` (42 MB) database from the GitHub Release assets (`github.com/Kantulaev/obsidian-chinese-popover/releases`) and caches it in the plugin directory for local offline use.
 
 ---
 

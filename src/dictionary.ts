@@ -258,7 +258,7 @@ export class DictionaryManager {
     const adapter = this.plugin.app.vault.adapter;
 
     const version = this.plugin.manifest.version || "1.0.0";
-    const downloadUrl = `https://github.com/Kantulaev/obsidian-plugin/releases/download/${version}/cedict.json`;
+    const downloadUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/${version}/cedict.json`;
 
     new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
 

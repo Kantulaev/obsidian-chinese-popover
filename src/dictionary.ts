@@ -250,13 +250,19 @@ export class DictionaryManager {
     const dictPath = `${this.plugin.manifest.dir}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
 
-    const version = this.plugin.manifest.version || "1.0.0";
+    const version = this.plugin.manifest.version || "1.1.0";
     const downloadUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/${version}/cedict.json`;
+    const fallbackUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.0.0/cedict.json`;
 
     new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
 
     try {
-      const res = await requestUrl({ url: downloadUrl });
+      let res;
+      try {
+        res = await requestUrl({ url: downloadUrl });
+      } catch (_e) {
+        res = await requestUrl({ url: fallbackUrl });
+      }
       const text = res.text;
       await adapter.write(dictPath, text);
       this.data = JSON.parse(text);

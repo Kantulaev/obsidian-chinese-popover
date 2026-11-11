@@ -1,0 +1,236 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#070a12" />
+    </linearGradient>
+
+    <!-- Glass Popover Gradient -->
+    <linearGradient id="glass-body" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(30, 41, 59, 0.85)" />
+      <stop offset="100%" stop-color="rgba(15, 23, 42, 0.92)" />
+    </linearGradient>
+
+    <!-- Glass Specular Reflection -->
+    <linearGradient id="glass-specular" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.25)" />
+      <stop offset="35%" stop-color="rgba(255, 255, 255, 0.05)" />
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
+    </linearGradient>
+
+    <!-- Accent Gradients -->
+    <linearGradient id="accent-cyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+
+    <linearGradient id="accent-emerald" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <linearGradient id="glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0.1" />
+    </linearGradient>
+
+    <!-- Filters -->
+    <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.65" />
+    </filter>
+
+    <filter id="popover-shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#000000" flood-opacity="0.75" />
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#38bdf8" flood-opacity="0.2" />
+    </filter>
+
+    <filter id="badge-glow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#059669" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <style>
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .font-chinese { font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+
+  <!-- Ambient Backdrop -->
+  <rect width="1000" height="600" fill="url(#bg-grad)" />
+
+  <!-- Ambient Glow Orbs -->
+  <circle cx="200" cy="180" r="180" fill="#38bdf8" opacity="0.08" filter="blur(60px)" />
+  <circle cx="820" cy="220" r="220" fill="#7c3aed" opacity="0.1" filter="blur(70px)" />
+  <circle cx="500" cy="480" r="160" fill="#10b981" opacity="0.06" filter="blur(50px)" />
+
+  <!-- App Window Container -->
+  <g transform="translate(60, 45)" filter="url(#soft-shadow)">
+    <!-- Window Frame -->
+    <rect width="880" height="510" rx="16" fill="#181b24" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.5" />
+
+    <!-- Window Titlebar -->
+    <path d="M 0 16 A 16 16 0 0 1 16 0 L 864 0 A 16 16 0 0 1 880 16 L 880 44 L 0 44 Z" fill="#13161f" />
+    <line x1="0" y1="44" x2="880" y2="44" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" />
+
+    <!-- Traffic Lights -->
+    <circle cx="24" cy="22" r="6" fill="#ff5f56" />
+    <circle cx="44" cy="22" r="6" fill="#ffbd2e" />
+    <circle cx="64" cy="22" r="6" fill="#27c93f" />
+
+    <!-- Tab / Document Title -->
+    <g transform="translate(100, 10)">
+      <rect width="210" height="26" rx="6" fill="#1e2230" stroke="rgba(255,255,255,0.05)" />
+      <!-- Document Icon -->
+      <path d="M 112 18 L 118 18 L 118 28 L 112 28 Z" fill="none" />
+      <text x="115" y="27" class="font-sans" font-size="12" fill="#94a3b8" font-weight="500">Learning-Cantonese.md</text>
+    </g>
+
+    <!-- Editor Body -->
+    <!-- Line numbers & text -->
+    <g transform="translate(30, 75)" opacity="0.35">
+      <text x="0" y="20" class="font-mono" font-size="13" fill="#64748b">1</text>
+      <text x="0" y="52" class="font-mono" font-size="13" fill="#64748b">2</text>
+      <text x="0" y="84" class="font-mono" font-size="13" fill="#64748b">3</text>
+      <text x="0" y="116" class="font-mono" font-size="13" fill="#64748b">4</text>
+      <text x="0" y="148" class="font-mono" font-size="13" fill="#64748b">5</text>
+      <text x="0" y="180" class="font-mono" font-size="13" fill="#64748b">6</text>
+      <text x="0" y="212" class="font-mono" font-size="13" fill="#64748b">7</text>
+      <text x="0" y="244" class="font-mono" font-size="13" fill="#64748b">8</text>
+    </g>
+
+    <!-- Editor Text -->
+    <g transform="translate(70, 75)">
+      <!-- Line 1: Header -->
+      <text x="0" y="20" class="font-sans" font-size="20" font-weight="700" fill="#f8fafc"># 🇭🇰 Daily Cantonese &amp; Mandarin Practice</text>
+
+      <!-- Line 2: Paragraph -->
+      <text x="0" y="52" class="font-sans" font-size="14" fill="#94a3b8">When greeting someone in Hong Kong, common polite expressions include:</text>
+
+      <!-- Line 3: Bullet points -->
+      <text x="0" y="84" class="font-sans" font-size="14" fill="#cbd5e1">• 早晨 (zou2 san4) — Good morning</text>
+
+      <!-- Line 4: Target sentence with selection -->
+      <text x="0" y="116" class="font-sans" font-size="14" fill="#cbd5e1">• </text>
+      
+      <!-- Selection highlight behind 你好 -->
+      <rect x="12" y="98" width="46" height="26" rx="5" fill="#0284c7" fill-opacity="0.35" stroke="#38bdf8" stroke-width="1.2" />
+      <text x="16" y="116" class="font-chinese" font-size="15" font-weight="700" fill="#38bdf8">你好</text>
+      
+      <text x="64" y="116" class="font-sans" font-size="14" fill="#cbd5e1"> (nei5 hou2 / nǐ hǎo) — Hello and welcome!</text>
+
+      <!-- Line 5: Next expression -->
+      <text x="0" y="148" class="font-sans" font-size="14" fill="#cbd5e1">• 唔該晒 (m4 goi1 saai3) — Thank you very much (for a service)</text>
+
+      <!-- Line 6: Next expression -->
+      <text x="0" y="180" class="font-sans" font-size="14" fill="#cbd5e1">• 得唔得呀？ (dak1 m4 dak1 aa3?) — Is it okay?</text>
+
+      <!-- Line 7: Next expression -->
+      <text x="0" y="212" class="font-sans" font-size="14" fill="#cbd5e1">• 冇問題 (mou5 man6 tai4) — No problem</text>
+    </g>
+
+    <!-- FLOATING APPLE LIQUID GLASS POPOVER -->
+    <g transform="translate(180, 210)" filter="url(#popover-shadow)">
+      <!-- Popover Body Glass Backdrop -->
+      <rect width="450" height="215" rx="18" fill="url(#glass-body)" stroke="rgba(255, 255, 255, 0.18)" stroke-width="1.2" />
+      
+      <!-- Glass Specular Top Highlight -->
+      <rect x="1" y="1" width="448" height="60" rx="17" fill="url(#glass-specular)" pointer-events="none" />
+
+      <!-- Top Row: Hanzi pill + Audio + Actions -->
+      <g transform="translate(20, 20)">
+        <!-- Hanzi Pill Badge -->
+        <rect width="180" height="36" rx="10" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
+        <text x="16" y="24" class="font-chinese" font-size="18" font-weight="700" fill="#ffffff">你好</text>
+        <text x="62" y="23" class="font-sans" font-size="13" fill="#64748b">|</text>
+        <text x="76" y="24" class="font-chinese" font-size="18" font-weight="600" fill="#94a3b8">你好</text>
+        <rect x="125" y="8" width="42" height="20" rx="5" fill="#3b82f6" fill-opacity="0.2" />
+        <text x="132" y="22" class="font-sans" font-size="10" font-weight="700" fill="#60a5fa">SIMP</text>
+
+        <!-- Audio Button (Cantonese Active) -->
+        <g transform="translate(195, 0)">
+          <rect width="138" height="36" rx="10" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="1.2" filter="url(#badge-glow)" />
+          <!-- Speaker Icon -->
+          <path d="M 14 18 L 18 18 L 24 13 L 24 23 L 18 18 Z" fill="#10b981" />
+          <path d="M 27 13 C 29 15 29 21 27 23" stroke="#10b981" stroke-width="1.8" fill="none" stroke-linecap="round" />
+          <path d="M 30 10 C 33 13 33 23 30 26" stroke="#10b981" stroke-width="1.8" fill="none" stroke-linecap="round" />
+          
+          <text x="38" y="23" class="font-sans" font-size="12" font-weight="700" fill="#34d399">廣東話</text>
+          <text x="88" y="23" class="font-sans" font-size="11" fill="#6ee7b7">0.8x</text>
+        </g>
+
+        <!-- Copy Button -->
+        <g transform="translate(345, 0)">
+          <rect width="36" height="36" rx="10" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
+          <!-- Copy icon -->
+          <rect x="11" y="11" width="11" height="13" rx="2" fill="none" stroke="#94a3b8" stroke-width="1.5" />
+          <path d="M 14 9 L 22 9 C 23 9 24 10 24 11 L 24 20" stroke="#94a3b8" stroke-width="1.5" fill="none" />
+        </g>
+
+        <!-- Close / Escape Button -->
+        <g transform="translate(388, 0)">
+          <rect width="22" height="36" rx="6" fill="transparent" />
+          <text x="5" y="24" class="font-sans" font-size="14" fill="#64748b">✕</text>
+        </g>
+      </g>
+
+      <!-- Middle Row: Phonetics (Pinyin + Jyutping) -->
+      <g transform="translate(22, 82)">
+        <!-- Pinyin with Tone Marks -->
+        <text x="0" y="20" class="font-sans" font-size="24" font-weight="700" fill="url(#accent-cyan)" letter-spacing="0.5">nǐ hǎo</text>
+
+        <!-- Cantonese Jyutping Badge -->
+        <g transform="translate(115, 0)">
+          <rect width="118" height="28" rx="8" fill="rgba(16, 185, 129, 0.18)" stroke="rgba(16, 185, 129, 0.35)" stroke-width="1" />
+          <text x="10" y="19" class="font-mono" font-size="13" font-weight="700" fill="#34d399">粵</text>
+          <text x="28" y="19" class="font-mono" font-size="14" font-weight="700" fill="#6ee7b7">nei5 hou2</text>
+        </g>
+      </g>
+
+      <!-- Divider -->
+      <line x1="22" y1="124" x2="428" y2="124" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+
+      <!-- Bottom Row: Definitions -->
+      <g transform="translate(22, 148)">
+        <circle cx="6" cy="6" r="3" fill="#38bdf8" />
+        <text x="18" y="10" class="font-sans" font-size="14" font-weight="600" fill="#ffffff">hello</text>
+        <text x="62" y="10" class="font-sans" font-size="14" fill="#94a3b8">•</text>
+        <text x="76" y="10" class="font-sans" font-size="14" font-weight="600" fill="#ffffff">hi</text>
+        <text x="100" y="10" class="font-sans" font-size="14" fill="#94a3b8">•</text>
+        <text x="114" y="10" class="font-sans" font-size="14" font-weight="600" fill="#ffffff">how are you</text>
+
+        <circle cx="6" cy="30" r="3" fill="#64748b" />
+        <text x="18" y="34" class="font-sans" font-size="13" fill="#cbd5e1">common friendly greeting for any time of day</text>
+      </g>
+    </g>
+
+    <!-- Callout Pills & Arrows showcasing features -->
+    <!-- Feature 1: Apple Liquid Glass -->
+    <g transform="translate(620, 160)">
+      <rect width="210" height="34" rx="8" fill="#1e2230" stroke="#38bdf8" stroke-width="1" />
+      <text x="12" y="22" class="font-sans" font-size="12" font-weight="600" fill="#e0f2fe">💎 Apple Liquid Glass UI</text>
+      <!-- Pointer line -->
+      <path d="M 0 17 L -30 30" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="3,3" />
+      <circle cx="-30" cy="30" r="3" fill="#38bdf8" />
+    </g>
+
+    <!-- Feature 2: Dual Phonetics -->
+    <g transform="translate(620, 275)">
+      <rect width="210" height="34" rx="8" fill="#1e2230" stroke="#10b981" stroke-width="1" />
+      <text x="12" y="22" class="font-sans" font-size="12" font-weight="600" fill="#d1fae5">🀄 Pinyin + Jyutping (粵)</text>
+      <!-- Pointer line -->
+      <path d="M 0 17 L -20 20" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,3" />
+      <circle cx="-20" cy="20" r="3" fill="#10b981" />
+    </g>
+
+    <!-- Feature 3: Native Cantonese Audio -->
+    <g transform="translate(620, 390)">
+      <rect width="210" height="34" rx="8" fill="#1e2230" stroke="#f59e0b" stroke-width="1" />
+      <text x="12" y="22" class="font-sans" font-size="12" font-weight="600" fill="#fef3c7">🔊 Cantonese Neural Voice</text>
+      <!-- Pointer line -->
+      <path d="M 0 17 L -70 -70" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3" />
+      <circle cx="-70" cy="-70" r="3" fill="#f59e0b" />
+    </g>
+  </g>
+</svg>

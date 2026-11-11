@@ -1,115 +1,151 @@
-# Chinese Popover Dictionary for Obsidian
+# 🏮 Chinese Popover Dictionary for Obsidian
 
-An elegant Apple Liquid Glass Chinese popover dictionary for Obsidian. Look up Chinese characters, words, and idioms with dual **Mandarin Pinyin** and **Cantonese Jyutping**, high-quality audio pronunciation, and concise definitions.
+<p align="center">
+  <img src="./assets/preview.svg" alt="Chinese Popover Dictionary Preview" width="100%" />
+</p>
 
----
+<p align="center">
+  <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.1.0-blue.svg" alt="Version 1.1.0" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
+  <img src="https://img.shields.io/badge/Dialects-Cantonese%20%2B%20Mandarin-059669.svg" alt="Cantonese & Mandarin" />
+  <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-0284c7.svg" alt="Apple Liquid Glass" />
+</p>
 
-## ✨ Features
-
-- **Double-Click & Hover Lookup**: Instantly look up Chinese words in both Live Preview (editing mode) and Reading View.
-- **Apple Liquid Glass Aesthetic**: Translucent frosted glass squircle popover with dynamic blur and smooth animations.
-- **Dual Phonetics**: Displays tone-marked Pinyin alongside Cantonese Jyutping (`nǐ hǎo / nei5 hou2`).
-- **Simplified & Traditional Hanzi**: Displays both Simplified and Traditional forms side-by-side in equal font size.
-- **Authentic Audio Pronunciation**:
-  - **Cantonese** (`廣東話`): Native Hong Kong neural voice.
-  - **Mandarin** (`普通话`): Native Putonghua neural voice.
-  - Adjustable speech speed (0.5x – 1.4x, default 0.8x for clear tone perception).
-  - Offline fallback via Web Speech API.
-- **Comprehensive Vocabulary**: Built on CC-CEDICT (118,000+ entries) combined with Pleco's hand-curated Cantonese readings (104,000+ words), CC-Canto, and Rime Cantonese.
-- **Editor Margin Protection**: Smart layout engine prevents the popover from overflowing into Obsidian's empty side margins when "Readable line length" is enabled.
-- **Deep Customization**:
-  - Trigger modes: Double-click, Hover with modifier key (Alt, Shift, Ctrl, Cmd), Hover always, or Hotkeys only.
-  - Appearance: Liquid Glass Dark, Liquid Glass Light, or Solid Minimalist themes; customizable popover width, height, blur intensity, and font sizes.
-  - Phonetic display modes: Both, Pinyin only, Jyutping only, or Auto by dialect.
-- **Keyboard Shortcuts**: Assign hotkeys to look up the word under the cursor, pronounce the active word, copy dictionary cards, or switch dialects instantly.
+<p align="center">
+  <b>Instant, beautiful Chinese popover lookup for Obsidian.</b><br/>
+  Featuring dual <b>Mandarin Pinyin</b> and <b>Cantonese Jyutping</b>, authentic neural audio pronunciation, simplified & traditional Hanzi, and an Apple Liquid Glass aesthetic.
+</p>
 
 ---
 
-## 🚀 Installation
+## 🌟 Why Chinese Popover Dictionary?
 
-### Via Obsidian Community Plugins (Recommended)
-1. Open **Settings** > **Community plugins** in Obsidian.
-2. Turn off **Restricted mode**.
+Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
+
+* 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
+* 🀄 **Dual Phonetics (Pinyin + Jyutping)** — Perfect for learners of both Mandarin (`Putonghua`) and Cantonese (`Guangdonghua`).
+* 🔊 **Native Voice Pronunciation** — Studio-quality neural audio for both dialects with adjustable playback speed (0.5x – 1.4x) and offline Web Speech support.
+* ⚡ **Instant Multi-Trigger Access** — Double-click, hover with modifier key (`Option / Alt / Shift / Cmd / Ctrl`), or hotkey navigation.
+* 📚 **Massive Vocabulary (118,000+ words)** — Powered by CC-CEDICT merged with Pleco's Cantonese readings, CC-Canto, and Rime Cantonese.
+* 🛡️ **Obsidian Margin Protection** — Automatically stays within your text container and never spills off-screen or into empty side margins.
+
+---
+
+## 📸 Overview
+
+```text
+┌────────────────────────────────────────────────────────┐
+│  你好  |  你好  [SIMP]   🔊 廣東話 0.8x   📋 Copy   ✕  │
+├────────────────────────────────────────────────────────┤
+│  nǐ hǎo         粵 nei5 hou2                           │
+├────────────────────────────────────────────────────────┤
+│  • hello  • hi  • how are you                          │
+│  • common friendly greeting for any occasion           │
+└────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✨ Feature Highlights
+
+### 1. Dual Phonetic Support
+Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switch modes on the fly:
+* **Both (`both`)**: Displays Mandarin Pinyin with diacritics (`nǐ hǎo`) and a dedicated green Jyutping badge (`粵 nei5 hou2`).
+* **Pinyin only (`pinyin`)**: Focused view for Mandarin learners.
+* **Jyutping only (`jyutping`)**: Tailored for Cantonese learners.
+* **Auto by Dialect (`dialect_auto`)**: Automatically highlights the phonetics corresponding to your selected speech dialect.
+
+### 2. Authentic Neural Pronunciation
+* **Cantonese (`廣東話`)**: Natural Hong Kong neural voice (`zh-HK` / `yue`).
+* **Mandarin (`普通话`)**: Clear Putonghua neural voice (`zh-CN`).
+* **Adjustable Speed**: Slow down pronunciation (default `0.8x`) to hear tones with razor-sharp clarity.
+* **Smart Fallback**: Online Google HD TTS with automatic fallback to local Web Speech API.
+
+### 3. Simplified & Traditional Hanzi
+* Displays both Simplified and Traditional characters side-by-side in equal font size.
+* Configurable separator (` - `, ` / `, ` · `, or `( )`).
+* Option to hide Traditional characters for a more compact card.
+
+### 4. Smart Positioning & Margin Clamping
+* Designed specifically for Obsidian's **"Readable line length"** mode.
+* Clamps popovers inside the active note container to avoid hanging awkwardly into empty grey side margins.
+* Auto-flips vertically if a word is near the top edge of your screen.
+
+---
+
+## 🚀 Quick Start
+
+### Installation via Community Directory (Recommended)
+1. In Obsidian, go to **Settings** > **Community plugins**.
+2. Make sure **Restricted mode** is turned **off**.
 3. Click **Browse** and search for `Chinese Popover Dictionary`.
-4. Click **Install**, then **Enable**.
+4. Click **Install**, then click **Enable**.
 
 ### Manual Installation
-1. Download `main.js`, `manifest.json`, `styles.css`, and `cedict.json` from the latest [GitHub Release](https://github.com/Kantulaev/obsidian-chinese-popover/releases).
-2. Create a folder named `chinese-popover-dict` in your vault's plugin directory:
-   `<vault>/.obsidian/plugins/chinese-popover-dict/`
-3. Copy the four downloaded files into that folder.
-4. Reload Obsidian, go to **Settings** > **Community plugins**, and enable **Chinese Popover Dictionary**.
+1. Download `main.js`, `manifest.json`, and `styles.css` from the latest [GitHub Release](https://github.com/Kantulaev/obsidian-chinese-popover/releases).
+2. Create a folder named `chinese-popover-dict` in your vault's plugins folder:
+   ```text
+   <YourVault>/.obsidian/plugins/chinese-popover-dict/
+   ```
+3. Place `main.js`, `manifest.json`, and `styles.css` into that folder.
+4. Reload Obsidian and enable the plugin under **Settings** > **Community plugins**.
 
 ---
 
-## 📖 How to Use
+## ⌨️ Hotkeys & Commands
 
-1. **Mouse Lookup**: Double-click any Chinese character or word in your notes.
-2. **Audio Pronunciation**: Click the Chinese word in the header pill or click the speaker button (🔊) to hear the native pronunciation.
-3. **Copy Entry**: Click the clipboard button (📋) to copy the word, phonetics, and translation to your clipboard.
-4. **Dismiss**: Press `Escape`, scroll, or click anywhere outside the popover.
+All actions can be bound to your favorite keyboard shortcuts under **Settings** > **Hotkeys**:
 
-### Hotkeys and Command Palette
-
-You can assign custom hotkeys in **Settings** > **Hotkeys** (search for `Chinese Dictionary`):
-
-| Command | Description |
-| :--- | :--- |
-| **Look up word under cursor or selection** | Opens popover for the active cursor position or selected text |
-| **Pronounce active word** | Plays Cantonese or Mandarin audio for the current word |
-| **Copy active word card** | Copies the dictionary entry to the clipboard |
-| **Switch Dialect** | Toggles between Cantonese and Mandarin |
-| **Cycle Phonetic Display** | Cycles between Both, Pinyin only, Jyutping only, and Auto |
-| **Toggle Chinese Dictionary** | Enables or disables the dictionary plugin |
-| **Close Popover** | Closes the popover window |
+| Command | Suggested Shortcut | Description |
+| :--- | :---: | :--- |
+| **Look up word under cursor or selection** | <kbd>Alt</kbd> + <kbd>D</kbd> | Opens popover for active cursor position or selection |
+| **Pronounce active word** | <kbd>Alt</kbd> + <kbd>P</kbd> | Plays audio for current word in chosen dialect |
+| **Copy active word card** | <kbd>Alt</kbd> + <kbd>C</kbd> | Copies formatted dictionary entry to clipboard |
+| **Switch Dialect** | <kbd>Alt</kbd> + <kbd>S</kbd> | Toggles between Cantonese (`廣東話`) and Mandarin (`普通话`) |
+| **Cycle Phonetic Display** | <kbd>Alt</kbd> + <kbd>T</kbd> | Cycles: Both → Pinyin → Jyutping → Auto |
+| **Toggle Chinese Dictionary** | — | Enables or disables popover triggers |
+| **Close Popover** | <kbd>Escape</kbd> | Closes any open popover immediately |
 
 ---
 
-## ⚙️ Settings Overview
+## ⚙️ Customization
 
-- **Activation & Triggers**:
-  - Trigger Mode: *Double Click*, *Hover + Modifier Key* (Alt/Option, Shift, Ctrl, Cmd), *Hover Always*, or *Hotkeys Only*.
-  - Hover Delay: 100 ms – 800 ms.
-- **Voice & Audio**:
-  - Dialect: Cantonese (`zh-yue`) vs Mandarin (`zh-CN`).
-  - Audio Engine: Google HD Neural (online) vs Web Speech API (offline).
-  - Speech Speed: 0.5x – 1.4x (default: 0.8x).
-  - Auto-play Audio on lookup: On / Off.
-- **Phonetics & Hanzi**:
-  - Phonetic Display: *Both (Pinyin / Jyutping)*, *Pinyin only*, *Jyutping only*, *Auto by dialect*.
-  - Tone Marks: Diacritics (`nǐ hǎo`) vs numbers (`ni3 hao3`).
-  - Traditional Hanzi: Show/hide, custom separator (` - `, ` / `, ` · `, `( )`).
-  - Max Definitions: 1 to 5 words.
-- **Appearance & Liquid Glass**:
-  - Theme: *Auto*, *Liquid Glass Dark*, *Liquid Glass Light*, *Solid Minimalist*.
-  - Text Accent: *Pure White*, *Cyan Glow*, *Warm Gold*, or *Obsidian Theme Accent*.
-  - Sizing & Blur: Popover width (260–460 px), height (130–250 px), blur (0–60 px).
-  - Font sizes: Hanzi (14–28 px), Pinyin (16–32 px), Translation (12–22 px).
-- **Dictionary Database**:
-  - Status indicator and manual download / reload button for the 42 MB dictionary database.
+Customize everything to match your vault's theme:
+
+* **Trigger Modes**: Double-click, Hover with modifier key (<kbd>Alt/Option</kbd>, <kbd>Shift</kbd>, <kbd>Ctrl</kbd>, <kbd>Cmd</kbd>), Hover always, or Hotkeys only.
+* **Themes**:
+  * 🌌 **Liquid Glass Dark** — Deep glassmorphism with vivid cyan/emerald highlights.
+  * ☀️ **Liquid Glass Light** — Frosted translucent glass tuned for light themes.
+  * ⬛ **Solid Minimalist** — Opaque card styling with zero transparency.
+  * 🔄 **Auto** — Adapts seamlessly to your current Obsidian theme.
+* **Card Dimensions**: Adjust popover width (260–460 px), height (130–250 px), and backdrop blur (0–60 px).
+* **Typography**: Fine-tune font sizes for Hanzi, Pinyin, and translations independently.
 
 ---
 
-## 🔒 Privacy & Network Disclosures
+## 🔒 Privacy & Security
 
-This plugin respects user privacy and complies with the Obsidian Developer Policies:
+We believe your notes and thoughts belong solely to you:
 
-- **Local & Offline Lookup**: All dictionary queries run 100% locally on your device. Your notes, selections, and keystrokes are never sent to any remote server.
-- **No Telemetry**: There is zero tracking, analytics, or data collection.
-- **Remote Services**:
-  - **Google Translate TTS API** (`translate.google.com`): When the audio button or auto-pronounce feature is triggered, an audio stream for the selected word is requested to provide native Cantonese and Mandarin pronunciation. You can switch the audio engine to **Web Speech API** in settings to use offline system speech synthesis without any internet connection.
-  - **Dictionary Database Download**: On initial installation, the plugin downloads the pre-built `cedict.json` (42 MB) database from the GitHub Release assets (`github.com/Kantulaev/obsidian-chinese-popover/releases`) and caches it in the plugin directory for local offline use.
+* 🛡️ **100% Local Dictionary Queries**: Words are looked up entirely inside your local vault. No note content, text selections, or keystrokes are ever sent to an external server.
+* 🚫 **Zero Telemetry**: No trackers, no cookies, no analytics.
+* 🌐 **External Connections**:
+  1. **Google TTS API** (`translate.google.com`): When the audio button is clicked, an audio stream is fetched for the selected word. You can switch to **Web Speech API** in settings for 100% offline pronunciation.
+  2. **CEDICT Database Download**: On first run, the plugin downloads the offline dictionary database (`cedict.json`, ~42 MB) from GitHub Releases and caches it in your plugin folder for lifetime offline use.
 
 ---
 
-## 📜 Attribution & Licenses
+## 📜 Credits & Licenses
 
-- **CC-CEDICT**: Licensed under the [Creative Commons Attribution-Share Alike 3.0 License](https://creativecommons.org/licenses/by-sa/3.0/).
-- **Pleco CC-CEDICT Cantonese Readings**: Provided by Pleco Software.
-- **CC-Canto**: Provided by the Cantodict and Pleco projects.
-- **Rime Cantonese**: Data from the `rime-cantonese` project.
+* **[CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cedict)**: Licensed under [Creative Commons Attribution-Share Alike 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+* **[Pleco Software](https://www.pleco.com/)**: Hand-curated Cantonese readings database.
+* **[CC-Canto](https://cantonese.org/)**: Additional colloquial Cantonese vocabulary.
+* **[Rime Cantonese](https://github.com/rime/rime-cantonese)**: Frequency and phonetic mappings.
+
+---
 
 ## 📄 License
 
-This plugin is open-source software licensed under the [MIT License](LICENSE).
-
+Distributed under the [MIT License](LICENSE). Built with ❤️ for the Chinese learning community.

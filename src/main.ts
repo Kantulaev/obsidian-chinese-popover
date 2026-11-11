@@ -1,9 +1,8 @@
 import { EditorView } from "@codemirror/view";
 import { Extension } from "@codemirror/state";
 import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
-import { DictionaryManager, MatchResult } from "./dictionary.ts";
+import { DictionaryManager } from "./dictionary.ts";
 import {
-  ChineseDialect,
   ChineseDictSettings,
   ChineseDictSettingTab,
   DEFAULT_SETTINGS,
@@ -11,6 +10,14 @@ import {
   PhoneticDisplay,
 } from "./settings.ts";
 import { ContentBounds, DictTooltip } from "./tooltip.ts";
+
+interface CodeMirrorEditor extends Editor {
+  cm?: EditorView;
+  cursorCoords?(
+    primary?: boolean,
+    mode?: string
+  ): { left: number; right: number; top: number; bottom: number } | null;
+}
 
 export default class ChineseHoverDictPlugin extends Plugin {
   settings: ChineseDictSettings = DEFAULT_SETTINGS;
@@ -21,8 +28,6 @@ export default class ChineseHoverDictPlugin extends Plugin {
   private lastHoverCoords: { x: number; y: number } | null = null;
 
   override async onload(): Promise<void> {
-    console.log("[Chinese Dict] Loading plugin...");
-
     await this.loadSettings();
 
     this.dictionary = new DictionaryManager(this);
@@ -168,12 +173,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // Add Settings Tab
     this.addSettingTab(new ChineseDictSettingTab(this.app, this));
-
-    console.log("[Chinese Dict] Plugin loaded successfully.");
   }
 
   override onunload(): void {
-    console.log("[Chinese Dict] Unloading plugin...");
     this.cancelHoverLookup();
     if (this.tooltip) {
       this.tooltip.destroy();
@@ -480,8 +482,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     let range: Range | null = null;
     if (document.caretRangeFromPoint) {
       range = document.caretRangeFromPoint(clientX, clientY);
-    } else if ((document as any).caretPositionFromPoint) {
-      const pos = (document as any).caretPositionFromPoint(clientX, clientY);
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(clientX, clientY);
       if (pos && pos.offsetNode) {
         range = document.createRange();
         range.setStart(pos.offsetNode, pos.offset);
@@ -578,7 +580,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     let clientX = window.innerWidth / 2;
     let clientY = window.innerHeight / 2;
 
-    const cm = (editor as any).cm as EditorView | undefined;
+    const cmEditor = editor as CodeMirrorEditor;
+    const cm = cmEditor.cm;
     if (cm) {
       const head = cm.state.selection.main.head;
       const coords = cm.coordsAtPos(head);
@@ -586,8 +589,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
         clientX = coords.left;
         clientY = coords.bottom;
       }
-    } else if (typeof (editor as any).cursorCoords === "function") {
-      const coords = (editor as any).cursorCoords(true, "window");
+    } else if (typeof cmEditor.cursorCoords === "function") {
+      const coords = cmEditor.cursorCoords(true, "window");
       if (coords) {
         clientX = coords.left;
         clientY = coords.bottom;

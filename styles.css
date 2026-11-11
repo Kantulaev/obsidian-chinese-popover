@@ -15,10 +15,10 @@
   justify-content: space-between;
   overflow: hidden;
 
-  /* Crucial: Must be completely non-interactive and hidden by default */
-  display: none !important;
-  pointer-events: none !important;
-  visibility: hidden !important;
+  /* Hidden by default */
+  display: none;
+  pointer-events: none;
+  visibility: hidden;
 
   /* Apple Squircle */
   border-radius: 20px;
@@ -48,45 +48,45 @@
 .theme-light .ch-dict-tooltip,
 .ch-dict-tooltip.ch-dict-theme-glass_light {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.68) 100%),
-              rgba(238, 240, 246, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+              rgba(238, 240, 246, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.75);
   box-shadow:
     0 20px 42px -10px rgba(0, 0, 0, 0.16),
     0 6px 14px -3px rgba(0, 0, 0, 0.09),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95) !important;
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
 }
 
 /* Force Dark Liquid Glass */
 .ch-dict-tooltip.ch-dict-theme-glass_dark {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%),
-              rgba(20, 22, 28, 0.82) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+              rgba(20, 22, 28, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   box-shadow:
     0 24px 48px -12px rgba(0, 0, 0, 0.65),
     0 8px 18px -4px rgba(0, 0, 0, 0.45),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4) !important;
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4);
 }
 
 /* Solid Minimalist Theme (No blur, high contrast) */
 .ch-dict-tooltip.ch-dict-theme-solid {
-  background: #1c1d22 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+  background: #1c1d22;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
 }
 
 .theme-light .ch-dict-tooltip.ch-dict-theme-solid {
-  background: #ffffff !important;
-  border: 1px solid rgba(0, 0, 0, 0.15) !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
 /* Visible popover state */
 .ch-dict-tooltip.ch-dict-visible {
-  display: flex !important;
-  pointer-events: auto !important;
-  visibility: visible !important;
+  display: flex;
+  pointer-events: auto;
+  visibility: visible;
   opacity: 1;
   transform: scale(1) translateY(0);
 }
@@ -168,7 +168,7 @@
   color: rgba(0, 0, 0, 0.4);
 }
 
-/* Traditional characters: Exact same size as simplified! */
+/* Traditional characters: Exact same size as simplified */
 .ch-dict-trad-hanzi {
   font-size: var(--ch-dict-font-hanzi, 19px);
   font-weight: 600;
@@ -232,7 +232,7 @@
   font-weight: 700;
   line-height: 1.22;
   letter-spacing: -0.2px;
-  color: #ffffff !important;
+  color: #ffffff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
   margin: 3px 0;
   white-space: normal;
@@ -240,31 +240,30 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  column-gap: 5px;
-  row-gap: 2px;
+  gap: 2px 5px;
   max-height: 58px;
   overflow: hidden;
 }
 
 .theme-light .ch-dict-pinyin-hero,
 .ch-dict-theme-glass_light .ch-dict-pinyin-hero {
-  color: #111113 !important;
+  color: #111113;
   text-shadow: none;
 }
 
 /* Color Presets */
 .ch-dict-tooltip.ch-dict-color-cyan .ch-dict-pinyin-hero {
-  color: #64d2ff !important;
+  color: #64d2ff;
   text-shadow: 0 0 10px rgba(100, 210, 255, 0.45);
 }
 
 .ch-dict-tooltip.ch-dict-color-gold .ch-dict-pinyin-hero {
-  color: #ffd60a !important;
+  color: #ffd60a;
   text-shadow: 0 0 10px rgba(255, 214, 10, 0.45);
 }
 
 .ch-dict-tooltip.ch-dict-color-obsidian .ch-dict-pinyin-hero {
-  color: var(--text-accent, #64d2ff) !important;
+  color: var(--text-accent, #64d2ff);
 }
 
 .ch-dict-pinyin-part {

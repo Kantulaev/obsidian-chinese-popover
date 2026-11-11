@@ -18,14 +18,7 @@ export class DictTooltip {
   private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
-    this.el = document.createElement("div");
-    this.el.addClass("ch-dict-tooltip");
-
-    // Strictly ensure it does not intercept clicks or take layout space when hidden
-    this.el.style.display = "none";
-    this.el.style.pointerEvents = "none";
-    this.el.style.left = "-9999px";
-    this.el.style.top = "-9999px";
+    this.el = createDiv({ cls: "ch-dict-tooltip" });
 
     // Prevent clicking inside the tooltip from bubbling to document and closing it
     this.el.addEventListener("mousedown", (e) => {
@@ -43,12 +36,14 @@ export class DictTooltip {
     const height = settings.popoverHeight || 165;
     const blur = settings.blurIntensity ?? 34;
 
-    this.el.style.setProperty("--ch-dict-width", `${width}px`);
-    this.el.style.setProperty("--ch-dict-height", `${height}px`);
-    this.el.style.setProperty("--ch-dict-blur", `${blur}px`);
-    this.el.style.setProperty("--ch-dict-font-hanzi", `${settings.fontSizeHanzi || 19}px`);
-    this.el.style.setProperty("--ch-dict-font-pinyin", `${settings.fontSizePinyin || 22}px`);
-    this.el.style.setProperty("--ch-dict-font-translation", `${settings.fontSizeTranslation || 15}px`);
+    this.el.setCssProps({
+      "--ch-dict-width": `${width}px`,
+      "--ch-dict-height": `${height}px`,
+      "--ch-dict-blur": `${blur}px`,
+      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 19}px`,
+      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 22}px`,
+      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 15}px`,
+    });
 
     // Reset theme classes
     this.el.removeClass(
@@ -128,9 +123,7 @@ export class DictTooltip {
     this.render(match, settings);
     this.position(x, y, settings, bounds);
 
-    // Make visible and interactive
-    this.el.style.display = "flex";
-    this.el.style.pointerEvents = "auto";
+    // Make visible and interactive via CSS class
     this.el.addClass("ch-dict-visible");
     this.isVisible = true;
 
@@ -163,10 +156,6 @@ export class DictTooltip {
     }
 
     this.el.removeClass("ch-dict-visible");
-    this.el.style.display = "none";
-    this.el.style.pointerEvents = "none";
-    this.el.style.left = "-9999px";
-    this.el.style.top = "-9999px";
     this.isVisible = false;
     this.currentWord = null;
     this.currentMatch = null;
@@ -347,21 +336,14 @@ export class DictTooltip {
     const mode = settings.phoneticDisplay || "both";
     let showBoth = false;
     let showJyutpingOnly = false;
-    let showPinyinOnly = false;
 
     if (mode === "both") {
       showBoth = Boolean(jyutping);
-      showPinyinOnly = !jyutping;
-    } else if (mode === "pinyin") {
-      showPinyinOnly = true;
     } else if (mode === "jyutping") {
       showJyutpingOnly = Boolean(jyutping);
-      showPinyinOnly = !jyutping;
     } else if (mode === "dialect_auto") {
       if (isCantonese && jyutping) {
         showBoth = true;
-      } else {
-        showPinyinOnly = true;
       }
     }
 
@@ -449,7 +431,7 @@ export class DictTooltip {
           this.fallbackSpeechSynthesis(text, isCantonese ? "zh-HK" : "zh-CN", speed);
         });
       }
-    } catch (_) {
+    } catch {
       this.fallbackSpeechSynthesis(text, isCantonese ? "zh-HK" : "zh-CN", speed);
     }
   }
@@ -603,8 +585,10 @@ export class DictTooltip {
       top = padding;
     }
 
-    this.el.style.left = `${Math.round(left)}px`;
-    this.el.style.top = `${Math.round(top)}px`;
+    this.el.setCssStyles({
+      left: `${Math.round(left)}px`,
+      top: `${Math.round(top)}px`,
+    });
   }
 
   /**

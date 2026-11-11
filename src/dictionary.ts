@@ -1,4 +1,4 @@
-import { Notice, Plugin } from "obsidian";
+import { Notice, Plugin, requestUrl } from "obsidian";
 
 export interface DictEntry {
   simplified?: string;
@@ -225,19 +225,12 @@ export class DictionaryManager {
         const rawContent = await adapter.read(dictPath);
         this.data = JSON.parse(rawContent);
         this.isLoaded = true;
-        const entryCount = Object.keys(this.data).length;
-        console.log(
-          `[Chinese Dict] Successfully loaded CC-CEDICT + Jyutping (${entryCount} words).`
-        );
         return;
       }
 
       // If local file is not present, use built-in core vocabulary first
       this.data = FALLBACK_DICT;
       this.isLoaded = true;
-      console.log(
-        "[Chinese Dict] cedict.json not found locally. Starting background download from GitHub release..."
-      );
 
       // Trigger automatic background download on first run
       this.downloadDictionary().catch((err) => {
@@ -263,12 +256,8 @@ export class DictionaryManager {
     new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
 
     try {
-      const res = await fetch(downloadUrl);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      const text = await res.text();
+      const res = await requestUrl({ url: downloadUrl });
+      const text = res.text;
       await adapter.write(dictPath, text);
       this.data = JSON.parse(text);
       this.isLoaded = true;

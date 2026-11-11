@@ -77,6 +77,19 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   maxWordLength: 6,
 };
 
+interface AppWithSetting extends App {
+  setting?: {
+    open(): void;
+    openTabById(id: string): void;
+    activeTab?: {
+      searchComponent?: {
+        setValue(val: string): void;
+      };
+      updateHotkeyVisibility?(): void;
+    };
+  };
+}
+
 export class ChineseDictSettingTab extends PluginSettingTab {
   plugin: ChineseHoverDictPlugin;
 
@@ -89,7 +102,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "🇨🇳 Chinese Popover Dictionary Settings" });
+    new Setting(containerEl)
+      .setName("Chinese Popover Dictionary Settings")
+      .setHeading();
 
     // --- QUICK HOTKEY HELPER ---
     new Setting(containerEl)
@@ -101,14 +116,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setCta()
           .onClick(() => {
             try {
-              const settingTab = (this.app as any).setting;
+              const settingTab = (this.app as AppWithSetting).setting;
               if (settingTab) {
                 settingTab.open();
                 settingTab.openTabById("hotkeys");
                 const hotkeyTab = settingTab.activeTab;
                 if (hotkeyTab && hotkeyTab.searchComponent) {
                   hotkeyTab.searchComponent.setValue("Chinese Dictionary");
-                  hotkeyTab.updateHotkeyVisibility();
+                  hotkeyTab.updateHotkeyVisibility?.();
                 }
               }
             } catch (e) {
@@ -120,7 +135,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // 1. АКТИВАЦИЯ И ТРИГГЕРЫ
     // ==========================================
-    containerEl.createEl("h3", { text: "🚀 Способ активации / Activation & Triggers" });
+    new Setting(containerEl)
+      .setName("🚀 Способ активации / Activation & Triggers")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Включить словарь / Enable Dictionary")
@@ -191,7 +208,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // 2. ОЗВУЧКА И ПРОИЗНОШЕНИЕ
     // ==========================================
-    containerEl.createEl("h3", { text: "🗣️ Озвучка и произношение / Voice & Audio" });
+    new Setting(containerEl)
+      .setName("🗣️ Озвучка и произношение / Voice & Audio")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Диалект произношения / Pronunciation Dialect")
@@ -253,7 +272,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // 3. ОТОБРАЖЕНИЕ ФОНЕТИКИ И ИЕРОГЛИФОВ
     // ==========================================
-    containerEl.createEl("h3", { text: "🀄 Фонетика и иероглифы / Phonetics & Hanzi" });
+    new Setting(containerEl)
+      .setName("🀄 Фонетика и иероглифы / Phonetics & Hanzi")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Режим отображения фонетики / Phonetics Display")
@@ -358,7 +379,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // 4. ВНЕШНИЙ ВИД И СТИЛЬ LIQUID GLASS
     // ==========================================
-    containerEl.createEl("h3", { text: "🎨 Внешний вид и стиль Liquid Glass / Appearance" });
+    new Setting(containerEl)
+      .setName("🎨 Внешний вид и стиль Liquid Glass / Appearance")
+      .setHeading();
 
     new Setting(containerEl)
       .setName("Стиль темы / Popover Theme")
@@ -503,7 +526,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // 5. ПАРАМЕТРЫ СЛОВАРЯ
     // ==========================================
-    containerEl.createEl("h3", { text: "🔍 Параметры словаря / Dictionary" });
+    new Setting(containerEl)
+      .setName("🔍 Параметры словаря / Dictionary")
+      .setHeading();
 
     const isFull = this.plugin.dictionary?.isFullDictionaryLoaded?.() ?? false;
     new Setting(containerEl)
@@ -544,7 +569,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     // СБРОС НАСТРОЕК
     // ==========================================
-    containerEl.createEl("div", { cls: "ch-dict-settings-spacer" });
+    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
 
     new Setting(containerEl)
       .setName("Сбросить настройки / Reset to Defaults")

@@ -112,3 +112,4 @@ This plugin respects user privacy and complies with the Obsidian Developer Polic
 ## 📄 License
 
 This plugin is open-source software licensed under the [MIT License](LICENSE).
+

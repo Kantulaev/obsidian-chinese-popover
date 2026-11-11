@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-chinese-hover-dict",
+  "name": "Chinese Popover Dictionary",
+  "version": "1.1.0",
+  "minAppVersion": "0.15.0",
+  "description": "Double-click Apple Liquid Glass Chinese popover dictionary with big Pinyin and concise translations.",
+  "author": "Antigravity",
+  "authorUrl": "https://github.com",
+  "isDesktopOnly": false
+}

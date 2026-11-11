@@ -1,0 +1,19 @@
+{
+  "nodeModulesDir": "none",
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "dom.iterable", "esnext"],
+    "strict": true,
+    "noImplicitOverride": false
+  },
+  "imports": {
+    "obsidian": "npm:obsidian@latest",
+    "@codemirror/view": "npm:@codemirror/view@^6.26.0",
+    "@codemirror/state": "npm:@codemirror/state@^6.4.1",
+    "esbuild": "npm:esbuild@^0.25.0"
+  },
+  "tasks": {
+    "build": "deno run -A build.ts production",
+    "dev": "deno run -A build.ts",
+    "build-dict": "deno run --allow-read --allow-write scripts/build-dict.ts"
+  }
+}

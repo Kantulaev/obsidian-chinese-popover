@@ -1,0 +1,305 @@
+/* Apple Liquid Glass Chinese Popover (Pinyin / Jyutping + Cantonese Voice) */
+
+.ch-dict-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: var(--ch-dict-width, 330px);
+  height: var(--ch-dict-height, 165px);
+  min-width: var(--ch-dict-width, 330px);
+  max-width: var(--ch-dict-width, 330px);
+  min-height: var(--ch-dict-height, 165px);
+  max-height: var(--ch-dict-height, 165px);
+  box-sizing: border-box;
+  padding: 13px 16px;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+
+  /* Crucial: Must be completely non-interactive and hidden by default */
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+
+  /* Apple Squircle */
+  border-radius: 20px;
+
+  /* Liquid Glass Dark Theme default */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%),
+              rgba(20, 22, 28, 0.82);
+  backdrop-filter: blur(var(--ch-dict-blur, 34px)) saturate(200%) contrast(105%);
+  -webkit-backdrop-filter: blur(var(--ch-dict-blur, 34px)) saturate(200%) contrast(105%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 8px 18px -4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  user-select: text;
+
+  opacity: 0;
+  transform: scale(0.92) translateY(6px);
+  transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light Theme Liquid Glass (Auto in light mode) */
+.theme-light .ch-dict-tooltip,
+.ch-dict-tooltip.ch-dict-theme-glass_light {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.68) 100%),
+              rgba(238, 240, 246, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  box-shadow:
+    0 20px 42px -10px rgba(0, 0, 0, 0.16),
+    0 6px 14px -3px rgba(0, 0, 0, 0.09),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Force Dark Liquid Glass */
+.ch-dict-tooltip.ch-dict-theme-glass_dark {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%),
+              rgba(20, 22, 28, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 8px 18px -4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Solid Minimalist Theme (No blur, high contrast) */
+.ch-dict-tooltip.ch-dict-theme-solid {
+  background: #1c1d22 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+}
+
+.theme-light .ch-dict-tooltip.ch-dict-theme-solid {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Visible popover state */
+.ch-dict-tooltip.ch-dict-visible {
+  display: flex !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Top bar: Hanzi capsule pill and action buttons */
+.ch-dict-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.ch-dict-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  max-width: 245px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-light .ch-dict-pill,
+.ch-dict-theme-glass_light .ch-dict-pill {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+}
+
+/* Clickable word: click directly on Chinese character to speak */
+.ch-dict-clickable-word {
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.ch-dict-clickable-word:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.03);
+}
+
+.theme-light .ch-dict-clickable-word:hover,
+.ch-dict-theme-glass_light .ch-dict-clickable-word:hover {
+  background: rgba(0, 0, 0, 0.11);
+}
+
+.ch-dict-clickable-word:active {
+  transform: scale(0.97);
+}
+
+/* Simplified characters */
+.ch-dict-hanzi {
+  font-size: var(--ch-dict-font-hanzi, 19px);
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.theme-light .ch-dict-hanzi,
+.ch-dict-theme-glass_light .ch-dict-hanzi {
+  color: #1a1a1c;
+}
+
+/* Dash separating Simplified and Traditional */
+.ch-dict-dash {
+  font-size: calc(var(--ch-dict-font-hanzi, 19px) - 2px);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 2px;
+  user-select: none;
+}
+
+.theme-light .ch-dict-dash,
+.ch-dict-theme-glass_light .ch-dict-dash {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* Traditional characters: Exact same size as simplified! */
+.ch-dict-trad-hanzi {
+  font-size: var(--ch-dict-font-hanzi, 19px);
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.theme-light .ch-dict-trad-hanzi,
+.ch-dict-theme-glass_light .ch-dict-trad-hanzi {
+  color: #1a1a1c;
+}
+
+/* Actions: Speaker & Copy buttons */
+.ch-dict-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ch-dict-glass-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: all 0.12s ease;
+  padding: 0;
+}
+
+.theme-light .ch-dict-glass-btn,
+.ch-dict-theme-glass_light .ch-dict-glass-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1a1a1c;
+}
+
+.ch-dict-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.08);
+}
+
+.theme-light .ch-dict-glass-btn:hover,
+.ch-dict-theme-glass_light .ch-dict-glass-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.ch-dict-glass-btn:active {
+  transform: scale(0.95);
+}
+
+/* Pinyin Hero: Multi-line wrap support with customizable colors and sizes */
+.ch-dict-pinyin-hero {
+  font-size: var(--ch-dict-font-pinyin, 22px);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.2px;
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  margin: 3px 0;
+  white-space: normal;
+  word-break: break-word;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 5px;
+  row-gap: 2px;
+  max-height: 58px;
+  overflow: hidden;
+}
+
+.theme-light .ch-dict-pinyin-hero,
+.ch-dict-theme-glass_light .ch-dict-pinyin-hero {
+  color: #111113 !important;
+  text-shadow: none;
+}
+
+/* Color Presets */
+.ch-dict-tooltip.ch-dict-color-cyan .ch-dict-pinyin-hero {
+  color: #64d2ff !important;
+  text-shadow: 0 0 10px rgba(100, 210, 255, 0.45);
+}
+
+.ch-dict-tooltip.ch-dict-color-gold .ch-dict-pinyin-hero {
+  color: #ffd60a !important;
+  text-shadow: 0 0 10px rgba(255, 214, 10, 0.45);
+}
+
+.ch-dict-tooltip.ch-dict-color-obsidian .ch-dict-pinyin-hero {
+  color: var(--text-accent, #64d2ff) !important;
+}
+
+.ch-dict-pinyin-part {
+  white-space: nowrap;
+}
+
+.ch-dict-pinyin-slash {
+  opacity: 0.65;
+  font-weight: 400;
+}
+
+.ch-dict-jyutping-part {
+  white-space: nowrap;
+}
+
+/* Translations: Customizable font size and definitions count */
+.ch-dict-translations {
+  font-size: var(--ch-dict-font-translation, 15px);
+  line-height: 1.35;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: 2px;
+}
+
+.theme-light .ch-dict-translations,
+.ch-dict-theme-glass_light .ch-dict-translations {
+  color: #2c2c2e;
+}
+
+/* Settings spacers */
+.ch-dict-settings-spacer {
+  height: 20px;
+}

@@ -39,7 +39,7 @@ const context = await esbuild.context({
 });
 
 async function copyToDist() {
-  const distDir = "./dist/obsidian-chinese-popover";
+  const distDir = "./dist/chinese-popover-dict";
   await Deno.mkdir(distDir, { recursive: true });
 
   const filesToCopy = ["manifest.json", "main.js", "styles.css", "cedict.json"];
@@ -54,7 +54,7 @@ async function copyToDist() {
 
   console.log("=================================================");
   console.log("SUCCESS! Distribution package ready in:");
-  console.log("   ./dist/obsidian-chinese-popover/");
+  console.log("   ./dist/chinese-popover-dict/");
   console.log("Files copied:");
   console.log("   - manifest.json");
   console.log("   - main.js");

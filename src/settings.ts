@@ -505,6 +505,28 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // ==========================================
     containerEl.createEl("h3", { text: "🔍 Параметры словаря / Dictionary" });
 
+    const isFull = this.plugin.dictionary?.isFullDictionaryLoaded?.() ?? false;
+    new Setting(containerEl)
+      .setName("База данных словаря / Dictionary Database")
+      .setDesc(
+        isFull
+          ? "✅ Полный словарь загружен и готов к работе (CC-CEDICT + 104k Jyutping)."
+          : "⚠️ Используется базовый демо-словарь. Вы можете скачать полную базу данных (42 MB) или поместить cedict.json в папку плагина."
+      )
+      .addButton((btn) => {
+        btn.setButtonText(isFull ? "Перезагрузить словарь" : "Скачать словарь (42 MB)");
+        if (!isFull) {
+          btn.setCta();
+        }
+        btn.onClick(async () => {
+          btn.setDisabled(true);
+          btn.setButtonText("Загрузка...");
+          await this.plugin.dictionary.downloadDictionary();
+          btn.setDisabled(false);
+          this.display();
+        });
+      });
+
     new Setting(containerEl)
       .setName("Максимальная длина слова / Max Word Length")
       .setDesc("Максимальное количество символов для поиска составных идиом (чэнъюй) и фраз (по умолчанию 6).")

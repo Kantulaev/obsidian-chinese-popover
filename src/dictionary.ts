@@ -214,7 +214,7 @@ export class DictionaryManager {
   }
 
   /**
-   * Loads dictionary data from plugin's cedict.json file, or falls back to built-in sample
+   * Loads dictionary data from plugin's cedict.json file, or downloads it on first run
    */
   async load(): Promise<void> {
     try {
@@ -229,22 +229,60 @@ export class DictionaryManager {
         console.log(
           `[Chinese Dict] Successfully loaded CC-CEDICT + Jyutping (${entryCount} words).`
         );
-      } else {
-        this.data = FALLBACK_DICT;
-        this.isLoaded = true;
-        console.warn(
-          "[Chinese Dict] cedict.json not found in plugin directory. Using fallback dictionary."
-        );
-        new Notice(
-          "Chinese Dict: cedict.json not found. Loaded demo vocabulary. Run 'deno task build-dict' to regenerate.",
-          8000
-        );
+        return;
       }
+
+      // If local file is not present, use built-in core vocabulary first
+      this.data = FALLBACK_DICT;
+      this.isLoaded = true;
+      console.log(
+        "[Chinese Dict] cedict.json not found locally. Starting background download from GitHub release..."
+      );
+
+      // Trigger automatic background download on first run
+      this.downloadDictionary().catch((err) => {
+        console.warn("[Chinese Dict] Automatic dictionary download skipped or failed:", err);
+      });
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = FALLBACK_DICT;
       this.isLoaded = true;
     }
+  }
+
+  /**
+   * Downloads cedict.json from GitHub release assets and caches it locally
+   */
+  async downloadDictionary(): Promise<boolean> {
+    const dictPath = `${this.plugin.manifest.dir}/cedict.json`;
+    const adapter = this.plugin.app.vault.adapter;
+
+    const version = this.plugin.manifest.version || "1.0.0";
+    const downloadUrl = `https://github.com/Kantulaev/obsidian-plugin/releases/download/${version}/cedict.json`;
+
+    new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
+
+    try {
+      const res = await fetch(downloadUrl);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const text = await res.text();
+      await adapter.write(dictPath, text);
+      this.data = JSON.parse(text);
+      this.isLoaded = true;
+      const count = Object.keys(this.data).length;
+      new Notice(`Chinese Popover: Словарь успешно загружен (${count} слов)!`, 5000);
+      return true;
+    } catch (err) {
+      console.warn("[Chinese Dict] Failed to download dictionary file:", err);
+      return false;
+    }
+  }
+
+  isFullDictionaryLoaded(): boolean {
+    return Object.keys(this.data).length > 50;
   }
 
   isReady(): boolean {

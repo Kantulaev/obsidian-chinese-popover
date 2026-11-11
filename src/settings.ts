@@ -102,10 +102,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl)
-      .setName("Chinese Popover Dictionary Settings")
-      .setHeading();
-
     // --- QUICK HOTKEY HELPER ---
     new Setting(containerEl)
       .setName("⌨️ Сочетания клавиш / Hotkeys")

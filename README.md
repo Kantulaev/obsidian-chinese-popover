@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.2.0-blue.svg" alt="Version 1.2.0" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.2.1-blue.svg" alt="Version 1.2.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
   <img src="https://img.shields.io/badge/Notebook-Permanent%20Markdown-059669.svg" alt="Markdown Notebook" />

@@ -39,19 +39,21 @@ export class ChineseVocabularyView extends ItemView {
   }
 
   render(): void {
-    const container = this.containerEl.children[1] as HTMLElement;
+    const container = this.contentEl;
     if (!container) return;
     container.empty();
     container.addClass("ch-vocab-view-container");
 
     const allItems = this.plugin.vocabulary.getItems();
 
-    // 1. Header Row
+    // 1. Header Bar
     const headerEl = container.createDiv({ cls: "ch-vocab-header" });
     const titleRow = headerEl.createDiv({ cls: "ch-vocab-title-row" });
 
-    const titleEl = titleRow.createEl("h4", { cls: "ch-vocab-title", text: "🏮 Мой словарик" });
-    titleEl.createSpan({
+    const titleGroup = titleRow.createDiv({ cls: "ch-vocab-title-group" });
+    titleGroup.createSpan({ cls: "ch-vocab-lantern", text: "🏮" });
+    titleGroup.createEl("span", { cls: "ch-vocab-title-text", text: "Мой словарик" });
+    titleGroup.createSpan({
       cls: "ch-vocab-count-badge",
       text: `${allItems.length}`,
     });
@@ -60,8 +62,8 @@ export class ChineseVocabularyView extends ItemView {
 
     // Open Markdown File button
     const openFileBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-icon-btn",
-      attr: { "aria-label": "Открыть файл в Obsidian (Open Markdown Note)", title: "Открыть файл заметки" },
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Открыть заметку в Obsidian (Open Note)", title: "Открыть заметку" },
       text: "📄",
     });
     openFileBtn.addEventListener("click", () => {
@@ -70,7 +72,7 @@ export class ChineseVocabularyView extends ItemView {
 
     // Re-sync from file button
     const syncBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-icon-btn",
+      cls: "ch-vocab-glass-icon-btn",
       attr: { "aria-label": "Синхронизировать с файлом (Sync)", title: "Синхронизировать" },
       text: "🔄",
     });
@@ -80,60 +82,95 @@ export class ChineseVocabularyView extends ItemView {
       this.render();
     });
 
-    // 2. Control Bar (Search + Practice Mode Toggle + Sort)
-    const controlBar = container.createDiv({ cls: "ch-vocab-control-bar" });
+    // 2. Search Bar
+    const searchWrap = container.createDiv({ cls: "ch-vocab-search-wrap" });
+    searchWrap.createSpan({ cls: "ch-vocab-search-icon", text: "🔍" });
 
-    // Search input
-    const searchContainer = controlBar.createDiv({ cls: "ch-vocab-search-wrap" });
-    const searchInput = searchContainer.createEl("input", {
-      type: "search",
+    const searchInput = searchWrap.createEl("input", {
+      type: "text",
       cls: "ch-vocab-search-input",
       placeholder: "Поиск (иероглифы, пиньинь, перевод)...",
       value: this.searchQuery,
     });
     searchInput.addEventListener("input", (e) => {
       this.searchQuery = (e.target as HTMLInputElement).value.toLowerCase().trim();
+      clearBtn.toggleClass("ch-vocab-clear-visible", Boolean(this.searchQuery));
       this.renderList(listContainer);
     });
 
-    // Options Row
-    const optionsRow = controlBar.createDiv({ cls: "ch-vocab-options-row" });
-
-    // Practice / Flashcards Toggle
-    const practiceBtn = optionsRow.createEl("button", {
-      cls: `ch-vocab-toggle-btn ${this.practiceMode ? "ch-vocab-toggle-active" : ""}`,
-      text: this.practiceMode ? "🃏 Карточки (Скрыто)" : "🃏 Тренировка",
-      attr: { title: "Режим карточек: скрывает перевод для тренировки памяти" },
+    const clearBtn = searchWrap.createSpan({
+      cls: `ch-vocab-search-clear ${this.searchQuery ? "ch-vocab-clear-visible" : ""}`,
+      text: "✕",
     });
-    practiceBtn.addEventListener("click", async () => {
-      this.practiceMode = !this.practiceMode;
-      this.plugin.settings.practiceMode = this.practiceMode;
+    clearBtn.addEventListener("click", () => {
+      this.searchQuery = "";
+      searchInput.value = "";
+      clearBtn.removeClass("ch-vocab-clear-visible");
+      this.renderList(listContainer);
+    });
+
+    // 3. Segmented Control Toolbar
+    const toolbar = container.createDiv({ cls: "ch-vocab-toolbar" });
+
+    // Segmented Mode: List vs Flashcards
+    const segmentedGroup = toolbar.createDiv({ cls: "ch-vocab-segmented-group" });
+
+    const listModeBtn = segmentedGroup.createEl("button", {
+      cls: `ch-vocab-seg-btn ${!this.practiceMode ? "ch-vocab-seg-active" : ""}`,
+      text: "📋 Список",
+    });
+    listModeBtn.addEventListener("click", async () => {
+      if (!this.practiceMode) return;
+      this.practiceMode = false;
+      this.plugin.settings.practiceMode = false;
       await this.plugin.saveSettings();
-      practiceBtn.setText(this.practiceMode ? "🃏 Карточки (Скрыто)" : "🃏 Тренировка");
-      practiceBtn.toggleClass("ch-vocab-toggle-active", this.practiceMode);
+      listModeBtn.addClass("ch-vocab-seg-active");
+      cardsModeBtn.removeClass("ch-vocab-seg-active");
       this.revealedCardIds.clear();
       this.renderList(listContainer);
     });
 
-    // Sort Dropdown
-    const sortSelect = optionsRow.createEl("select", { cls: "ch-vocab-sort-select" });
-    const sortOptions: { value: VocabularySort; label: string }[] = [
-      { value: "date_desc", label: "⏳ Сначала новые" },
-      { value: "date_asc", label: "⌛ Сначала старые" },
-      { value: "alpha", label: "🔤 По алфавиту" },
-    ];
-    for (const opt of sortOptions) {
-      const optionEl = sortSelect.createEl("option", { value: opt.value, text: opt.label });
-      if (opt.value === this.sortBy) optionEl.selected = true;
-    }
-    sortSelect.addEventListener("change", async (e) => {
-      this.sortBy = (e.target as HTMLSelectElement).value as VocabularySort;
-      this.plugin.settings.vocabularySort = this.sortBy;
+    const cardsModeBtn = segmentedGroup.createEl("button", {
+      cls: `ch-vocab-seg-btn ${this.practiceMode ? "ch-vocab-seg-active" : ""}`,
+      text: "🃏 Карточки",
+    });
+    cardsModeBtn.addEventListener("click", async () => {
+      if (this.practiceMode) return;
+      this.practiceMode = true;
+      this.plugin.settings.practiceMode = true;
       await this.plugin.saveSettings();
+      cardsModeBtn.addClass("ch-vocab-seg-active");
+      listModeBtn.removeClass("ch-vocab-seg-active");
+      this.revealedCardIds.clear();
       this.renderList(listContainer);
     });
 
-    // 3. Cards List Container
+    // Sort Cycle Button
+    const sortLabels: Record<VocabularySort, string> = {
+      date_desc: "⏳ Новые",
+      date_asc: "⌛ Старые",
+      alpha: "🔤 А-Я",
+    };
+    const sortBtn = toolbar.createEl("button", {
+      cls: "ch-vocab-sort-btn",
+      text: sortLabels[this.sortBy],
+      attr: { title: "Сортировка (нажмите для переключения)" },
+    });
+    sortBtn.addEventListener("click", async () => {
+      if (this.sortBy === "date_desc") {
+        this.sortBy = "date_asc";
+      } else if (this.sortBy === "date_asc") {
+        this.sortBy = "alpha";
+      } else {
+        this.sortBy = "date_desc";
+      }
+      this.plugin.settings.vocabularySort = this.sortBy;
+      await this.plugin.saveSettings();
+      sortBtn.setText(sortLabels[this.sortBy]);
+      this.renderList(listContainer);
+    });
+
+    // 4. Cards List Container
     const listContainer = container.createDiv({ cls: "ch-vocab-cards-list" });
     this.renderList(listContainer);
   }
@@ -180,7 +217,7 @@ export class ChineseVocabularyView extends ItemView {
         cls: "ch-vocab-empty-desc",
         text: this.searchQuery
           ? "Попробуйте изменить поисковый запрос"
-          : "Нажимайте звёздочку ⭐ в окне подсказки или выделите слово, чтобы добавить его в коллекцию.",
+          : "Нажимайте звёздочку ⭐ во всплывающем окне подсказки, чтобы сохранять слова в этот список.",
       });
       return;
     }
@@ -193,37 +230,59 @@ export class ChineseVocabularyView extends ItemView {
   private renderCard(container: HTMLElement, item: VocabularyItem): void {
     const card = container.createDiv({ cls: "ch-vocab-card" });
 
-    // 1. Card Top Bar
-    const topBar = card.createDiv({ cls: "ch-vocab-card-top" });
+    // 1. Top Row: Hanzi + Actions
+    const topRow = card.createDiv({ cls: "ch-vocab-card-header" });
 
-    // Hanzi group
-    const hanziGroup = topBar.createDiv({ cls: "ch-vocab-hanzi-group" });
-    hanziGroup.createSpan({ cls: "ch-vocab-word-simp", text: item.word });
+    // Hanzi presentation
+    const hanziBox = topRow.createDiv({ cls: "ch-vocab-hanzi-box" });
+    hanziBox.createSpan({ cls: "ch-vocab-hanzi-main", text: item.word });
 
     if (item.traditional && item.traditional !== item.word) {
-      hanziGroup.createSpan({ cls: "ch-vocab-word-sep", text: " | " });
-      hanziGroup.createSpan({ cls: "ch-vocab-word-trad", text: item.traditional });
+      hanziBox.createSpan({
+        cls: "ch-vocab-trad-badge",
+        text: `繁 ${item.traditional}`,
+        attr: { title: "Традиционные иероглифы (Traditional)" },
+      });
     }
 
-    // Action buttons: Audio + Remove
-    const actions = topBar.createDiv({ cls: "ch-vocab-card-actions" });
+    // Header Actions: Audio + Copy + Delete
+    const actionsBox = topRow.createDiv({ cls: "ch-vocab-actions-box" });
 
     // Audio Button
-    const audioBtn = actions.createEl("button", {
-      cls: "ch-vocab-action-btn",
-      text: "🔊",
+    const isCantonese = this.plugin.settings.dialect === "cantonese";
+    const audioBtn = actionsBox.createEl("button", {
+      cls: `ch-vocab-audio-pill ${isCantonese ? "ch-vocab-audio-canto" : "ch-vocab-audio-mando"}`,
       attr: {
-        title: this.plugin.settings.dialect === "cantonese" ? "Озвучить (廣東話)" : "Озвучить (普通话)",
+        title: isCantonese
+          ? `Озвучить на кантонском (廣東話, ${this.plugin.settings.speechSpeed}x)`
+          : `Озвучить на путунхуа (普通话, ${this.plugin.settings.speechSpeed}x)`,
       },
     });
+    audioBtn.createSpan({ cls: "ch-vocab-audio-icon", text: "🔊" });
+    audioBtn.createSpan({ cls: "ch-vocab-audio-label", text: isCantonese ? "廣東話" : "普通话" });
     audioBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.plugin.tooltip.playSpeech(item.word, this.plugin.settings);
     });
 
+    // Copy Button
+    const copyBtn = actionsBox.createEl("button", {
+      cls: "ch-vocab-action-icon-btn",
+      text: "📋",
+      attr: { title: "Скопировать карточку" },
+    });
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const clipText = `${item.word}${item.traditional ? ` (${item.traditional})` : ""} [${item.pinyin}${item.jyutping ? ` / 粵 ${item.jyutping}` : ""}] - ${item.definitions.join("; ")}`;
+      navigator.clipboard.writeText(clipText);
+      copyBtn.setText("✓");
+      setTimeout(() => copyBtn.setText("📋"), 1500);
+      new Notice(`Скопировано: ${item.word}`);
+    });
+
     // Delete Button
-    const deleteBtn = actions.createEl("button", {
-      cls: "ch-vocab-action-btn ch-vocab-delete-btn",
+    const deleteBtn = actionsBox.createEl("button", {
+      cls: "ch-vocab-action-icon-btn ch-vocab-delete-btn",
       text: "✕",
       attr: { title: "Удалить из словарика" },
     });
@@ -233,49 +292,51 @@ export class ChineseVocabularyView extends ItemView {
       this.render();
     });
 
-    // 2. Phonetics Row (Pinyin + Jyutping)
-    const phoneticsRow = card.createDiv({ cls: "ch-vocab-phonetics" });
-    phoneticsRow.createSpan({ cls: "ch-vocab-pinyin", text: item.pinyin });
+    // 2. Phonetics Row
+    const phoneticsRow = card.createDiv({ cls: "ch-vocab-phonetics-row" });
+    phoneticsRow.createSpan({ cls: "ch-vocab-pinyin-text", text: item.pinyin });
 
     if (item.jyutping) {
-      const jpBadge = phoneticsRow.createSpan({ cls: "ch-vocab-jyutping" });
-      jpBadge.createSpan({ cls: "ch-vocab-jp-tag", text: "粵 " });
-      jpBadge.createSpan({ text: item.jyutping });
+      const jBadge = phoneticsRow.createSpan({ cls: "ch-vocab-jyutping-badge" });
+      jBadge.createSpan({ cls: "ch-vocab-jyutping-tag", text: "粵" });
+      jBadge.createSpan({ cls: "ch-vocab-jyutping-val", text: item.jyutping });
     }
 
-    // 3. Definitions Row (with practice mode masking)
+    // 3. Definitions Section (Practice Mode Masking)
     const isRevealed = this.revealedCardIds.has(item.id);
-    const shouldMask = this.practiceMode && !isRevealed;
+    const isMasked = this.practiceMode && !isRevealed;
 
-    const defsWrap = card.createDiv({
-      cls: `ch-vocab-defs-wrap ${shouldMask ? "ch-vocab-masked" : ""}`,
+    const defsContainer = card.createDiv({
+      cls: `ch-vocab-defs-box ${isMasked ? "ch-vocab-is-masked" : ""}`,
     });
 
-    if (shouldMask) {
-      const maskPrompt = defsWrap.createDiv({
-        cls: "ch-vocab-mask-hint",
-        text: "👁️ Нажмите, чтобы увидеть перевод",
-      });
-      maskPrompt.addEventListener("click", () => {
+    if (isMasked) {
+      const maskOverlay = defsContainer.createDiv({ cls: "ch-vocab-mask-overlay" });
+      maskOverlay.createSpan({ cls: "ch-vocab-mask-btn", text: "👁️ Нажмите для проверки" });
+      maskOverlay.addEventListener("click", (e) => {
+        e.stopPropagation();
         this.revealedCardIds.add(item.id);
-        defsWrap.removeClass("ch-vocab-masked");
-        maskPrompt.remove();
+        defsContainer.removeClass("ch-vocab-is-masked");
+        maskOverlay.remove();
       });
     }
 
-    const defsText = item.definitions.slice(0, 3).join(" • ");
-    defsWrap.createDiv({ cls: "ch-vocab-defs", text: defsText });
+    const defsList = defsContainer.createDiv({ cls: "ch-vocab-defs-list" });
+    for (let i = 0; i < Math.min(item.definitions.length, 3); i++) {
+      const defRow = defsList.createDiv({ cls: "ch-vocab-def-item" });
+      defRow.createSpan({ cls: "ch-vocab-def-bullet", text: "•" });
+      defRow.createSpan({ cls: "ch-vocab-def-text", text: item.definitions[i] });
+    }
 
-    // 4. Context Sentence (if available)
+    // 4. Context Quote (if exists)
     if (item.contextSentence) {
-      const ctxRow = card.createDiv({ cls: "ch-vocab-context" });
-      ctxRow.createSpan({ cls: "ch-vocab-ctx-quote", text: "“" });
-      ctxRow.createSpan({ cls: "ch-vocab-ctx-text", text: item.contextSentence });
-      ctxRow.createSpan({ cls: "ch-vocab-ctx-quote", text: "”" });
+      const quoteBox = card.createDiv({ cls: "ch-vocab-quote-box" });
+      quoteBox.createSpan({ cls: "ch-vocab-quote-icon", text: "💬" });
+      quoteBox.createSpan({ cls: "ch-vocab-quote-content", text: `“${item.contextSentence}”` });
     }
 
     // 5. Card Footer: Date
-    const footer = card.createDiv({ cls: "ch-vocab-footer" });
-    footer.createSpan({ cls: "ch-vocab-date", text: item.dateString });
+    const footer = card.createDiv({ cls: "ch-vocab-card-footer" });
+    footer.createSpan({ cls: "ch-vocab-date-tag", text: `📅 ${item.dateString}` });
   }
 }

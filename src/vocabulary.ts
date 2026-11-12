@@ -113,7 +113,6 @@ export class VocabularyManager {
     };
 
     if (existingIndex >= 0) {
-      // Update existing item
       this.items[existingIndex] = newItem;
     } else {
       this.items.unshift(newItem);
@@ -157,27 +156,42 @@ export class VocabularyManager {
 
   /**
    * Syncs the current vocabulary list to the user's Markdown file in their vault.
+   * Uses an elegant, readable 4-column layout that fits cleanly in Obsidian on all screen sizes.
    */
   async syncToMarkdown(): Promise<void> {
     const filePath = this.plugin.settings.vocabularyFilePath || "Chinese Vocabulary.md";
     const adapter = this.plugin.app.vault.adapter;
 
-    let content = "# 🏮 Chinese Personal Vocabulary\n\n";
-    content += "> Permanent vocabulary notebook managed by **Chinese Popover Dictionary**.\n";
-    content += `> Total entries: **${this.items.length}** | Last updated: **${new Date().toLocaleDateString()}**\n\n`;
-    content += "| Word | Traditional | Pinyin | Jyutping (粵) | Definition | Context | Date |\n";
-    content += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n";
+    let content = "# 🏮 Китайский словарик / Chinese Personal Vocabulary\n\n";
+    content += "> Карточки и слова сохранены плагином **Chinese Popover Dictionary**.\n";
+    content += `> Всего слов: **${this.items.length}** • Последнее обновление: **${new Date().toLocaleDateString()}**\n\n`;
+    content += "| Иероглифы | Фонетика | Перевод | Контекст и дата |\n";
+    content += "| :--- | :--- | :--- | :--- |\n";
 
     for (const item of this.items) {
-      const word = `**${this.escapeMd(item.word)}**`;
-      const trad = this.escapeMd(item.traditional || "-");
-      const pinyin = this.escapeMd(item.pinyin);
-      const jyutping = this.escapeMd(item.jyutping || "-");
-      const def = this.escapeMd(item.definitions.slice(0, 3).join("; "));
-      const ctx = item.contextSentence ? `*${this.escapeMd(item.contextSentence)}*` : "-";
-      const date = item.dateString;
+      // Column 1: Hanzi
+      let hanziCell = `**${this.escapeMd(item.word)}**`;
+      if (item.traditional && item.traditional !== item.word) {
+        hanziCell += `<br><small>繁: ${this.escapeMd(item.traditional)}</small>`;
+      }
 
-      content += `| ${word} | ${trad} | ${pinyin} | ${jyutping} | ${def} | ${ctx} | ${date} |\n`;
+      // Column 2: Phonetics
+      let phoneticsCell = `\`${this.escapeMd(item.pinyin)}\``;
+      if (item.jyutping) {
+        phoneticsCell += `<br><small>粵: ${this.escapeMd(item.jyutping)}</small>`;
+      }
+
+      // Column 3: Definitions
+      const defCell = this.escapeMd(item.definitions.slice(0, 3).join(" • "));
+
+      // Column 4: Context & Date
+      let metaCell = "";
+      if (item.contextSentence) {
+        metaCell += `*“${this.escapeMd(item.contextSentence)}”*<br>`;
+      }
+      metaCell += `<small>${item.dateString}</small>`;
+
+      content += `| ${hanziCell} | ${phoneticsCell} | ${defCell} | ${metaCell} |\n`;
     }
 
     try {
@@ -188,7 +202,7 @@ export class VocabularyManager {
   }
 
   /**
-   * Imports or re-reads words from the user's Markdown table if edited outside.
+   * Imports or re-reads words from the user's Markdown table (supports both 4-column and 7-column formats).
    */
   async importFromMarkdown(): Promise<number> {
     const filePath = this.plugin.settings.vocabularyFilePath || "Chinese Vocabulary.md";
@@ -203,7 +217,12 @@ export class VocabularyManager {
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed.startsWith("|") || trimmed.includes(":---") || trimmed.toLowerCase().includes("| word |")) {
+        if (
+          !trimmed.startsWith("|") ||
+          trimmed.includes(":---") ||
+          trimmed.toLowerCase().includes("| word |") ||
+          trimmed.toLowerCase().includes("| иероглифы |")
+        ) {
           continue;
         }
 
@@ -212,13 +231,57 @@ export class VocabularyManager {
           .map((c) => c.trim())
           .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
 
-        if (cols.length >= 5) {
+        if (cols.length === 4) {
+          // New 4-column format: | Hanzi | Phonetics | Definition | Meta |
+          const hanziRaw = cols[0];
+          const wordMatch = hanziRaw.match(/\*\*([^*]+)\*\*/);
+          const word = wordMatch ? wordMatch[1].trim() : hanziRaw.split("<br>")[0].replace(/[^\u4e00-\u9fa5]/g, "").trim();
+          
+          let trad = "";
+          const tradMatch = hanziRaw.match(/繁:\s*([^<]+)/);
+          if (tradMatch) trad = tradMatch[1].trim();
+
+          const phoneticsRaw = cols[1];
+          const pinyinMatch = phoneticsRaw.match(/`([^`]+)`/);
+          const pinyin = pinyinMatch ? pinyinMatch[1].trim() : phoneticsRaw.split("<br>")[0].trim();
+
+          let jyutping = "";
+          const jpMatch = phoneticsRaw.match(/粵:\s*([^<]+)/);
+          if (jpMatch) jyutping = jpMatch[1].trim();
+
+          const defs = cols[2].split("•").map((d) => d.trim()).filter(Boolean);
+
+          const metaRaw = cols[3];
+          let ctx = "";
+          const ctxMatch = metaRaw.match(/\*“([^”]+)”\*/);
+          if (ctxMatch) ctx = ctxMatch[1].trim();
+
+          let date = "";
+          const dateMatch = metaRaw.match(/(\d{4}-\d{2}-\d{2})/);
+          if (dateMatch) date = dateMatch[1];
+
+          if (word) {
+            parsedItems.push({
+              id: `${word}-${Date.now()}`,
+              word,
+              traditional: trad || undefined,
+              pinyin,
+              jyutping,
+              definitions: defs.length > 0 ? defs : ["No definition"],
+              contextSentence: ctx || undefined,
+              dateAdded: Date.now(),
+              dateString: date || new Date().toISOString().slice(0, 10),
+              tags: [],
+            });
+          }
+        } else if (cols.length >= 5) {
+          // Legacy 7-column format
           const word = cols[0].replace(/\*\*/g, "").trim();
           const trad = cols[1] === "-" ? "" : cols[1];
           const pinyin = cols[2];
           const jyutping = cols[3] === "-" ? "" : cols[3];
-          const defs = cols[4].split(";").map((d) => d.trim());
-          const ctx = cols[5] && cols[5] !== "-" ? cols[5].replace(/^\*|\*$/g, "") : "";
+          const defs = cols[4].split(/;|•/).map((d) => d.trim()).filter(Boolean);
+          const ctx = cols[5] && cols[5] !== "-" ? cols[5].replace(/^\*|\*$/g, "").replace(/^“|”$/g, "") : "";
           const date = cols[6] || "";
 
           if (word) {
@@ -228,10 +291,10 @@ export class VocabularyManager {
               traditional: trad || undefined,
               pinyin,
               jyutping,
-              definitions: defs,
+              definitions: defs.length > 0 ? defs : ["No definition"],
               contextSentence: ctx || undefined,
               dateAdded: Date.now(),
-              dateString: date,
+              dateString: date || new Date().toISOString().slice(0, 10),
               tags: [],
             });
           }

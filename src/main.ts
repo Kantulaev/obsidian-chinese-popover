@@ -10,6 +10,11 @@ import {
   PhoneticDisplay,
 } from "./settings.ts";
 import { ContentBounds, DictTooltip } from "./tooltip.ts";
+import { VocabularyManager } from "./vocabulary.ts";
+import {
+  ChineseVocabularyView,
+  VIEW_TYPE_CHINESE_VOCABULARY,
+} from "./vocabulary-view.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -22,6 +27,7 @@ interface CodeMirrorEditor extends Editor {
 export default class ChineseHoverDictPlugin extends Plugin {
   settings: ChineseDictSettings = DEFAULT_SETTINGS;
   dictionary!: DictionaryManager;
+  vocabulary!: VocabularyManager;
   tooltip!: DictTooltip;
 
   private hoverTimeout: number | null = null;
@@ -36,7 +42,27 @@ export default class ChineseHoverDictPlugin extends Plugin {
       console.error("[Chinese Dict] Background load error:", err);
     });
 
-    this.tooltip = new DictTooltip();
+    this.vocabulary = new VocabularyManager(this);
+    this.vocabulary.load().catch((err) => {
+      console.error("[Chinese Dict] Vocabulary load error:", err);
+    });
+
+    this.tooltip = new DictTooltip(this);
+
+    // Register Right Sidebar View for Vocabulary
+    this.registerView(
+      VIEW_TYPE_CHINESE_VOCABULARY,
+      (leaf) => new ChineseVocabularyView(leaf, this)
+    );
+
+    // Ribbon icon to open Vocabulary in right sidebar
+    this.addRibbonIcon(
+      "book-marked",
+      "Китайский словарик / Chinese Vocabulary",
+      () => {
+        this.activateVocabularyView();
+      }
+    );
 
     // Register CodeMirror 6 extension for Live Preview and Source Mode
     this.registerEditorExtension(this.buildCodeMirrorExtension());
@@ -167,6 +193,28 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (!this.tooltip.getIsOpen()) return false;
         if (checking) return true;
         this.tooltip.hide();
+        return true;
+      },
+    });
+
+    // 8. Open Personal Vocabulary in Sidebar
+    this.addCommand({
+      id: "open-chinese-vocabulary",
+      name: "Открыть словарик в боковой панели / Open vocabulary in sidebar",
+      callback: () => {
+        this.activateVocabularyView();
+      },
+    });
+
+    // 9. Star or unstar word under cursor / selection
+    this.addCommand({
+      id: "toggle-star-active-word",
+      name: "Добавить или удалить слово из словарика / Star or unstar word",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView && !this.tooltip.getIsOpen()) return false;
+        if (checking) return true;
+        this.toggleStarActiveWord();
         return true;
       },
     });
@@ -376,7 +424,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     if (match) {
       const resolvedBounds = bounds || this.getContentBounds(null, view);
-      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds);
+      const context = this.settings.autoSaveContextSentence
+        ? this.extractContextSentence(fullDoc, pos)
+        : undefined;
+      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
     }
   }
 
@@ -510,7 +561,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
-      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds);
+      const context = this.settings.autoSaveContextSentence
+        ? this.extractContextSentence(fullText, offset)
+        : undefined;
+      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
     }
   }
 
@@ -622,7 +676,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
-      this.tooltip.show(match, clientX, clientY, this.settings, bounds);
+      const context = this.settings.autoSaveContextSentence
+        ? this.extractContextSentence(lineText, cursor.ch)
+        : undefined;
+      this.tooltip.show(match, clientX, clientY, this.settings, bounds, context);
     } else {
       new Notice("Иероглиф не найден под курсором / No Chinese character at cursor", 2000);
     }
@@ -784,5 +841,123 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (this.tooltip.getIsOpen()) {
       this.tooltip.refresh(this.settings);
     }
+  }
+
+  /**
+   * Opens or reveals the Chinese Vocabulary View in the right sidebar
+   */
+  public async activateVocabularyView(): Promise<void> {
+    const { workspace } = this.app;
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHINESE_VOCABULARY)[0];
+
+    if (!leaf) {
+      const rightLeaf = workspace.getRightLeaf(false);
+      if (rightLeaf) {
+        await rightLeaf.setViewState({
+          type: VIEW_TYPE_CHINESE_VOCABULARY,
+          active: true,
+        });
+        leaf = rightLeaf;
+      }
+    }
+
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+      if (leaf.view instanceof ChineseVocabularyView) {
+        leaf.view.render();
+      }
+    }
+  }
+
+  /**
+   * Refreshes any open vocabulary view tabs in real time
+   */
+  public refreshVocabularyViews(): void {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CHINESE_VOCABULARY);
+    for (const leaf of leaves) {
+      if (leaf.view instanceof ChineseVocabularyView) {
+        leaf.view.render();
+      }
+    }
+  }
+
+  /**
+   * Extracts the full sentence surrounding the given character offset
+   */
+  public extractContextSentence(text: string, offset: number): string {
+    if (!text) return "";
+    const delimiters = /[。！？!?;\n]/;
+
+    let start = 0;
+    for (let i = offset - 1; i >= 0; i--) {
+      if (delimiters.test(text[i])) {
+        start = i + 1;
+        break;
+      }
+    }
+
+    let end = text.length;
+    for (let i = offset; i < text.length; i++) {
+      if (delimiters.test(text[i])) {
+        end = i + 1;
+        break;
+      }
+    }
+
+    const sentence = text.substring(start, end).trim();
+    return sentence.length > 0 ? sentence : text.trim();
+  }
+
+  /**
+   * Toggle starring of active word (under popover or under cursor)
+   */
+  public async toggleStarActiveWord(): Promise<void> {
+    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentMatch()) {
+      const match = this.tooltip.getCurrentMatch()!;
+      const context = this.tooltip.getCurrentContextSentence();
+      await this.vocabulary.toggleWord(match, context);
+      this.tooltip.refresh(this.settings);
+      this.refreshVocabularyViews();
+      return;
+    }
+
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (activeView && activeView.editor) {
+      const editor = activeView.editor;
+      const selection = editor.getSelection().trim();
+      if (selection && this.dictionary.isChinese(selection[0])) {
+        const entries = this.dictionary.get(selection);
+        if (entries && entries.length > 0) {
+          const cursor = editor.getCursor();
+          const lineText = editor.getLine(cursor.line);
+          const context = this.settings.autoSaveContextSentence
+            ? this.extractContextSentence(lineText, cursor.ch)
+            : undefined;
+          await this.vocabulary.toggleWord(
+            { word: selection, entries, length: selection.length },
+            context
+          );
+          this.refreshVocabularyViews();
+          return;
+        }
+      }
+
+      const cursor = editor.getCursor();
+      const lineText = editor.getLine(cursor.line);
+      const match = this.dictionary.findWordAtOffset(
+        lineText,
+        cursor.ch,
+        this.settings.maxWordLength
+      );
+      if (match) {
+        const context = this.settings.autoSaveContextSentence
+          ? this.extractContextSentence(lineText, cursor.ch)
+          : undefined;
+        await this.vocabulary.toggleWord(match, context);
+        this.refreshVocabularyViews();
+        return;
+      }
+    }
+    new Notice("Нет слова для добавления в словарик / No active word to star");
   }
 }

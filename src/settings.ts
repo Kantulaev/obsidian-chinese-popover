@@ -44,6 +44,12 @@ export interface ChineseDictSettings {
 
   // Dictionary Lookup
   maxWordLength: number;
+
+  // Personal Vocabulary Notebook
+  vocabularyFilePath: string;
+  autoSaveContextSentence: boolean;
+  practiceMode: boolean;
+  vocabularySort: "date_desc" | "date_asc" | "alpha";
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -75,6 +81,11 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   fontSizeTranslation: 15,
 
   maxWordLength: 6,
+
+  vocabularyFilePath: "Chinese Vocabulary.md",
+  autoSaveContextSentence: true,
+  practiceMode: false,
+  vocabularySort: "date_desc",
 };
 
 interface AppWithSetting extends App {
@@ -559,6 +570,50 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.maxWordLength = value;
             await this.plugin.saveSettings();
+          })
+      );
+
+    // ==========================================
+    // 6. ЛИЧНЫЙ СЛОВАРИК
+    // ==========================================
+    new Setting(containerEl)
+      .setName("📖 Личный словарик / Personal Vocabulary")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Путь к файлу словарика / Vocabulary Markdown File")
+      .setDesc("Файл в вашем хранилище, в который бессрочно сохраняются все добавленные слова.")
+      .addText((text) =>
+        text
+          .setPlaceholder("Chinese Vocabulary.md")
+          .setValue(this.plugin.settings.vocabularyFilePath)
+          .onChange(async (value) => {
+            this.plugin.settings.vocabularyFilePath = value.trim() || "Chinese Vocabulary.md";
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Сохранять контекстное предложение / Save Context Sentence")
+      .setDesc("Автоматически сохранять предложение, из которого вы добавили слово, для лучшего запоминания контекста.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoSaveContextSentence)
+          .onChange(async (value) => {
+            this.plugin.settings.autoSaveContextSentence = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Открыть словарик в боковой панели / Open in Sidebar")
+      .setDesc("Открыть интерактивную панель словарика в правой боковой панели Obsidian.")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Открыть панель")
+          .setCta()
+          .onClick(() => {
+            this.plugin.activateVocabularyView();
           })
       );
 

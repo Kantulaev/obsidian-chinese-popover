@@ -6,15 +6,15 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.1.0-blue.svg" alt="Version 1.1.0" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.2.0-blue.svg" alt="Version 1.2.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
-  <img src="https://img.shields.io/badge/Dialects-Cantonese%20%2B%20Mandarin-059669.svg" alt="Cantonese & Mandarin" />
+  <img src="https://img.shields.io/badge/Notebook-Permanent%20Markdown-059669.svg" alt="Markdown Notebook" />
   <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-0284c7.svg" alt="Apple Liquid Glass" />
 </p>
 
 <p align="center">
-  <b>Instant, beautiful Chinese popover lookup for Obsidian.</b><br/>
+  <b>Instant, beautiful Chinese popover lookup and personal vocabulary book for Obsidian.</b><br/>
   Featuring dual <b>Mandarin Pinyin</b> and <b>Cantonese Jyutping</b>, authentic neural audio pronunciation, simplified & traditional Hanzi, and an Apple Liquid Glass aesthetic.
 </p>
 
@@ -25,6 +25,8 @@
 Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
 
 * 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
+* 📖 **Permanent Personal Vocabulary Notebook** — Star difficult words with `⭐` in 1 click; they are saved permanently into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
+* 🃏 **Interactive Sidebar & Flashcards** — Review saved words in a sleek right sidebar tab with search, filters, audio buttons, and tap-to-reveal quiz mode.
 * 🀄 **Dual Phonetics (Pinyin + Jyutping)** — Perfect for learners of both Mandarin (`Putonghua`) and Cantonese (`Guangdonghua`).
 * 🔊 **Native Voice Pronunciation** — Studio-quality neural audio for both dialects with adjustable playback speed (0.5x – 1.4x) and offline Web Speech support.
 * ⚡ **Instant Multi-Trigger Access** — Double-click, hover with modifier key (`Option / Alt / Shift / Cmd / Ctrl`), or hotkey navigation.
@@ -36,14 +38,14 @@ Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **
 ## 📸 Overview
 
 ```text
-┌────────────────────────────────────────────────────────┐
-│  你好  |  你好  [SIMP]   🔊 廣東話 0.8x   📋 Copy   ✕  │
-├────────────────────────────────────────────────────────┤
-│  nǐ hǎo         粵 nei5 hou2                           │
-├────────────────────────────────────────────────────────┤
-│  • hello  • hi  • how are you                          │
-│  • common friendly greeting for any occasion           │
-└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  你好  |  你好  [SIMP]   🔊 廣東話 0.8x   📋 Copy   ⭐ Star   ✕  │
+├────────────────────────────────────────────────────────────────┤
+│  nǐ hǎo         粵 nei5 hou2                                   │
+├────────────────────────────────────────────────────────────────┤
+│  • hello  • hi  • how are you                                  │
+│  • common friendly greeting for any occasion                   │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -73,6 +75,14 @@ Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switc
 * Clamps popovers inside the active note container to avoid hanging awkwardly into empty grey side margins.
 * Auto-flips vertically if a word is near the top edge of your screen.
 
+### 5. 📖 Personal Vocabulary Notebook & Flashcards
+* **Permanent Vault Storage**: Star difficult words with `⭐` in the popover or via hotkey. All saved words are stored permanently in a clean Markdown note in your vault (`Chinese Vocabulary.md`).
+* **Right Sidebar Tab**: Access your vocabulary anytime with the ribbon icon (`book-marked`) or command palette.
+* **Interactive Liquid Glass Cards**: Each card shows Simplified/Traditional Hanzi, tone-marked Pinyin, green Jyutping badge, definitions, context sentence, and an instant audio playback button.
+* **🃏 Flashcards / Practice Mode**: Click to mask definitions and test your memory before sleep or study sessions. Tap any card to reveal.
+* **Context Retention**: Automatically remembers the sentence where you found the word!
+* **Full-text Search & Sort**: Filter words instantly by Hanzi, Pinyin, Jyutping, or English meanings. Sort by date or alphabetical order.
+
 ---
 
 ## 🚀 Quick Start
@@ -101,6 +111,8 @@ All actions can be bound to your favorite keyboard shortcuts under **Settings** 
 | Command | Suggested Shortcut | Description |
 | :--- | :---: | :--- |
 | **Look up word under cursor or selection** | <kbd>Alt</kbd> + <kbd>D</kbd> | Opens popover for active cursor position or selection |
+| **Star or unstar word** | <kbd>Alt</kbd> + <kbd>B</kbd> | Adds or removes word from Personal Vocabulary notebook |
+| **Open vocabulary in sidebar** | — | Opens the vocabulary notebook panel in the right sidebar |
 | **Pronounce active word** | <kbd>Alt</kbd> + <kbd>P</kbd> | Plays audio for current word in chosen dialect |
 | **Copy active word card** | <kbd>Alt</kbd> + <kbd>C</kbd> | Copies formatted dictionary entry to clipboard |
 | **Switch Dialect** | <kbd>Alt</kbd> + <kbd>S</kbd> | Toggles between Cantonese (`廣東話`) and Mandarin (`普通话`) |
@@ -114,6 +126,10 @@ All actions can be bound to your favorite keyboard shortcuts under **Settings** 
 
 Customize everything to match your vault's theme:
 
+* **Personal Vocabulary**:
+  * Customizable markdown file path (`Chinese Vocabulary.md`).
+  * Auto-save context sentences: On / Off.
+  * Practice / flashcard mode toggle.
 * **Trigger Modes**: Double-click, Hover with modifier key (<kbd>Alt/Option</kbd>, <kbd>Shift</kbd>, <kbd>Ctrl</kbd>, <kbd>Cmd</kbd>), Hover always, or Hotkeys only.
 * **Themes**:
   * 🌌 **Liquid Glass Dark** — Deep glassmorphism with vivid cyan/emerald highlights.
@@ -130,6 +146,7 @@ Customize everything to match your vault's theme:
 We believe your notes and thoughts belong solely to you:
 
 * 🛡️ **100% Local Dictionary Queries**: Words are looked up entirely inside your local vault. No note content, text selections, or keystrokes are ever sent to an external server.
+* 📁 **Your Data Stays Yours**: Your personal vocabulary is written to standard Markdown in your vault. It will never be locked into proprietary formats and will remain readable forever.
 * 🚫 **Zero Telemetry**: No trackers, no cookies, no analytics.
 * 🌐 **External Connections**:
   1. **Google TTS API** (`translate.google.com`): When the audio button is clicked, an audio stream is fetched for the selected word. You can switch to **Web Speech API** in settings for 100% offline pronunciation.

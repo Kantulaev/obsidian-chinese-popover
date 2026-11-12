@@ -1,4 +1,5 @@
 import { Notice } from "obsidian";
+import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
 import { ChineseDictSettings } from "./settings.ts";
@@ -15,9 +16,12 @@ export class DictTooltip {
   private isVisible: boolean = false;
   private currentWord: string | null = null;
   private currentMatch: MatchResult | null = null;
+  private currentContextSentence: string | undefined = undefined;
   private currentAudio: HTMLAudioElement | null = null;
+  private plugin: ChineseHoverDictPlugin | null = null;
 
-  constructor() {
+  constructor(plugin?: ChineseHoverDictPlugin) {
+    this.plugin = plugin ?? null;
     this.el = createDiv({ cls: "ch-dict-tooltip" });
 
     // Prevent clicking inside the tooltip from bubbling to document and closing it
@@ -26,6 +30,14 @@ export class DictTooltip {
     });
 
     document.body.appendChild(this.el);
+  }
+
+  setPlugin(plugin: ChineseHoverDictPlugin): void {
+    this.plugin = plugin;
+  }
+
+  getCurrentContextSentence(): string | undefined {
+    return this.currentContextSentence;
   }
 
   /**
@@ -114,13 +126,15 @@ export class DictTooltip {
     x: number,
     y: number,
     settings: ChineseDictSettings,
-    bounds?: ContentBounds
+    bounds?: ContentBounds,
+    contextSentence?: string
   ): void {
     this.currentMatch = match;
     this.currentWord = match.word;
+    this.currentContextSentence = contextSentence;
 
     this.applyDynamicStyles(settings);
-    this.render(match, settings);
+    this.render(match, settings, contextSentence);
     this.position(x, y, settings, bounds);
 
     // Make visible and interactive via CSS class
@@ -138,7 +152,7 @@ export class DictTooltip {
   refresh(settings: ChineseDictSettings): void {
     if (!this.isVisible || !this.currentMatch) return;
     this.applyDynamicStyles(settings);
-    this.render(this.currentMatch, settings);
+    this.render(this.currentMatch, settings, this.currentContextSentence);
   }
 
   /**
@@ -235,7 +249,7 @@ export class DictTooltip {
    * - Big Crisp Pinyin Hero: Multi-line wrap, customizable color & font size
    * - Translations: 1-5 readable words comma-separated
    */
-  private render(match: MatchResult, settings: ChineseDictSettings): void {
+  private render(match: MatchResult, settings: ChineseDictSettings, contextSentence?: string): void {
     this.el.empty();
 
     const isCantonese = settings.dialect === "cantonese";
@@ -319,6 +333,27 @@ export class DictTooltip {
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
+      });
+
+      // Star / Personal Vocabulary Button
+      const isStarred = this.plugin?.vocabulary?.hasWord(match.word) ?? false;
+      const starBtn = actions.createEl("button", {
+        cls: `ch-dict-glass-btn ch-dict-star-btn ${isStarred ? "ch-dict-btn-starred" : "ch-dict-btn-unstarred"}`,
+        text: isStarred ? "⭐" : "☆",
+        attr: {
+          "aria-label": isStarred ? "Remove from Vocabulary" : "Add to Vocabulary",
+          title: isStarred ? "Удалить из личного словарика" : "Добавить в личный словарик (Save to Vocabulary)",
+        },
+      });
+      starBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (this.plugin?.vocabulary) {
+          const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
+          starBtn.setText(nowStarred ? "⭐" : "☆");
+          starBtn.toggleClass("ch-dict-btn-starred", nowStarred);
+          starBtn.toggleClass("ch-dict-btn-unstarred", !nowStarred);
+          this.plugin.refreshVocabularyViews();
+        }
       });
     }
 

@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.3.0-blue.svg" alt="Version 1.3.0" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.3.1-blue.svg" alt="Version 1.3.1" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
   <img src="https://img.shields.io/badge/Word%20Splitting-Intl.Segmenter-0284c7.svg" alt="Word Splitting" />
@@ -87,9 +87,12 @@ Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switc
 
 ### 6. ✂️ Smart Chinese Word Selection (Word Splitting)
 Chinese text contains no spaces between words. By default, Obsidian's editor often highlights an entire sentence or just a single character when double-clicked:
-* **Native Word Boundaries**: Automatically calculates Chinese word boundaries using CC-CEDICT combined with JavaScript's native `Intl.Segmenter`.
-* **Zero External Dependencies**: 0 KB external WASM bloat — runs entirely via native browser APIs without heavy binary downloads or IndexedDB cache.
-* **Precise Double-Click Selection**: Snaps editor selection to the exact Chinese word in both Live Preview (editing mode) and Reading View.
+* **Native Word Boundaries**: Automatically calculates Chinese word boundaries using CC-CEDICT combined with JavaScript's native `Intl.Segmenter` and dedicated Cantonese grammar heuristics.
+* **🇭🇰 First-Class Cantonese Intelligence**:
+  * **HKSCS & Astral Plane Support**: Handles Hong Kong Supplementary Character Set characters and CJK extensions (e.g. `𨋢` / lift, `𠵱家` / now, `𨳊`).
+  * **Grammar Patterns**: Recognizes colloquial Cantonese A-not-A questions (`去唔去`, `識唔識`, `知唔知`, `食唔食`), potential complements (`睇唔明`, `搞得掂`, `食得落`), and verb aspect particles (`食緊`, `買咗`, `食晒`, `睇吓`).
+* **Zero External Dependencies**: 0 KB external WASM bloat — runs entirely via native browser APIs and built-in lexicon without heavy binary downloads or IndexedDB cache.
+* **Precise Double-Click Selection**: Snaps editor selection to the exact Chinese word in both Live Preview (editing mode) and Reading View via CodeMirror 6's native `mouseSelectionStyle`.
 
 ---
 

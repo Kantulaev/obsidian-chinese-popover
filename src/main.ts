@@ -1,5 +1,5 @@
 import { EditorView } from "@codemirror/view";
-import { Extension } from "@codemirror/state";
+import { EditorSelection, Extension } from "@codemirror/state";
 import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
 import { DictionaryManager } from "./dictionary.ts";
 import {
@@ -365,35 +365,92 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * CodeMirror 6 extension for Live Preview and Source mode
    */
   private buildCodeMirrorExtension(): Extension {
-    return EditorView.domEventHandlers({
-      dblclick: (event: MouseEvent, view: EditorView) => {
-        if (!this.settings.enabled) return;
-        if (this.settings.triggerMode === "command_only") return;
-        if (this.settings.triggerMode === "hover") return;
-
-        const target = event.target as HTMLElement | null;
-        const bounds = this.getContentBounds(target, view);
-        this.handleEditorLookup(event.clientX, event.clientY, view, bounds);
-      },
-      mousemove: (event: MouseEvent, view: EditorView) => {
-        if (!this.settings.enabled) return;
-        const mode = this.settings.triggerMode;
-        if (mode !== "hover" && mode !== "hover_modifier") return;
-
-        if (mode === "hover_modifier") {
-          if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
-            this.cancelHoverLookup();
-            return;
-          }
+    return [
+      // Mouse selection style facet: overrides double-click word selection in CodeMirror 6
+      EditorView.mouseSelectionStyle.of((view: EditorView, event: MouseEvent) => {
+        if (
+          !this.settings.enabled ||
+          !this.settings.smartWordSelection ||
+          event.button !== 0 ||
+          event.detail !== 2
+        ) {
+          return null;
         }
 
-        const target = event.target as HTMLElement | null;
-        this.scheduleHoverLookup(event.clientX, event.clientY, view, undefined, target || undefined);
-      },
-      mouseleave: () => {
-        this.cancelHoverLookup();
-      },
-    });
+        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+        if (pos === null) return null;
+
+        const doc = view.state.doc.toString();
+        const match = this.dictionary.findWordAtOffset(
+          doc,
+          pos,
+          this.settings.maxWordLength
+        );
+
+        if (!match || match.start === undefined || match.end === undefined) {
+          return null;
+        }
+
+        const { start, end } = match;
+
+        return {
+          get(curEvent: MouseEvent, _extend: boolean, multiple: boolean) {
+            let range = EditorSelection.range(start, end);
+            const curPos = view.posAtCoords({
+              x: curEvent.clientX,
+              y: curEvent.clientY,
+            });
+            if (curPos !== null) {
+              if (curPos < start) {
+                range = EditorSelection.range(end, curPos);
+              } else if (curPos > end) {
+                range = EditorSelection.range(start, curPos);
+              }
+            }
+            if (multiple) {
+              return view.state.selection.addRange(range);
+            }
+            return EditorSelection.create([range]);
+          },
+          update(_update) {},
+        };
+      }),
+      EditorView.domEventHandlers({
+        dblclick: (event: MouseEvent, view: EditorView) => {
+          if (!this.settings.enabled) return;
+          if (this.settings.triggerMode === "command_only") return;
+          if (this.settings.triggerMode === "hover") return;
+
+          const target = event.target as HTMLElement | null;
+          const bounds = this.getContentBounds(target, view);
+          this.handleEditorLookup(event.clientX, event.clientY, view, bounds);
+        },
+        mousemove: (event: MouseEvent, view: EditorView) => {
+          if (!this.settings.enabled) return;
+          const mode = this.settings.triggerMode;
+          if (mode !== "hover" && mode !== "hover_modifier") return;
+
+          if (mode === "hover_modifier") {
+            if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
+              this.cancelHoverLookup();
+              return;
+            }
+          }
+
+          const target = event.target as HTMLElement | null;
+          this.scheduleHoverLookup(
+            event.clientX,
+            event.clientY,
+            view,
+            undefined,
+            target || undefined
+          );
+        },
+        mouseleave: () => {
+          this.cancelHoverLookup();
+        },
+      }),
+    ];
   }
 
   /**
@@ -461,7 +518,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (!container) return;
 
     const bounds = this.getContentBounds(target, undefined);
-    this.handleReadingViewLookup(event.clientX, event.clientY, container, bounds);
+    this.handleReadingViewLookup(event.clientX, event.clientY, container, bounds, event);
   }
 
   /**
@@ -509,7 +566,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     clientX: number,
     clientY: number,
     container: HTMLElement,
-    bounds?: ContentBounds
+    bounds?: ContentBounds,
+    event?: MouseEvent
   ): void {
     if (!this.dictionary.isReady()) {
       new Notice("Dictionary is still loading, please wait a moment...", 2000);
@@ -521,7 +579,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // Check if user selected text
     const selection = window.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
-    if (selectedText && this.dictionary.isChinese(selectedText[0])) {
+    if (selectedText && this.dictionary.isChinese(selectedText)) {
       const directEntries = this.dictionary.get(selectedText);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
@@ -584,6 +642,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
             wordRange.setEnd(textNode, match.end);
             sel.removeAllRanges();
             sel.addRange(wordRange);
+          }
+          if (event) {
+            event.preventDefault();
           }
         } catch {
           // ignore
@@ -682,7 +743,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const bounds = this.getContentBounds(null, cm);
 
-    if (selection && this.dictionary.isChinese(selection[0])) {
+    if (selection && this.dictionary.isChinese(selection)) {
       const directEntries = this.dictionary.get(selection);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
@@ -731,7 +792,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
   public lookupAtReadingView(): void {
     const selection = window.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
-    if (!selectedText || !this.dictionary.isChinese(selectedText[0])) {
+    if (!selectedText || !this.dictionary.isChinese(selectedText)) {
       new Notice("Выделите китайское слово для поиска / Select Chinese word to look up", 2000);
       return;
     }
@@ -774,7 +835,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (activeView && activeView.editor) {
       const editor = activeView.editor;
       const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection[0])) {
+      if (selection && this.dictionary.isChinese(selection)) {
         this.tooltip.playSpeech(selection, this.settings);
         new Notice(`Озвучивание: ${selection}`);
         return;
@@ -808,7 +869,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (activeView && activeView.editor) {
       const editor = activeView.editor;
       const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection[0])) {
+      if (selection && this.dictionary.isChinese(selection)) {
         const entries = this.dictionary.get(selection);
         if (entries && entries.length > 0) {
           this.tooltip.copyEntryDirect(
@@ -965,7 +1026,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (activeView && activeView.editor) {
       const editor = activeView.editor;
       const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection[0])) {
+      if (selection && this.dictionary.isChinese(selection)) {
         const entries = this.dictionary.get(selection);
         if (entries && entries.length > 0) {
           const cursor = editor.getCursor();

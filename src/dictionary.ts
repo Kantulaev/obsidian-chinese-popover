@@ -260,7 +260,7 @@ export class DictionaryManager {
       let res;
       try {
         res = await requestUrl({ url: downloadUrl });
-      } catch (_e) {
+      } catch {
         res = await requestUrl({ url: fallbackUrl });
       }
       const text = res.text;

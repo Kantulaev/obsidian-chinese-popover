@@ -423,6 +423,16 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
+      if (
+        this.settings.smartWordSelection &&
+        match.start !== undefined &&
+        match.end !== undefined
+      ) {
+        view.dispatch({
+          selection: { anchor: match.start, head: match.end },
+        });
+      }
+
       const resolvedBounds = bounds || this.getContentBounds(null, view);
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(fullDoc, pos)
@@ -561,6 +571,25 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
+      if (
+        this.settings.smartWordSelection &&
+        match.start !== undefined &&
+        match.end !== undefined
+      ) {
+        try {
+          const sel = window.getSelection();
+          if (sel) {
+            const wordRange = document.createRange();
+            wordRange.setStart(textNode, match.start);
+            wordRange.setEnd(textNode, match.end);
+            sel.removeAllRanges();
+            sel.addRange(wordRange);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(fullText, offset)
         : undefined;
@@ -676,6 +705,17 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
+      if (
+        this.settings.smartWordSelection &&
+        match.start !== undefined &&
+        match.end !== undefined
+      ) {
+        editor.setSelection(
+          { line: cursor.line, ch: match.start },
+          { line: cursor.line, ch: match.end }
+        );
+      }
+
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(lineText, cursor.ch)
         : undefined;

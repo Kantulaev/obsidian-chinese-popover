@@ -12,6 +12,8 @@ export interface MatchResult {
   word: string;
   entries: DictEntry[];
   length: number;
+  start?: number;
+  end?: number;
 }
 
 export type DictionaryData = Record<string, DictEntry[]>;
@@ -312,6 +314,8 @@ export class DictionaryManager {
     }
 
     let bestMatch: MatchResult | null = null;
+    let bestStart = -1;
+    let bestEnd = -1;
     const minStart = Math.max(0, offset - maxLen + 1);
 
     for (let start = minStart; start <= offset; start++) {
@@ -327,14 +331,66 @@ export class DictionaryManager {
                 word: candidate,
                 entries: entries,
                 length: len,
+                start: start,
+                end: end,
               };
+              bestStart = start;
+              bestEnd = end;
             }
           }
         }
       }
     }
 
-    return bestMatch;
+    if (bestMatch) {
+      bestMatch.start = bestStart;
+      bestMatch.end = bestEnd;
+      return bestMatch;
+    }
+
+    // Fallback: Native Intl.Segmenter (built into Chromium / Electron, 0 dependencies)
+    if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+      try {
+        interface SegmenterType {
+          segment(input: string): Iterable<{ segment: string; index: number }>;
+        }
+        interface IntlWithSegmenter {
+          Segmenter: new (locales: string[], options: { granularity: string }) => SegmenterType;
+        }
+        const IntlSegmenter = (Intl as unknown as IntlWithSegmenter).Segmenter;
+        const segmenter = new IntlSegmenter(["zh-CN", "zh-HK", "zh-TW", "zh"], {
+          granularity: "word",
+        });
+        const segments = segmenter.segment(fullText);
+        for (const seg of segments) {
+          const s = seg.index;
+          const e = seg.index + seg.segment.length;
+          if (offset >= s && offset < e) {
+            const word = seg.segment;
+            if (this.isChinese(word[0])) {
+              return {
+                word,
+                entries: this.get(word) || [],
+                length: word.length,
+                start: s,
+                end: e,
+              };
+            }
+          }
+        }
+      } catch {
+        // ignore and fallback
+      }
+    }
+
+    // Ultimate fallback: single clicked character
+    return {
+      word: clickedChar,
+      entries: this.get(clickedChar) || [],
+      length: 1,
+      start: offset,
+      end: offset + 1,
+    };
   }
 
   /**

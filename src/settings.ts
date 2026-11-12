@@ -50,6 +50,9 @@ export interface ChineseDictSettings {
   autoSaveContextSentence: boolean;
   practiceMode: boolean;
   vocabularySort: "date_desc" | "date_asc" | "alpha";
+
+  // Smart Chinese Word Splitting & Selection
+  smartWordSelection: boolean;
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -86,6 +89,8 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   autoSaveContextSentence: true,
   practiceMode: false,
   vocabularySort: "date_desc",
+
+  smartWordSelection: true,
 };
 
 interface AppWithSetting extends App {
@@ -175,6 +180,18 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             this.plugin.settings.triggerMode = value as TriggerMode;
             await this.plugin.saveSettings();
             this.display(); // Refresh to show/hide relevant modifier options
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Умное выделение китайских слов / Smart Word Selection")
+      .setDesc("При двойном клике автоматически выделяет в редакторе китайское слово целиком (вместо одного иероглифа или всего предложения), используя CEDICT и встроенный Intl.Segmenter.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.smartWordSelection)
+          .onChange(async (value) => {
+            this.plugin.settings.smartWordSelection = value;
+            await this.plugin.saveSettings();
           })
       );
 

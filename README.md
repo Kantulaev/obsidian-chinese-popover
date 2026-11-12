@@ -6,16 +6,17 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.2.1-blue.svg" alt="Version 1.2.1" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.3.0-blue.svg" alt="Version 1.3.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
+  <img src="https://img.shields.io/badge/Word%20Splitting-Intl.Segmenter-0284c7.svg" alt="Word Splitting" />
   <img src="https://img.shields.io/badge/Notebook-Permanent%20Markdown-059669.svg" alt="Markdown Notebook" />
-  <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-0284c7.svg" alt="Apple Liquid Glass" />
+  <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-7C3AED.svg" alt="Apple Liquid Glass" />
 </p>
 
 <p align="center">
   <b>Instant, beautiful Chinese popover lookup and personal vocabulary book for Obsidian.</b><br/>
-  Featuring dual <b>Mandarin Pinyin</b> and <b>Cantonese Jyutping</b>, authentic neural audio pronunciation, simplified & traditional Hanzi, and an Apple Liquid Glass aesthetic.
+  Featuring dual <b>Mandarin Pinyin</b> and <b>Cantonese Jyutping</b>, smart Chinese word selection (word splitting), authentic neural audio pronunciation, simplified & traditional Hanzi, and an Apple Liquid Glass aesthetic.
 </p>
 
 ---
@@ -25,6 +26,7 @@
 Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
 
 * 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
+* ✂️ **Smart Chinese Word Selection (Word Splitting)** — Solves Obsidian's lack of Chinese word boundaries. Double-clicking any Chinese character cleanly selects the exact word (`学习` or `香港`) instead of a single character or the entire paragraph, powered by CEDICT and native `Intl.Segmenter`.
 * 📖 **Permanent Personal Vocabulary Notebook** — Star difficult words with `⭐` in 1 click; they are saved permanently into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
 * 🃏 **Interactive Sidebar & Flashcards** — Review saved words in a sleek right sidebar tab with search, filters, audio buttons, and tap-to-reveal quiz mode.
 * 🀄 **Dual Phonetics (Pinyin + Jyutping)** — Perfect for learners of both Mandarin (`Putonghua`) and Cantonese (`Guangdonghua`).
@@ -82,6 +84,12 @@ Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switc
 * **🃏 Flashcards / Practice Mode**: Click to mask definitions and test your memory before sleep or study sessions. Tap any card to reveal.
 * **Context Retention**: Automatically remembers the sentence where you found the word!
 * **Full-text Search & Sort**: Filter words instantly by Hanzi, Pinyin, Jyutping, or English meanings. Sort by date or alphabetical order.
+
+### 6. ✂️ Smart Chinese Word Selection (Word Splitting)
+Chinese text contains no spaces between words. By default, Obsidian's editor often highlights an entire sentence or just a single character when double-clicked:
+* **Native Word Boundaries**: Automatically calculates Chinese word boundaries using CC-CEDICT combined with JavaScript's native `Intl.Segmenter`.
+* **Zero External Dependencies**: 0 KB external WASM bloat — runs entirely via native browser APIs without heavy binary downloads or IndexedDB cache.
+* **Precise Double-Click Selection**: Snaps editor selection to the exact Chinese word in both Live Preview (editing mode) and Reading View.
 
 ---
 

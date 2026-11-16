@@ -449,8 +449,8 @@ export class DictTooltip {
       const burgerMenu = burgerWrap.createDiv({ cls: "ch-dict-burger-menu" });
 
       // Hover and Click behavior:
-      // A timer grace period and invisible bridge ensure moving the mouse
-      // down into the menu is completely smooth and never prematurely hides it.
+      // A generous timer grace period (400ms) and invisible bridge ensure moving
+      // the mouse down into the menu is completely smooth and never prematurely hides it.
       let hoverTimer: number | null = null;
 
       const openMenu = () => {
@@ -467,9 +467,8 @@ export class DictTooltip {
         }
         hoverTimer = window.setTimeout(() => {
           burgerMenu.removeClass("is-hovered");
-          burgerMenu.removeClass("is-open");
           hoverTimer = null;
-        }, 280);
+        }, 400);
       };
 
       burgerWrap.addEventListener("mouseenter", openMenu);
@@ -477,14 +476,14 @@ export class DictTooltip {
       burgerMenu.addEventListener("mouseenter", openMenu);
       burgerMenu.addEventListener("mouseleave", closeMenuWithDelay);
 
-      // Click toggles menu
+      // Click toggles menu and keeps it open until next click or outside click
       burgerBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         if (hoverTimer !== null) {
           window.clearTimeout(hoverTimer);
           hoverTimer = null;
         }
-        const willOpen = !burgerMenu.hasClass("is-open") && !burgerMenu.hasClass("is-hovered");
+        const willOpen = !burgerMenu.hasClass("is-open");
         if (willOpen) {
           burgerMenu.addClass("is-open");
         } else {
@@ -533,17 +532,14 @@ export class DictTooltip {
         },
       });
       const copyIcon = copyItem.createSpan({ cls: "ch-dict-burger-icon", text: "📋" });
-      const copyLabel = copyItem.createSpan({ cls: "ch-dict-burger-label", text: "Копировать" });
 
       copyItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
         copyIcon.setText("✓");
-        copyLabel.setText("Скопировано!");
         copyItem.addClass("ch-dict-btn-success");
         window.setTimeout(() => {
           copyIcon.setText("📋");
-          copyLabel.setText("Копировать");
           copyItem.removeClass("ch-dict-btn-success");
         }, 1200);
       });
@@ -562,10 +558,6 @@ export class DictTooltip {
         cls: "ch-dict-burger-icon",
         text: isStarred ? "⭐" : "☆",
       });
-      const starLabel = starItem.createSpan({
-        cls: "ch-dict-burger-label",
-        text: isStarred ? "В словарике" : "В словарик",
-      });
 
       starItem.addEventListener("click", async (e) => {
         e.stopPropagation();
@@ -574,8 +566,8 @@ export class DictTooltip {
           window.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
           const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
           starIcon.setText(nowStarred ? "⭐" : "☆");
-          starLabel.setText(nowStarred ? "В словарике" : "В словарик");
           starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
+          starItem.setAttribute("aria-label", nowStarred ? "Удалить из словарика" : "Сохранить в словарик");
           this.plugin.refreshVocabularyViews();
 
           if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
@@ -598,15 +590,11 @@ export class DictTooltip {
           "aria-label": this.isPinned ? "Открепить карточку" : "Закрепить карточку",
         },
       });
-      const pinIcon = pinItem.createSpan({ cls: "ch-dict-burger-icon", text: "📌" });
-      const pinLabel = pinItem.createSpan({
-        cls: "ch-dict-burger-label",
-        text: this.isPinned ? "Открепить" : "Закрепить",
-      });
+      const pinIcon = pinItem.createSpan({ cls: "ch-dict-burger-icon", text: this.isPinned ? "📍" : "📌" });
       pinItem.addEventListener("click", (e) => {
         e.stopPropagation();
         const pinned = this.togglePin();
-        pinLabel.setText(pinned ? "Открепить" : "Закрепить");
+        pinIcon.setText(pinned ? "📍" : "📌");
         pinItem.setAttribute("title", pinned ? "Открепить карточку" : "Закрепить карточку на экране");
         pinItem.setAttribute("aria-label", pinned ? "Открепить карточку" : "Закрепить карточку");
       });
@@ -620,7 +608,6 @@ export class DictTooltip {
         },
       });
       noteItem.createSpan({ cls: "ch-dict-burger-icon", text: "📝" });
-      noteItem.createSpan({ cls: "ch-dict-burger-label", text: "Заметка слова" });
       noteItem.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (this.plugin) {
@@ -640,7 +627,6 @@ export class DictTooltip {
         },
       });
       strokeItem.createSpan({ cls: "ch-dict-burger-icon", text: "🖌️" });
-      strokeItem.createSpan({ cls: "ch-dict-burger-label", text: "Порядок черт" });
       strokeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         if (this.plugin) {
@@ -660,7 +646,6 @@ export class DictTooltip {
         },
       });
       closeItem.createSpan({ cls: "ch-dict-burger-icon", text: "✕" });
-      closeItem.createSpan({ cls: "ch-dict-burger-label", text: "Закрыть (Esc)" });
       closeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.hide(true);
@@ -774,6 +759,99 @@ export class DictTooltip {
       const chars = Array.from(match.word).filter((c) => /\p{Script=Han}/u.test(c));
       if (chars.length >= 2) {
         const decompRow = this.el.createDiv({ cls: "ch-dict-decomp-row" });
+        let activeChar: string | null = null;
+        let decompDrawer: HTMLElement | null = null;
+        const chipElements = new Map<string, HTMLElement>();
+
+        const renderDecompDrawer = (targetChar: string) => {
+          if (decompDrawer) {
+            decompDrawer.remove();
+            decompDrawer = null;
+          }
+
+          if (activeChar === targetChar) {
+            // Clicking same character collapses drawer
+            activeChar = null;
+            chipElements.forEach((el) => el.removeClass("is-active"));
+            return;
+          }
+
+          activeChar = targetChar;
+          chipElements.forEach((el, c) => {
+            if (c === targetChar) {
+              el.addClass("is-active");
+            } else {
+              el.removeClass("is-active");
+            }
+          });
+
+          const charEntries = this.plugin?.dictionary?.get(targetChar);
+          const py = charEntries && charEntries[0] ? formatPinyin(charEntries[0].pinyin, true) : "";
+          const jp = charEntries && charEntries[0]?.jyutping;
+          const phon = isCantonese && jp ? jp : py;
+          const isRu = settings.translationLanguage !== "en";
+          const def = charEntries ? this.formatConciseDefinitions(charEntries, 2, targetChar, settings.translationLanguage || "en") : "";
+
+          const radInfo = getCharacterRadical(targetChar);
+          const comps = getCharacterComponents(targetChar);
+
+          decompDrawer = this.el.createDiv({ cls: "ch-dict-decomp-drawer" });
+          decompRow.after(decompDrawer);
+
+          // Drawer Header: Char + Phonetic + Def + Audio Button
+          const header = decompDrawer.createDiv({ cls: "ch-dict-decomp-drawer-header" });
+          const left = header.createDiv({ cls: "ch-dict-decomp-drawer-left" });
+          left.createSpan({ cls: "ch-dict-decomp-drawer-char", text: targetChar });
+          if (phon) {
+            left.createSpan({ cls: "ch-dict-decomp-drawer-phon", text: `[${phon}]` });
+          }
+          if (def) {
+            left.createSpan({ cls: "ch-dict-decomp-drawer-def", text: def });
+          }
+
+          const audioBtn = header.createEl("button", {
+            cls: "ch-dict-decomp-drawer-audio",
+            text: "🔊",
+            attr: {
+              title: `Озвучить ${targetChar}`,
+              "aria-label": `Озвучить ${targetChar}`,
+            },
+          });
+          audioBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.playSpeech(targetChar, settings);
+          });
+
+          // Drawer Detail (Radical & Anatomy/Components)
+          const detail = decompDrawer.createDiv({ cls: "ch-dict-decomp-drawer-detail" });
+
+          if (radInfo) {
+            const radMeaning = isRu ? radInfo.meaningRu : radInfo.meaningEn;
+            const radLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
+            radLine.createSpan({
+              cls: "ch-dict-decomp-detail-label",
+              text: isRu ? "Ключ:" : "Radical:",
+            });
+            radLine.createSpan({
+              text: `#${radInfo.number} «${radInfo.radical}» [${radInfo.pinyin}] — ${radMeaning} (${radInfo.strokeCount} ${isRu ? "черт" : "strokes"})`,
+            });
+          }
+
+          if (comps && comps.length > 0) {
+            const compLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
+            compLine.createSpan({
+              cls: "ch-dict-decomp-detail-label",
+              text: isRu ? "Состав:" : "Components:",
+            });
+            compLine.createSpan({ text: comps.join(" + ") });
+          } else if (!radInfo) {
+            const basicLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
+            basicLine.createSpan({
+              text: isRu ? "Базовый неделимый иероглиф" : "Basic ideogram / pictogram",
+            });
+          }
+        };
+
         for (const char of chars) {
           const charEntries = this.plugin?.dictionary?.get(char);
           if (charEntries && charEntries.length > 0) {
@@ -787,30 +865,31 @@ export class DictTooltip {
               settings.translationLanguage || "en"
             );
 
-            let extraTitle = "";
-            let radInfo = null;
-            if (settings.showRadicals) {
-              radInfo = getCharacterRadical(char);
-              if (radInfo) {
-                const radMeaning = settings.translationLanguage === "ru" ? radInfo.meaningRu : radInfo.meaningEn;
-                extraTitle += `\nКлюч #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning}, ${radInfo.strokeCount} черт)`;
-              }
-              const comps = getCharacterComponents(char);
-              if (comps && comps.length > 0) {
-                extraTitle += `\nСостав: ${comps.join(" + ")}`;
-              }
+            const radInfo = getCharacterRadical(char);
+            const comps = getCharacterComponents(char);
+            let tooltipText = `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}`;
+            if (radInfo) {
+              const radMeaning = settings.translationLanguage === "ru" ? radInfo.meaningRu : radInfo.meaningEn;
+              tooltipText += `\nКлюч #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning})`;
             }
+            if (comps && comps.length > 0) {
+              tooltipText += `\nСостав: ${comps.join(" + ")}`;
+            }
+            tooltipText += `\nНажмите, чтобы раскрыть строение и состав`;
 
             const chip = decompRow.createDiv({
               cls: "ch-dict-decomp-chip",
               attr: {
-                title: `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}${extraTitle}\nНажмите для озвучки иероглифа`,
+                title: tooltipText,
+                "aria-label": `${char}: строение и состав`,
               },
             });
+            chipElements.set(char, chip);
+
             chip.createSpan({ cls: "ch-dict-decomp-char", text: char });
             chip.createSpan({ cls: "ch-dict-decomp-phon", text: phon });
             chip.createSpan({ cls: "ch-dict-decomp-def", text: def });
-            if (radInfo) {
+            if (radInfo && settings.showRadicals) {
               chip.createSpan({
                 cls: "ch-dict-decomp-rad",
                 text: radInfo.radical,
@@ -820,7 +899,7 @@ export class DictTooltip {
 
             chip.addEventListener("click", (e) => {
               e.stopPropagation();
-              this.playSpeech(char, settings);
+              renderDecompDrawer(char);
             });
           }
         }

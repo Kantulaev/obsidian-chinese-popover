@@ -448,13 +448,49 @@ export class DictTooltip {
 
       const burgerMenu = burgerWrap.createDiv({ cls: "ch-dict-burger-menu" });
 
+      // Hover and Click behavior:
+      // A timer grace period and invisible bridge ensure moving the mouse
+      // down into the menu is completely smooth and never prematurely hides it.
+      let hoverTimer: number | null = null;
+
+      const openMenu = () => {
+        if (hoverTimer !== null) {
+          window.clearTimeout(hoverTimer);
+          hoverTimer = null;
+        }
+        burgerMenu.addClass("is-hovered");
+      };
+
+      const closeMenuWithDelay = () => {
+        if (hoverTimer !== null) {
+          window.clearTimeout(hoverTimer);
+        }
+        hoverTimer = window.setTimeout(() => {
+          burgerMenu.removeClass("is-hovered");
+          burgerMenu.removeClass("is-open");
+          hoverTimer = null;
+        }, 280);
+      };
+
+      burgerWrap.addEventListener("mouseenter", openMenu);
+      burgerWrap.addEventListener("mouseleave", closeMenuWithDelay);
+      burgerMenu.addEventListener("mouseenter", openMenu);
+      burgerMenu.addEventListener("mouseleave", closeMenuWithDelay);
+
       // Click toggles menu
       burgerBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        burgerMenu.toggleClass("is-open", !burgerMenu.hasClass("is-open"));
-      });
-      burgerWrap.addEventListener("mouseleave", () => {
-        burgerMenu.removeClass("is-open");
+        if (hoverTimer !== null) {
+          window.clearTimeout(hoverTimer);
+          hoverTimer = null;
+        }
+        const willOpen = !burgerMenu.hasClass("is-open") && !burgerMenu.hasClass("is-hovered");
+        if (willOpen) {
+          burgerMenu.addClass("is-open");
+        } else {
+          burgerMenu.removeClass("is-open");
+          burgerMenu.removeClass("is-hovered");
+        }
       });
 
       // Helper to open Obsidian context menu on top of popover

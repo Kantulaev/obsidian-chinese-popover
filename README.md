@@ -31,7 +31,7 @@
 * **Apple Liquid Glass UI** — Translucent frosted glass card with fluid blur, draggable header bar, and pin (📌) to freeze on screen.
 * **Character Anatomy & 214 Radicals** — Click any character chip in compound words to reveal its Kangxi radical, stroke count, meaning, and etymological components (`宀 + 子`).
 * **Ultra-Compact Action Palette** — 34px icon-only quick dock (`📋`, `⭐`, `📌`, `📝`, `🖌️`, `✕`) that never spills over or hides prematurely.
-* **Dual Russian & English Translations** — Choose English (CC-CEDICT), Russian (БКРС / Большой китайско-русский словарь), or both simultaneously.
+* **Dual English & Russian Translations** — Choose English (CC-CEDICT), Russian (BKRS), or both simultaneously.
 * **Dual Phonetics & Tone Colors** — Mandarin diacritic Pinyin + Cantonese Jyutping (`粵`) with customizable tone colors.
 
 ---
@@ -43,7 +43,7 @@
 </p>
 
 * **Permanent Personal Vocabulary Book** — Star difficult words (`⭐`) into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
-* **Spaced Repetition (SRS Flashcards)** — Built-in SM-2 intervals (**Снова 1д**, **Трудно 3д**, **Хорошо 7д**, **Легко 14д**) with due review filters.
+* **Spaced Repetition (SRS Flashcards)** — Built-in SM-2 intervals (**Again 1d**, **Hard 3d**, **Good 7d**, **Easy 14d**) with due review filters.
 * **Spotlight Quick Search (`Alt + S`)** — Instant modal to search 118,000+ words by Hanzi (`你好`), Pinyin (`nihao`), Jyutping, or Russian/English.
 * **1-Click Anki Sync** — Push cards directly into desktop Anki via AnkiConnect or export offline `.tsv` decks.
 * **Pleco Mobile Export** — Export vocabulary directly to Pleco `.txt` format for flashcards on iOS and Android.

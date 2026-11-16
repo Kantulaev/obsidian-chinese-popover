@@ -20,12 +20,6 @@
       <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
     </linearGradient>
 
-    <!-- Accents -->
-    <linearGradient id="rose-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f43f5e" />
-      <stop offset="100%" stop-color="#fb7185" />
-    </linearGradient>
-
     <!-- Shadows -->
     <filter id="tools-shadow" x="-15%" y="-15%" width="130%" height="135%">
       <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.7" />
@@ -63,8 +57,8 @@
 
     <!-- Header -->
     <g transform="translate(18, 16)">
-      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">🖌️ Порядок черт (米字格)</text>
-      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Анимация каллиграфии и шаги</text>
+      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">🖌️ Stroke Order (Mizige)</text>
+      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Vector calligraphy steps &amp; playback</text>
     </g>
 
     <!-- Mizige Calligraphy Box (180 x 180) -->
@@ -79,7 +73,6 @@
       <line x1="0" y1="90" x2="180" y2="90" stroke="#fcd34d" stroke-width="1" stroke-dasharray="4,4" />
 
       <!-- Chinese Character "永" (The Eight Principles of Yong) with Red Active Stroke -->
-      <!-- Background completed strokes (dark gray/black) -->
       <text x="90" y="132" class="font-kaiti" font-size="124" font-weight="700" fill="#1e1e24" text-anchor="middle">永</text>
       <!-- Red animated stroke highlight -->
       <path d="M 90 28 Q 96 38 88 52" stroke="#ef4444" stroke-width="10" fill="none" stroke-linecap="round" />
@@ -89,7 +82,7 @@
     <g transform="translate(18, 268)">
       <g>
         <rect width="244" height="32" rx="7" fill="rgba(0, 0, 0, 0.3)" stroke="rgba(255, 255, 255, 0.08)" />
-        <text x="10" y="20" class="font-sans" font-size="11.5" fill="#f1f5f9">Черта <tspan fill="#38bdf8" font-weight="700">1 / 5</tspan>: <tspan fill="#fca5a5" font-weight="700">点 (diǎn)</tspan> — Точка</text>
+        <text x="12" y="20" class="font-sans" font-size="11.5" fill="#f1f5f9">Stroke <tspan fill="#38bdf8" font-weight="700">1 / 5</tspan>: <tspan fill="#fca5a5" font-weight="700">点 (diǎn)</tspan> — Dot</text>
       </g>
     </g>
 
@@ -110,14 +103,14 @@
 
     <!-- Header -->
     <g transform="translate(18, 16)">
-      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">📊 Анализатор текста и HSK</text>
-      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Сложность заметок и HSK 1–6</text>
+      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">📊 Text Difficulty &amp; HSK</text>
+      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Vault difficulty &amp; HSK 1–6 metrics</text>
     </g>
 
     <!-- Overall Rating Badge -->
     <g transform="translate(18, 68)">
       <rect width="244" height="42" rx="10" fill="rgba(16, 185, 129, 0.16)" stroke="#10b981" stroke-width="1.2" />
-      <text x="14" y="26" class="font-sans" font-size="13" font-weight="700" fill="#34d399">Общий уровень: HSK 2 / A2</text>
+      <text x="14" y="26" class="font-sans" font-size="13" font-weight="700" fill="#34d399">Overall Level: HSK 2 / CEFR A2</text>
     </g>
 
     <!-- Progress Bars for Levels -->
@@ -146,9 +139,9 @@
         <rect y="18" width="36" height="8" rx="4" fill="#fbbf24" />
       </g>
 
-      <!-- HSK 4-6 / Вне HSK: 10% -->
+      <!-- HSK 4-6 / Beyond HSK: 10% -->
       <g transform="translate(0, 114)">
-        <text x="0" y="12" class="font-sans" font-size="11" font-weight="600" fill="#e2e8f0">HSK 4–6 / Вне списка</text>
+        <text x="0" y="12" class="font-sans" font-size="11" font-weight="600" fill="#e2e8f0">HSK 4–6 / Beyond HSK</text>
         <text x="210" y="12" class="font-sans" font-size="11" fill="#a855f7">10%</text>
         <rect y="18" width="244" height="8" rx="4" fill="rgba(255, 255, 255, 0.08)" />
         <rect y="18" width="24" height="8" rx="4" fill="#a855f7" />
@@ -158,8 +151,8 @@
     <!-- Stats Summary Footer -->
     <g transform="translate(18, 296)">
       <rect width="244" height="56" rx="8" fill="rgba(0, 0, 0, 0.3)" stroke="rgba(255, 255, 255, 0.08)" />
-      <text x="12" y="24" class="font-sans" font-size="11.5" fill="#94a3b8">Всего слов в тексте: <tspan fill="#ffffff" font-weight="700">428</tspan></text>
-      <text x="12" y="42" class="font-sans" font-size="11.5" fill="#94a3b8">Уникальных иероглифов: <tspan fill="#ffffff" font-weight="700">184</tspan></text>
+      <text x="12" y="24" class="font-sans" font-size="11.5" fill="#94a3b8">Total words in text: <tspan fill="#ffffff" font-weight="700">428</tspan></text>
+      <text x="12" y="42" class="font-sans" font-size="11.5" fill="#94a3b8">Unique characters: <tspan fill="#ffffff" font-weight="700">184</tspan></text>
     </g>
   </g>
 
@@ -170,33 +163,33 @@
 
     <!-- Header -->
     <g transform="translate(18, 16)">
-      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">📝 Заметки и Материалы</text>
-      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Zettelkasten, чэнъюи, PDF листы</text>
+      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">📝 Notes &amp; Worksheets</text>
+      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Zettelkasten, fables, PDF sheets</text>
     </g>
 
     <!-- Item 1: Atomic Word Note -->
     <g transform="translate(18, 68)">
       <rect width="244" height="82" rx="10" fill="rgba(168, 85, 247, 0.12)" stroke="rgba(168, 85, 247, 0.3)" stroke-width="1" />
-      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#c084fc">📝 Атомные заметки слов</text>
-      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">Генерация в 1 клик в <tspan fill="#e2e8f0">Chinese/Words/</tspan></text>
-      <text x="12" y="62" class="font-sans" font-size="11" fill="#94a3b8">YAML, теги, пиньинь, контекст, ссылки.</text>
+      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#c084fc">📝 Atomic Word Notes</text>
+      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">1-click creation in <tspan fill="#e2e8f0">Chinese/Words/</tspan></text>
+      <text x="12" y="62" class="font-sans" font-size="11" fill="#94a3b8">YAML, tags, pinyin, context &amp; links.</text>
     </g>
 
     <!-- Item 2: Chengyu Origin Story -->
     <g transform="translate(18, 160)">
       <rect width="244" height="96" rx="10" fill="rgba(251, 191, 36, 0.12)" stroke="rgba(251, 191, 36, 0.3)" stroke-width="1" />
-      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#fbbf24">📜 Притчи Чэнъюй (成语故事)</text>
-      <text x="12" y="44" class="font-kaiti" font-size="13" font-weight="700" fill="#ffffff">«画蛇添足» — Нарисовав змею, пририсовать ей ноги</text>
-      <text x="12" y="64" class="font-sans" font-size="10.5" fill="#94a3b8">Период Сражающихся царств (战国策):</text>
-      <text x="12" y="80" class="font-sans" font-size="10.5" fill="#cbd5e1">О лишних усилиях, портящих всё дело.</text>
+      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#fbbf24">📜 Chengyu Stories (成语故事)</text>
+      <text x="12" y="44" class="font-kaiti" font-size="13" font-weight="700" fill="#ffffff">«画蛇添足» — Draw a snake and add feet</text>
+      <text x="12" y="64" class="font-sans" font-size="10.5" fill="#94a3b8">Warring States Period (Zhan Guo Ce):</text>
+      <text x="12" y="80" class="font-sans" font-size="10.5" fill="#cbd5e1">Ruining an achievement with excess.</text>
     </g>
 
     <!-- Item 3: Printable PDF Worksheets -->
     <g transform="translate(18, 268)">
       <rect width="244" height="84" rx="10" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1" />
-      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#38bdf8">🖨️ Прописи для печати</text>
-      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">Генератор листов с сеткой Мицзыгэ</text>
-      <text x="12" y="62" class="font-sans" font-size="11" fill="#cbd5e1">Печать или экспорт в PDF для тренировки руки.</text>
+      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#38bdf8">🖨️ Printable Worksheets</text>
+      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">Mizige grid calligraphy practice sheets</text>
+      <text x="12" y="62" class="font-sans" font-size="11" fill="#cbd5e1">Export to PDF or print for pen practice.</text>
     </g>
   </g>
 </svg>

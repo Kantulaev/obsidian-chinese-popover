@@ -76,7 +76,7 @@
     <rect width="168" height="26" rx="6" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1" />
     <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#38bdf8" letter-spacing="1">POPOVER &amp; ANATOMY</text>
     <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Apple Liquid Glass &amp; Character Anatomy</text>
-    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Interactive desktop-grade dictionary card with Kangxi radical decomposition and 34px compact action palette.</text>
+    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Interactive desktop-grade dictionary card with Kangxi radical decomposition and 34px compact action dock.</text>
   </g>
 
   <!-- ================= LEFT: MAIN INTERACTIVE POPOVER CARD ================= -->
@@ -101,8 +101,8 @@
       <g transform="translate(202, 0)">
         <rect width="112" height="36" rx="9" fill="rgba(16, 185, 129, 0.14)" stroke="#10b981" stroke-width="1.2" />
         <text x="12" y="23" class="font-sans" font-size="14" fill="#34d399">🔊</text>
-        <text x="32" y="22" class="font-sans" font-size="11" font-weight="700" fill="#34d399">普通话</text>
-        <text x="76" y="22" class="font-sans" font-size="11" fill="#6ee7b7">1.0x</text>
+        <text x="32" y="22" class="font-sans" font-size="11" font-weight="700" fill="#34d399">Mandarin</text>
+        <text x="82" y="22" class="font-sans" font-size="11" fill="#6ee7b7">1.0x</text>
       </g>
 
       <!-- Compact 34px Action Palette (Burger dock) -->
@@ -138,21 +138,21 @@
       <!-- Multi-POS Badge -->
       <g transform="translate(316, 2)">
         <rect width="90" height="26" rx="7" fill="rgba(168, 85, 247, 0.18)" stroke="#a855f7" stroke-width="1" />
-        <text x="10" y="17" class="font-sans" font-size="11" font-weight="600" fill="#c084fc">глаг · сущ</text>
+        <text x="10" y="17" class="font-sans" font-size="11" font-weight="600" fill="#c084fc">verb · noun</text>
       </g>
     </g>
 
-    <!-- DEFINITIONS (RUSSIAN & ENGLISH) -->
+    <!-- DEFINITIONS -->
     <g transform="translate(20, 116)">
-      <!-- Russian translation (BKRS) -->
+      <!-- Primary Definition -->
       <g>
         <circle cx="6" cy="7" r="3" fill="#38bdf8" />
-        <text x="18" y="12" class="font-sans" font-size="13.5" font-weight="600" fill="#ffffff">учиться; изучать; обучение, учёба</text>
+        <text x="18" y="12" class="font-sans" font-size="13.5" font-weight="600" fill="#ffffff">to learn; to study; study, studies, learning</text>
       </g>
-      <!-- English translation (CC-CEDICT) -->
+      <!-- Secondary Definition -->
       <g transform="translate(0, 22)">
         <circle cx="6" cy="7" r="3" fill="#64748b" />
-        <text x="18" y="12" class="font-sans" font-size="12.5" fill="#cbd5e1">to learn; to study; study, studies</text>
+        <text x="18" y="12" class="font-sans" font-size="12.5" fill="#cbd5e1">to acquire knowledge or skill through study or experience</text>
       </g>
     </g>
 
@@ -161,26 +161,26 @@
 
     <!-- CHARACTER BREAKDOWN ROW -->
     <g transform="translate(20, 180)">
-      <text x="0" y="17" class="font-sans" font-size="11" font-weight="600" fill="#94a3b8">РАЗБИВКА СЛОВА:</text>
+      <text x="0" y="17" class="font-sans" font-size="11" font-weight="600" fill="#94a3b8">CHARACTER ANATOMY:</text>
 
       <!-- Chip 1: 学 (ACTIVE / EXPANDED) -->
-      <g transform="translate(108, 0)" filter="url(#glow-badge)">
-        <rect width="180" height="28" rx="7" fill="rgba(56, 189, 248, 0.22)" stroke="#38bdf8" stroke-width="1.2" />
+      <g transform="translate(138, 0)" filter="url(#glow-badge)">
+        <rect width="168" height="28" rx="7" fill="rgba(56, 189, 248, 0.22)" stroke="#38bdf8" stroke-width="1.2" />
         <text x="10" y="19" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">学</text>
         <text x="28" y="18" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xué</text>
-        <text x="56" y="18" class="font-sans" font-size="11" fill="#e2e8f0">учиться</text>
-        <rect x="136" y="5" width="34" height="18" rx="4" fill="rgba(56, 189, 248, 0.25)" />
-        <text x="142" y="17" class="font-kaiti" font-size="10" fill="#38bdf8">#39 子</text>
+        <text x="56" y="18" class="font-sans" font-size="11" fill="#e2e8f0">to study</text>
+        <rect x="124" y="5" width="36" height="18" rx="4" fill="rgba(56, 189, 248, 0.25)" />
+        <text x="130" y="17" class="font-kaiti" font-size="10" fill="#38bdf8">#39 子</text>
       </g>
 
       <!-- Chip 2: 习 -->
-      <g transform="translate(300, 0)">
-        <rect width="180" height="28" rx="7" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1" />
+      <g transform="translate(318, 0)">
+        <rect width="168" height="28" rx="7" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1" />
         <text x="10" y="19" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">习</text>
         <text x="28" y="18" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xí</text>
-        <text x="48" y="18" class="font-sans" font-size="11" fill="#94a3b8">упражняться</text>
-        <rect x="132" y="5" width="38" height="18" rx="4" fill="rgba(255, 255, 255, 0.1)" />
-        <text x="138" y="17" class="font-kaiti" font-size="10" fill="#94a3b8">#124 羽</text>
+        <text x="48" y="18" class="font-sans" font-size="11" fill="#94a3b8">to practice</text>
+        <rect x="120" y="5" width="40" height="18" rx="4" fill="rgba(255, 255, 255, 0.1)" />
+        <text x="126" y="17" class="font-kaiti" font-size="10" fill="#94a3b8">#124 羽</text>
       </g>
     </g>
 
@@ -192,13 +192,13 @@
       <g transform="translate(14, 14)">
         <text x="0" y="16" class="font-kaiti" font-size="20" font-weight="700" fill="#ffffff">学</text>
         <text x="24" y="16" class="font-sans" font-size="13" font-weight="600" fill="#38bdf8">[xué]</text>
-        <text x="68" y="16" class="font-sans" font-size="12.5" fill="#f1f5f9">учиться, изучать, наука</text>
+        <text x="68" y="16" class="font-sans" font-size="12.5" fill="#f1f5f9">to study, to learn, knowledge</text>
 
         <!-- Audio inside Drawer -->
         <g transform="translate(390, -4)">
           <rect width="64" height="24" rx="6" fill="rgba(255, 255, 255, 0.1)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
           <text x="8" y="16" class="font-sans" font-size="11" fill="#38bdf8">🔊</text>
-          <text x="24" y="16" class="font-sans" font-size="10.5" font-weight="600" fill="#ffffff">Звук</text>
+          <text x="24" y="16" class="font-sans" font-size="10.5" font-weight="600" fill="#ffffff">Audio</text>
         </g>
       </g>
 
@@ -208,21 +208,21 @@
       <g transform="translate(14, 62)">
         <!-- Line 1: Kangxi Radical -->
         <g>
-          <rect width="52" height="18" rx="4" fill="rgba(56, 189, 248, 0.18)" />
-          <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#38bdf8">КЛЮЧ</text>
-          <text x="60" y="13" class="font-sans" font-size="12" fill="#cbd5e1">#39 <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">«子»</tspan> [zǐ] — ребенок, сын, дитя (3 черты)</text>
+          <rect width="56" height="18" rx="4" fill="rgba(56, 189, 248, 0.18)" />
+          <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#38bdf8">RADICAL</text>
+          <text x="66" y="13" class="font-sans" font-size="12" fill="#cbd5e1">#39 <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">«子»</tspan> [zǐ] — child, son, seed (3 strokes)</text>
         </g>
 
         <!-- Line 2: Character Composition / Etymology -->
         <g transform="translate(0, 26)">
-          <rect width="60" height="18" rx="4" fill="rgba(192, 132, 252, 0.18)" />
-          <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#c084fc">СОСТАВ</text>
-          <text x="68" y="13" class="font-sans" font-size="12" fill="#cbd5e1"><tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">冖</tspan> (покров/школа) + <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">子</tspan> (дитя) — познание под кровом учителя</text>
+          <rect width="64" height="18" rx="4" fill="rgba(192, 132, 252, 0.18)" />
+          <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#c084fc">ANATOMY</text>
+          <text x="74" y="13" class="font-sans" font-size="12" fill="#cbd5e1"><tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">冖</tspan> (roof/cover) + <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">子</tspan> (child) — acquiring knowledge under shelter</text>
         </g>
 
-        <!-- Line 3: Stroke count & info -->
+        <!-- Line 3: Info Tip -->
         <g transform="translate(0, 52)">
-          <text x="0" y="12" class="font-sans" font-size="11" fill="#64748b">💡 Нажмите на любой иероглиф слова, чтобы мгновенно изучить его ключ и строение.</text>
+          <text x="0" y="12" class="font-sans" font-size="11" fill="#64748b">💡 Click any character chip to inspect its Kangxi radical and etymological anatomy.</text>
         </g>
       </g>
     </g>
@@ -236,7 +236,7 @@
       <circle cx="34" cy="41" r="18" fill="rgba(56, 189, 248, 0.15)" />
       <text x="24" y="47" class="font-sans" font-size="16">💎</text>
       <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">Apple Liquid Glass UI</text>
-      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Плавный блюр, Drag &amp; Drop, Pin (📌) на экране и моментальный ресайз.</text>
+      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Fluid blur, Drag &amp; Drop header, Pin (📌) on screen, and instant resizing.</text>
     </g>
 
     <!-- Feature 2: Character Anatomy & Radicals -->
@@ -244,8 +244,8 @@
       <rect width="320" height="82" rx="14" fill="#131b2e" stroke="rgba(192, 132, 252, 0.25)" stroke-width="1.2" />
       <circle cx="34" cy="41" r="18" fill="rgba(192, 132, 252, 0.15)" />
       <text x="24" y="47" class="font-sans" font-size="16">🔬</text>
-      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">214 Ключей Канси и Состав</text>
-      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Шторка этимологии, пиктографический разбор и ключи по клику на знак.</text>
+      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">214 Kangxi Radicals &amp; Anatomy</text>
+      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Interactive etymology drawer with ideogram component decompositions.</text>
     </g>
 
     <!-- Feature 3: Compact Action Palette -->
@@ -253,17 +253,17 @@
       <rect width="320" height="82" rx="14" fill="#131b2e" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1.2" />
       <circle cx="34" cy="41" r="18" fill="rgba(16, 185, 129, 0.15)" />
       <text x="24" y="47" class="font-sans" font-size="16">⚡</text>
-      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">34px Компакт-Бургер Меню</text>
-      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Копирование, ⭐ словарик, 📝 заметки, анимация черт без вылезания за край.</text>
+      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">34px Compact Action Palette</text>
+      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Copy, ⭐ star to vocab, 📝 atomic notes, and stroke order without overflow.</text>
     </g>
 
-    <!-- Feature 4: Russian BKRS & CEDICT -->
+    <!-- Feature 4: CC-CEDICT & Russian BKRS -->
     <g transform="translate(0, 294)" filter="url(#card-shadow)">
       <rect width="320" height="82" rx="14" fill="#131b2e" stroke="rgba(251, 191, 36, 0.25)" stroke-width="1.2" />
       <circle cx="34" cy="41" r="18" fill="rgba(251, 191, 36, 0.15)" />
-      <text x="24" y="47" class="font-sans" font-size="16">🇷🇺</text>
-      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">БКРС + CC-CEDICT (118k)</text>
-      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Русские и английские переводы, части речи и HSK 1–6 уровни.</text>
+      <text x="24" y="47" class="font-sans" font-size="16">📚</text>
+      <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">CEDICT &amp; Russian BKRS (118k)</text>
+      <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">English &amp; Russian translations, multi-POS tags, and HSK 1–6 exam levels.</text>
     </g>
   </g>
 </svg>

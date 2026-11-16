@@ -32,17 +32,6 @@
       <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
     </linearGradient>
 
-    <!-- Accent Gradients -->
-    <linearGradient id="amber-orange" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#fbbf24" />
-      <stop offset="100%" stop-color="#f97316" />
-    </linearGradient>
-
-    <linearGradient id="cyan-blue2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#818cf8" />
-    </linearGradient>
-
     <!-- Shadows -->
     <filter id="study-shadow" x="-15%" y="-15%" width="130%" height="135%">
       <feDropShadow dx="0" dy="20" stdDeviation="26" flood-color="#000000" flood-opacity="0.75" />
@@ -72,8 +61,8 @@
   <g transform="translate(60, 42)">
     <rect width="186" height="26" rx="6" fill="rgba(251, 191, 36, 0.12)" stroke="rgba(251, 191, 36, 0.3)" stroke-width="1" />
     <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#fbbf24" letter-spacing="1">STUDY &amp; SRS ECOSYSTEM</text>
-    <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Vocabulary Book, Spaced Repetition &amp; Anki</text>
-    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Permanent vault Markdown storage, SM-2 flashcard intervals, instant Spotlight dictionary and mobile export.</text>
+    <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Vocabulary Notebook, Spaced Repetition &amp; Anki</text>
+    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Permanent vault Markdown storage, SM-2 flashcard intervals, instant Spotlight dictionary, and mobile export.</text>
   </g>
 
   <!-- ================= LEFT: SIDEBAR VOCABULARY NOTEBOOK ================= -->
@@ -84,13 +73,13 @@
 
     <!-- Sidebar Header -->
     <g transform="translate(18, 16)">
-      <text x="0" y="18" class="font-sans" font-size="16" font-weight="700" fill="#ffffff">🏮 Личный словарик</text>
-      <text x="175" y="18" class="font-sans" font-size="12" fill="#94a3b8">(Chinese Vocabulary.md)</text>
+      <text x="0" y="18" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">🏮 Personal Vocabulary Book</text>
+      <text x="214" y="18" class="font-sans" font-size="11.5" fill="#94a3b8">(Chinese Vocabulary.md)</text>
       
-      <!-- Stats pills -->
-      <g transform="translate(330, 0)">
-        <rect width="112" height="26" rx="7" fill="rgba(251, 191, 36, 0.18)" stroke="#fbbf24" stroke-width="1" />
-        <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#fbbf24">⭐ 142 слова</text>
+      <!-- Stats pill -->
+      <g transform="translate(350, 0)">
+        <rect width="98" height="26" rx="7" fill="rgba(251, 191, 36, 0.18)" stroke="#fbbf24" stroke-width="1" />
+        <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#fbbf24">⭐ 142 words</text>
       </g>
     </g>
 
@@ -98,12 +87,12 @@
     <g transform="translate(18, 56)">
       <!-- Search Input Box -->
       <rect width="250" height="32" rx="8" fill="rgba(0, 0, 0, 0.35)" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
-      <text x="12" y="21" class="font-sans" font-size="12" fill="#64748b">🔍 Поиск в словарике...</text>
+      <text x="12" y="21" class="font-sans" font-size="12" fill="#64748b">🔍 Search saved vocabulary...</text>
 
       <!-- SRS Due Filter Button (ACTIVE) -->
       <g transform="translate(260, 0)">
         <rect width="182" height="32" rx="8" fill="rgba(16, 185, 129, 0.2)" stroke="#10b981" stroke-width="1.2" />
-        <text x="12" y="20" class="font-sans" font-size="11.5" font-weight="700" fill="#34d399">🔁 К повторению (18)</text>
+        <text x="18" y="20" class="font-sans" font-size="11.5" font-weight="700" fill="#34d399">🔁 Due Reviews (18)</text>
       </g>
     </g>
 
@@ -137,39 +126,39 @@
 
       <!-- Translation & Context Sentence -->
       <g transform="translate(16, 52)">
-        <text x="0" y="14" class="font-sans" font-size="12.5" font-weight="600" fill="#f1f5f9">друг, приятель; дружеский</text>
+        <text x="0" y="14" class="font-sans" font-size="12.5" font-weight="600" fill="#f1f5f9">friend, companion; friendly</text>
         <g transform="translate(0, 22)">
           <rect width="412" height="24" rx="6" fill="rgba(0, 0, 0, 0.28)" />
-          <text x="8" y="16" class="font-sans" font-size="11" fill="#94a3b8">Контекст: <tspan fill="#e2e8f0" font-family="'KaiTi', serif">他是我的好朋友。</tspan> (Он мой хороший друг.)</text>
+          <text x="8" y="16" class="font-sans" font-size="11" fill="#94a3b8">Context: <tspan fill="#e2e8f0" font-family="'KaiTi', serif">他是我的好朋友。</tspan> (He is my good friend.)</text>
         </g>
       </g>
 
       <!-- SRS INTERVAL RATINGS (SM-2 Buttons) -->
       <g transform="translate(16, 110)">
-        <text x="0" y="17" class="font-sans" font-size="10" font-weight="700" fill="#94a3b8">ОЦЕНКА SRS:</text>
+        <text x="0" y="17" class="font-sans" font-size="10" font-weight="700" fill="#94a3b8">SRS RATING:</text>
 
         <!-- Again -->
         <g transform="translate(85, 0)">
           <rect width="74" height="26" rx="6" fill="rgba(239, 68, 68, 0.18)" stroke="#ef4444" stroke-width="1" />
-          <text x="8" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#fca5a5">Снова 1д</text>
+          <text x="9" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#fca5a5">Again 1d</text>
         </g>
 
         <!-- Hard -->
         <g transform="translate(167, 0)">
           <rect width="78" height="26" rx="6" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="1" />
-          <text x="8" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#fcd34d">Трудно 3д</text>
+          <text x="12" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#fcd34d">Hard 3d</text>
         </g>
 
         <!-- Good -->
         <g transform="translate(253, 0)">
           <rect width="86" height="26" rx="6" fill="rgba(16, 185, 129, 0.22)" stroke="#10b981" stroke-width="1.2" />
-          <text x="8" y="17" class="font-sans" font-size="10.5" font-weight="700" fill="#34d399">Хорошо 7д</text>
+          <text x="12" y="17" class="font-sans" font-size="10.5" font-weight="700" fill="#34d399">Good 7d</text>
         </g>
 
         <!-- Easy -->
         <g transform="translate(347, 0)">
           <rect width="80" height="26" rx="6" fill="rgba(56, 189, 248, 0.18)" stroke="#38bdf8" stroke-width="1" />
-          <text x="8" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#7dd3fc">Легко 14д</text>
+          <text x="11" y="17" class="font-sans" font-size="10.5" font-weight="600" fill="#7dd3fc">Easy 14d</text>
         </g>
       </g>
     </g>
@@ -184,7 +173,7 @@
           <rect width="80" height="20" rx="5" fill="rgba(16, 185, 129, 0.15)" />
           <text x="6" y="14" class="font-mono" font-size="10.5" font-weight="700" fill="#34d399">din6 nou5</text>
         </g>
-        <text x="0" y="44" class="font-sans" font-size="12" fill="#cbd5e1">компьютер, ЭВМ · [HSK 1] · 214 ключей: 电 (молния) + 脑 (мозг)</text>
+        <text x="0" y="44" class="font-sans" font-size="12" fill="#cbd5e1">computer, electronic brain · [HSK 1] · 214 Radicals: 电 (lightning) + 脑 (brain)</text>
       </g>
     </g>
   </g>
@@ -211,14 +200,14 @@
         <text x="12" y="22" class="font-kaiti" font-size="18" font-weight="700" fill="#ffffff">你好</text>
         <text x="60" y="21" class="font-sans" font-size="13" font-weight="700" fill="#38bdf8">nǐ hǎo</text>
         <text x="120" y="21" class="font-mono" font-size="12" fill="#34d399">nei5 hou2</text>
-        <text x="12" y="42" class="font-sans" font-size="11" fill="#cbd5e1">здравствуй(те); привет · hello, hi</text>
+        <text x="12" y="42" class="font-sans" font-size="11" fill="#cbd5e1">hello; hi; how are you · standard friendly greeting</text>
         <text x="305" y="32" class="font-sans" font-size="11" fill="#38bdf8">↵ Open</text>
       </g>
 
       <!-- Result 2 -->
       <g transform="translate(16, 122)">
         <text x="12" y="20" class="font-kaiti" font-size="16" font-weight="700" fill="#94a3b8">您好</text>
-        <text x="60" y="19" class="font-sans" font-size="12" fill="#64748b">nínhǎo · Здравствуйте (вежл.)</text>
+        <text x="60" y="19" class="font-sans" font-size="12" fill="#64748b">nínhǎo · hello (polite, respectful greeting)</text>
       </g>
     </g>
 
@@ -229,8 +218,8 @@
         <rect width="375" height="82" rx="14" fill="#131b2e" stroke="rgba(168, 85, 247, 0.25)" stroke-width="1.2" />
         <circle cx="34" cy="41" r="18" fill="rgba(168, 85, 247, 0.15)" />
         <text x="24" y="47" class="font-sans" font-size="16">🗃️</text>
-        <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">Синхронизация с Anki в 1 клик</text>
-        <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">AnkiConnect API: мгновенное добавление при ⭐, колоды и экспорт в TSV.</text>
+        <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">1-Click Anki Sync (AnkiConnect)</text>
+        <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">AnkiConnect API: instant card creation on ⭐, deck routing, and TSV export.</text>
       </g>
 
       <!-- Integration 2: Pleco & Mobile -->
@@ -238,8 +227,8 @@
         <rect width="375" height="82" rx="14" fill="#131b2e" stroke="rgba(249, 115, 22, 0.25)" stroke-width="1.2" />
         <circle cx="34" cy="41" r="18" fill="rgba(249, 115, 22, 0.15)" />
         <text x="24" y="47" class="font-sans" font-size="16">📱</text>
-        <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">Экспорт флешкарт в Pleco</text>
-        <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Готовые файлы .txt для импорта в Pleco Flashcards на iOS и Android.</text>
+        <text x="64" y="34" class="font-sans" font-size="14" font-weight="700" fill="#ffffff">Pleco Mobile Flashcards Export</text>
+        <text x="64" y="54" class="font-sans" font-size="11.5" fill="#94a3b8">Ready-to-import .txt files formatted for Pleco Flashcards on iOS and Android.</text>
       </g>
     </g>
   </g>

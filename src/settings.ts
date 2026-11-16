@@ -199,7 +199,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
+  override display(): void {
+    this.renderSettings();
+  }
+
+  private renderSettings(): void {
     const { containerEl } = this;
     containerEl.empty();
 
@@ -264,7 +268,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.triggerMode = value as TriggerMode;
             await this.plugin.saveSettings();
-            this.display(); // Refresh to show/hide relevant modifier options
+            this.renderSettings(); // Refresh to show/hide relevant modifier options
           })
       );
 
@@ -680,7 +684,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
               this.plugin.settings.chineseFontScope,
               this.plugin.settings.customChineseFont
             );
-            this.display();
+            this.renderSettings();
           })
       );
 
@@ -965,7 +969,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           btn.setButtonText("Загрузка...");
           await this.plugin.dictionary.downloadDictionary();
           btn.setDisabled(false);
-          this.display();
+          this.renderSettings();
         });
       });
 
@@ -1037,7 +1041,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setButtonText("Открыть панель")
           .setCta()
           .onClick(() => {
-            this.plugin.activateVocabularyView();
+            void this.plugin.activateVocabularyView();
           })
       );
 
@@ -1057,7 +1061,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.anki.enabled = value;
             await this.plugin.saveSettings();
-            this.display();
+            this.renderSettings();
           })
       );
 
@@ -1228,14 +1232,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       .addButton((btn) =>
         btn
           .setButtonText("Сбросить всё")
-          .setDestructive()
+          .setClass("mod-warning")
           .onClick(async () => {
             this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as ChineseDictSettings;
             await this.plugin.saveSettings();
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);
             }
-            this.display();
+            this.renderSettings();
           })
       );
 

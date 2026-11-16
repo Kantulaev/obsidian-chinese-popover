@@ -145,7 +145,7 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
   }
 
   onOpen(): void {
-    super.onOpen();
+    void super.onOpen();
     const footer = this.modalEl.createDiv({ cls: "ch-search-footer" });
     const legend = footer.createDiv({ cls: "ch-search-legend" });
 

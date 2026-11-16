@@ -1535,7 +1535,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     if (leaf) {
-      await workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf, { focus: true });
       if (leaf.view instanceof ChineseVocabularyView) {
         leaf.view.render();
       }

@@ -55,8 +55,9 @@ async function copyToDist() {
   for (const file of filesToCopy) {
     try {
       await Deno.copyFile(file, `${distDir}/${file}`);
-    } catch (e: any) {
-      console.warn(`Could not copy ${file}:`, e?.message ?? e);
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e.message : String(e);
+      console.warn(`Could not copy ${file}:`, err);
     }
   }
 

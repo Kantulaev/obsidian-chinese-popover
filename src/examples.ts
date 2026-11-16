@@ -232,6 +232,16 @@ export async function fetchDynamicExamples(
     return list;
   }
 
+interface TatoebaItem {
+  text?: string;
+  transcriptions?: Array<{ script?: string; text?: string }>;
+  translations?: Array<Array<{ lang?: string; text?: string }>>;
+}
+
+interface TatoebaResponse {
+  results?: TatoebaItem[];
+}
+
   const url = `https://tatoeba.org/en/api_v0/search?from=cmn&to=${targetLang}&query=${encodeURIComponent(cleanWord)}`;
 
   try {
@@ -243,12 +253,13 @@ export async function fetchDynamicExamples(
       },
     });
 
-    if (res.status !== 200 || !res.json || !Array.isArray(res.json.results)) {
+    const json = res.json as TatoebaResponse | null;
+    if (res.status !== 200 || !json || !Array.isArray(json.results)) {
       return [];
     }
 
     const sentences: ExampleSentence[] = [];
-    const results = res.json.results;
+    const results = json.results;
 
     for (const item of results) {
       if (!item.text) continue;
@@ -258,7 +269,7 @@ export async function fetchDynamicExamples(
       let py = "";
       if (Array.isArray(item.transcriptions)) {
         const latn = item.transcriptions.find(
-          (t: { script?: string; text?: string }) => t.script === "Latn"
+          (t) => t.script === "Latn"
         );
         if (latn && latn.text) {
           py = latn.text.trim();
@@ -271,7 +282,7 @@ export async function fetchDynamicExamples(
         for (const subGroup of item.translations) {
           if (Array.isArray(subGroup)) {
             const matched = subGroup.find(
-              (t: { lang?: string; text?: string }) => t.lang === targetLang
+              (t) => t.lang === targetLang
             );
             if (matched && matched.text) {
               trans = matched.text.trim();

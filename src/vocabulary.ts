@@ -27,6 +27,11 @@ export function getLocalDateString(date: Date = new Date()): string {
 
 export type VocabularySort = "date_desc" | "date_asc" | "alpha";
 
+interface VocabSavedData {
+  vocabulary?: VocabularyItem[];
+  [key: string]: unknown;
+}
+
 export class VocabularyManager {
   private plugin: ChineseHoverDictPlugin;
   private items: VocabularyItem[] = [];
@@ -40,7 +45,7 @@ export class VocabularyManager {
   async load(): Promise<void> {
     try {
       // 1. Load from plugin stored data
-      const data = await this.plugin.loadData();
+      const data = (await this.plugin.loadData()) as VocabSavedData | null;
       if (data && Array.isArray(data.vocabulary)) {
         this.items = data.vocabulary;
       }
@@ -214,11 +219,11 @@ export class VocabularyManager {
 
   private async persist(): Promise<void> {
     this.persistPromise = this.persistPromise.then(async () => {
-      const currentData = (await this.plugin.loadData()) || {};
+      const currentData = ((await this.plugin.loadData()) as VocabSavedData | null) || {};
       currentData.vocabulary = this.items;
       await this.plugin.saveData(currentData);
     });
-    return this.persistPromise;
+    await this.persistPromise;
   }
 
   /**

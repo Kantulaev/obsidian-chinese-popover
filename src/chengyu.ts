@@ -215,13 +215,14 @@ export async function fetchDynamicChengyuStory(word: string): Promise<ChengyuSto
       headers: { "Accept": "application/json" },
     });
 
-    if (res.status === 200 && res.json && res.json.extract) {
+    const json = res.json as { description?: string; extract?: string } | null;
+    if (res.status === 200 && json && json.extract) {
       const story: ChengyuStory = {
         idiom: clean,
-        literal: res.json.description || clean,
-        figurative: res.json.extract.slice(0, 120),
-        storyRu: res.json.extract,
-        storyEn: res.json.extract,
+        literal: json.description || clean,
+        figurative: json.extract.slice(0, 120),
+        storyRu: json.extract,
+        storyEn: json.extract,
         dynasty: "Классическая китайская идиома",
       };
       DYNAMIC_CHENGYU_CACHE.set(clean, story);

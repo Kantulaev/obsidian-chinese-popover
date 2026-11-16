@@ -28,7 +28,8 @@ export async function checkAnkiConnect(url: string): Promise<boolean> {
       contentType: "application/json",
       body: JSON.stringify({ action: "version", version: 6 }),
     });
-    return res.status === 200 && res.json?.result >= 6;
+    const data = res.json as { result?: number; error?: string } | null;
+    return res.status === 200 && (data?.result ?? 0) >= 6;
   } catch {
     return false;
   }
@@ -83,8 +84,9 @@ export async function addNoteToAnki(
       contentType: "application/json",
       body: JSON.stringify(payload),
     });
-    if (res.json?.error) {
-      new Notice(`AnkiConnect: ${res.json.error}`, 4000);
+    const resData = res.json as { error?: string } | null;
+    if (resData?.error) {
+      new Notice(`AnkiConnect: ${resData.error}`, 4000);
       return false;
     }
     return true;

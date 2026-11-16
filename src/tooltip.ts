@@ -172,7 +172,7 @@ export class DictTooltip {
 
     // Record in Recent Lookups History
     if (this.plugin?.history) {
-      this.plugin.history.add(match);
+      void this.plugin.history.add(match);
       this.plugin.refreshVocabularyViews();
     }
 
@@ -559,27 +559,29 @@ export class DictTooltip {
         text: isStarred ? "⭐" : "☆",
       });
 
-      starItem.addEventListener("click", async (e) => {
+      starItem.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (this.plugin?.vocabulary) {
-          starIcon.addClass("ch-star-bouncing");
-          window.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
-          const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
-          starIcon.setText(nowStarred ? "⭐" : "☆");
-          starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
-          starItem.setAttribute("aria-label", nowStarred ? "Удалить из словарика" : "Сохранить в словарик");
-          this.plugin.refreshVocabularyViews();
+        void (async () => {
+          if (this.plugin?.vocabulary) {
+            starIcon.addClass("ch-star-bouncing");
+            window.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
+            const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
+            starIcon.setText(nowStarred ? "⭐" : "☆");
+            starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
+            starItem.setAttribute("aria-label", nowStarred ? "Удалить из словарика" : "Сохранить в словарик");
+            this.plugin.refreshVocabularyViews();
 
-          if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
-            const item = this.plugin.vocabulary.getItem(match.word);
-            if (item) {
-              const ok = await addNoteToAnki(this.plugin.settings.anki, item);
-              if (ok) {
-                new Notice(`Слово "${match.word}" добавлено в Anki!`);
+            if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
+              const item = this.plugin.vocabulary.getItem(match.word);
+              if (item) {
+                const ok = await addNoteToAnki(this.plugin.settings.anki, item);
+                if (ok) {
+                  new Notice(`Слово "${match.word}" добавлено в Anki!`);
+                }
               }
             }
           }
-        }
+        })();
       });
 
       // --- Item: Pin / Sticky Mode ---
@@ -608,14 +610,16 @@ export class DictTooltip {
         },
       });
       noteItem.createSpan({ cls: "ch-dict-burger-icon", text: "📝" });
-      noteItem.addEventListener("click", async (e) => {
+      noteItem.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (this.plugin) {
-          await createWordNote(this.plugin.app, match, contextSentence, {
-            folderPath: settings.wordNotesFolder || "Chinese/Words",
-            openAfterCreation: true,
-          });
-        }
+        void (async () => {
+          if (this.plugin) {
+            await createWordNote(this.plugin.app, match, contextSentence, {
+              folderPath: settings.wordNotesFolder || "Chinese/Words",
+              openAfterCreation: true,
+            });
+          }
+        })();
       });
 
       // --- Item: Stroke Order Animation ---
@@ -1019,7 +1023,7 @@ export class DictTooltip {
       text
     )}`;
 
-    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child") as HTMLElement | null;
+    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child");
     if (audioBtn) {
       audioBtn.addClass("ch-audio-playing");
     }
@@ -1061,7 +1065,7 @@ export class DictTooltip {
     utterance.lang = langCode;
     utterance.rate = speed;
 
-    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child") as HTMLElement | null;
+    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child");
     if (audioBtn) {
       audioBtn.addClass("ch-audio-playing");
     }
@@ -1099,9 +1103,9 @@ export class DictTooltip {
     // 1. Look for sizers (CodeMirror 6 .cm-sizer or Reading view .markdown-preview-sizer)
     const sizer = leaf.querySelector(
       ".cm-sizer, .markdown-preview-sizer"
-    ) as HTMLElement | null;
+    );
 
-    if (sizer) {
+    if (sizer instanceof HTMLElement) {
       const rect = sizer.getBoundingClientRect();
       if (rect.width > 100) {
         const style = window.getComputedStyle(sizer);
@@ -1119,7 +1123,7 @@ export class DictTooltip {
     // 2. Look for active line or paragraph
     const textEl = leaf.querySelector(
       ".cm-line, .markdown-preview-section p, .markdown-rendered p"
-    ) as HTMLElement | null;
+    );
 
     if (textEl) {
       const rect = textEl.getBoundingClientRect();

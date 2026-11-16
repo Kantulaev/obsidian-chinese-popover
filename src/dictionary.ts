@@ -601,7 +601,7 @@ export class DictionaryManager {
 
       if (await adapter.exists(dictPath)) {
         const rawContent = await adapter.read(dictPath);
-        this.data = Object.assign({}, JSON.parse(rawContent), CANTONESE_CORE_DICT);
+        this.data = Object.assign({}, JSON.parse(rawContent) as DictionaryData, CANTONESE_CORE_DICT);
         this.isLoaded = true;
         return;
       }
@@ -643,7 +643,7 @@ export class DictionaryManager {
       }
       const text = res.text;
       await adapter.write(dictPath, text);
-      this.data = Object.assign({}, JSON.parse(text), CANTONESE_CORE_DICT);
+      this.data = Object.assign({}, JSON.parse(text) as DictionaryData, CANTONESE_CORE_DICT);
       this.isLoaded = true;
       const count = Object.keys(this.data).length;
       new Notice(`Chinese Popover: Словарь успешно загружен (${count} слов)!`, 5000);

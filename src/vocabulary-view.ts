@@ -43,8 +43,9 @@ export class ChineseVocabularyView extends ItemView {
     return "book-marked";
   }
 
-  override async onOpen(): Promise<void> {
+  override onOpen(): Promise<void> {
     this.render();
+    return Promise.resolve();
   }
 
   override async onClose(): Promise<void> {
@@ -121,18 +122,20 @@ export class ChineseVocabularyView extends ItemView {
         menu.addItem((i) =>
           i.setTitle("🗃️ Синхронизировать с AnkiConnect")
             .setIcon("sync")
-            .onClick(async () => {
-              const items = this.plugin.vocabulary.getItems();
-              if (items.length === 0) {
-                new Notice("Словарик пуст!");
-                return;
-              }
-              let addedCount = 0;
-              for (const item of items) {
-                const ok = await addNoteToAnki(this.plugin.settings.anki, item);
-                if (ok) addedCount++;
-              }
-              new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
+            .onClick(() => {
+              void (async () => {
+                const items = this.plugin.vocabulary.getItems();
+                if (items.length === 0) {
+                  new Notice("Словарик пуст!");
+                  return;
+                }
+                let addedCount = 0;
+                for (const item of items) {
+                  const ok = await addNoteToAnki(this.plugin.settings.anki, item);
+                  if (ok) addedCount++;
+                }
+                new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
+              })();
             })
         );
       }
@@ -180,17 +183,19 @@ export class ChineseVocabularyView extends ItemView {
         i.setTitle("📄 Открыть файл словарика (.md)")
           .setIcon("file-text")
           .onClick(() => {
-            this.plugin.vocabulary.openMarkdownFile();
+            void this.plugin.vocabulary.openMarkdownFile();
           })
       );
 
       menu.addItem((i) =>
         i.setTitle("🔄 Синхронизировать с файлом")
           .setIcon("refresh-cw")
-          .onClick(async () => {
-            const count = await this.plugin.vocabulary.importFromMarkdown();
-            new Notice(`Синхронизировано: ${count} слов`, 2000);
-            this.render();
+          .onClick(() => {
+            void (async () => {
+              const count = await this.plugin.vocabulary.importFromMarkdown();
+              new Notice(`Синхронизировано: ${count} слов`, 2000);
+              this.render();
+            })();
           })
       );
 
@@ -279,30 +284,34 @@ export class ChineseVocabularyView extends ItemView {
       cls: `ch-vocab-seg-btn ${!this.practiceMode ? "ch-vocab-seg-active" : ""}`,
       text: "📋 Список",
     });
-    listModeBtn.addEventListener("click", async () => {
-      if (!this.practiceMode) return;
-      this.practiceMode = false;
-      this.plugin.settings.practiceMode = false;
-      await this.plugin.saveSettings();
-      listModeBtn.addClass("ch-vocab-seg-active");
-      cardsModeBtn.removeClass("ch-vocab-seg-active");
-      this.revealedCardIds.clear();
-      this.renderList(listContainer);
+    listModeBtn.addEventListener("click", () => {
+      void (async () => {
+        if (!this.practiceMode) return;
+        this.practiceMode = false;
+        this.plugin.settings.practiceMode = false;
+        await this.plugin.saveSettings();
+        listModeBtn.addClass("ch-vocab-seg-active");
+        cardsModeBtn.removeClass("ch-vocab-seg-active");
+        this.revealedCardIds.clear();
+        this.renderList(listContainer);
+      })();
     });
 
     const cardsModeBtn = segmentedGroup.createEl("button", {
       cls: `ch-vocab-seg-btn ${this.practiceMode ? "ch-vocab-seg-active" : ""}`,
       text: "🃏 Карточки",
     });
-    cardsModeBtn.addEventListener("click", async () => {
-      if (this.practiceMode) return;
-      this.practiceMode = true;
-      this.plugin.settings.practiceMode = true;
-      await this.plugin.saveSettings();
-      cardsModeBtn.addClass("ch-vocab-seg-active");
-      listModeBtn.removeClass("ch-vocab-seg-active");
-      this.revealedCardIds.clear();
-      this.renderList(listContainer);
+    cardsModeBtn.addEventListener("click", () => {
+      void (async () => {
+        if (this.practiceMode) return;
+        this.practiceMode = true;
+        this.plugin.settings.practiceMode = true;
+        await this.plugin.saveSettings();
+        cardsModeBtn.addClass("ch-vocab-seg-active");
+        listModeBtn.removeClass("ch-vocab-seg-active");
+        this.revealedCardIds.clear();
+        this.renderList(listContainer);
+      })();
     });
 
     // Sort Cycle Button
@@ -316,18 +325,20 @@ export class ChineseVocabularyView extends ItemView {
       text: sortLabels[this.sortBy],
       attr: { title: "Сортировка (нажмите для переключения)" },
     });
-    sortBtn.addEventListener("click", async () => {
-      if (this.sortBy === "date_desc") {
-        this.sortBy = "date_asc";
-      } else if (this.sortBy === "date_asc") {
-        this.sortBy = "alpha";
-      } else {
-        this.sortBy = "date_desc";
-      }
-      this.plugin.settings.vocabularySort = this.sortBy;
-      await this.plugin.saveSettings();
-      sortBtn.setText(sortLabels[this.sortBy]);
-      this.renderList(listContainer);
+    sortBtn.addEventListener("click", () => {
+      void (async () => {
+        if (this.sortBy === "date_desc") {
+          this.sortBy = "date_asc";
+        } else if (this.sortBy === "date_asc") {
+          this.sortBy = "alpha";
+        } else {
+          this.sortBy = "date_desc";
+        }
+        this.plugin.settings.vocabularySort = this.sortBy;
+        await this.plugin.saveSettings();
+        sortBtn.setText(sortLabels[this.sortBy]);
+        this.renderList(listContainer);
+      })();
     });
 
     // Due Today SRS filter button
@@ -460,31 +471,33 @@ export class ChineseVocabularyView extends ItemView {
       text: "📝",
       attr: { title: "Создать атомную заметку слова (Zettelkasten Note)" },
     });
-    noteBtn.addEventListener("click", async (e) => {
+    noteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const match = this.plugin.dictionary.getExact(item.word);
-      if (match) {
-        await createWordNote(this.plugin.app, match, item.contextSentence, {
-          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
-          openAfterCreation: true,
-        });
-      } else {
-        const dummyMatch = {
-          word: item.word,
-          entries: [{
-            simplified: item.word,
-            traditional: item.traditional || item.word,
-            pinyin: item.pinyin,
-            jyutping: item.jyutping,
-            definitions: item.definitions,
-          }],
-          length: Array.from(item.word).length,
-        };
-        await createWordNote(this.plugin.app, dummyMatch, item.contextSentence, {
-          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
-          openAfterCreation: true,
-        });
-      }
+      void (async () => {
+        const match = this.plugin.dictionary.getExact(item.word);
+        if (match) {
+          await createWordNote(this.plugin.app, match, item.contextSentence, {
+            folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+            openAfterCreation: true,
+          });
+        } else {
+          const dummyMatch = {
+            word: item.word,
+            entries: [{
+              simplified: item.word,
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            }],
+            length: Array.from(item.word).length,
+          };
+          await createWordNote(this.plugin.app, dummyMatch, item.contextSentence, {
+            folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+            openAfterCreation: true,
+          });
+        }
+      })();
     });
 
     // Stroke Order Button
@@ -541,10 +554,12 @@ export class ChineseVocabularyView extends ItemView {
       text: "✕",
       attr: { title: "Удалить из словарика" },
     });
-    deleteBtn.addEventListener("click", async (e) => {
+    deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      await this.plugin.vocabulary.removeWord(item.word);
-      this.render();
+      void (async () => {
+        await this.plugin.vocabulary.removeWord(item.word);
+        this.render();
+      })();
     });
 
     // 2. Phonetics Row
@@ -655,46 +670,54 @@ export class ChineseVocabularyView extends ItemView {
       cls: "ch-vocab-srs-btn srs-again",
       text: "🔴 Снова (1д)",
     });
-    btnAgain.addEventListener("click", async (e) => {
+    btnAgain.addEventListener("click", (e) => {
       e.stopPropagation();
-      await this.plugin.vocabulary.updateSrsRating(item.word, "again");
-      new Notice(`Запланировано на завтра (1 день): ${item.word}`);
-      this.renderList(listContainer);
+      void (async () => {
+        await this.plugin.vocabulary.updateSrsRating(item.word, "again");
+        new Notice(`Запланировано на завтра (1 день): ${item.word}`);
+        this.renderList(listContainer);
+      })();
     });
 
     const btnHard = srsBtns.createEl("button", {
       cls: "ch-vocab-srs-btn srs-hard",
       text: "🟡 Трудно",
     });
-    btnHard.addEventListener("click", async (e) => {
+    btnHard.addEventListener("click", (e) => {
       e.stopPropagation();
-      await this.plugin.vocabulary.updateSrsRating(item.word, "hard");
-      new Notice(`Интервал обновлен (Трудно): ${item.word}`);
-      this.renderList(listContainer);
+      void (async () => {
+        await this.plugin.vocabulary.updateSrsRating(item.word, "hard");
+        new Notice(`Интервал обновлен (Трудно): ${item.word}`);
+        this.renderList(listContainer);
+      })();
     });
 
     const btnGood = srsBtns.createEl("button", {
       cls: "ch-vocab-srs-btn srs-good",
       text: "🟢 Хорошо",
     });
-    btnGood.addEventListener("click", async (e) => {
+    btnGood.addEventListener("click", (e) => {
       e.stopPropagation();
-      await this.plugin.vocabulary.updateSrsRating(item.word, "good");
-      const updated = this.plugin.vocabulary.getItem(item.word);
-      new Notice(`Отлично! Следующее повторение: ${updated?.nextReviewDate || ""}`);
-      this.renderList(listContainer);
+      void (async () => {
+        await this.plugin.vocabulary.updateSrsRating(item.word, "good");
+        const updated = this.plugin.vocabulary.getItem(item.word);
+        new Notice(`Отлично! Следующее повторение: ${updated?.nextReviewDate || ""}`);
+        this.renderList(listContainer);
+      })();
     });
 
     const btnEasy = srsBtns.createEl("button", {
       cls: "ch-vocab-srs-btn srs-easy",
       text: "🔵 Легко",
     });
-    btnEasy.addEventListener("click", async (e) => {
+    btnEasy.addEventListener("click", (e) => {
       e.stopPropagation();
-      await this.plugin.vocabulary.updateSrsRating(item.word, "easy");
-      const updated = this.plugin.vocabulary.getItem(item.word);
-      new Notice(`Запомнено! Следующее повторение: ${updated?.nextReviewDate || ""}`);
-      this.renderList(listContainer);
+      void (async () => {
+        await this.plugin.vocabulary.updateSrsRating(item.word, "easy");
+        const updated = this.plugin.vocabulary.getItem(item.word);
+        new Notice(`Запомнено! Следующее повторение: ${updated?.nextReviewDate || ""}`);
+        this.renderList(listContainer);
+      })();
     });
   }
 
@@ -712,11 +735,13 @@ export class ChineseVocabularyView extends ItemView {
         cls: "ch-vocab-history-clear-btn",
         text: "Очистить всё 🗑️",
       });
-      clearBtn.addEventListener("click", async () => {
-        if (this.plugin.history) {
-          await this.plugin.history.clear();
-          this.render();
-        }
+      clearBtn.addEventListener("click", () => {
+        void (async () => {
+          if (this.plugin.history) {
+            await this.plugin.history.clear();
+            this.render();
+          }
+        })();
       });
     }
 
@@ -861,24 +886,26 @@ export class ChineseVocabularyView extends ItemView {
       text: isStarred ? "⭐ В словарике" : "☆ В словарик",
       attr: { title: isStarred ? "Удалить из словарика" : "Сохранить в личный словарик" },
     });
-    starBtn.addEventListener("click", async (e) => {
+    starBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const match = this.plugin.dictionary.getExact(item.word) || {
-        word: item.word,
-        entries: [
-          {
-            traditional: item.traditional || item.word,
-            pinyin: item.pinyin,
-            jyutping: item.jyutping,
-            definitions: item.definitions,
-          },
-        ],
-        length: Array.from(item.word).length,
-      };
-      const nowStarred = await this.plugin.vocabulary.toggleWord(match);
-      starBtn.setText(nowStarred ? "⭐ В словарике" : "☆ В словарик");
-      starBtn.toggleClass("ch-vocab-btn-starred", nowStarred);
-      this.render();
+      void (async () => {
+        const match = this.plugin.dictionary.getExact(item.word) || {
+          word: item.word,
+          entries: [
+            {
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            },
+          ],
+          length: Array.from(item.word).length,
+        };
+        const nowStarred = await this.plugin.vocabulary.toggleWord(match);
+        starBtn.setText(nowStarred ? "⭐ В словарике" : "☆ В словарик");
+        starBtn.toggleClass("ch-vocab-btn-starred", nowStarred);
+        this.render();
+      })();
     });
 
     // 📝 Note
@@ -887,24 +914,26 @@ export class ChineseVocabularyView extends ItemView {
       text: "📝 Заметка",
       attr: { title: "Создать заметку слова (Zettelkasten)" },
     });
-    noteBtn.addEventListener("click", async (e) => {
+    noteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const match = this.plugin.dictionary.getExact(item.word) || {
-        word: item.word,
-        entries: [
-          {
-            traditional: item.traditional || item.word,
-            pinyin: item.pinyin,
-            jyutping: item.jyutping,
-            definitions: item.definitions,
-          },
-        ],
-        length: Array.from(item.word).length,
-      };
-      await createWordNote(this.plugin.app, match, undefined, {
-        folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
-        openAfterCreation: true,
-      });
+      void (async () => {
+        const match = this.plugin.dictionary.getExact(item.word) || {
+          word: item.word,
+          entries: [
+            {
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            },
+          ],
+          length: Array.from(item.word).length,
+        };
+        await createWordNote(this.plugin.app, match, undefined, {
+          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+          openAfterCreation: true,
+        });
+      })();
     });
 
     // ✕ Remove from history
@@ -913,12 +942,14 @@ export class ChineseVocabularyView extends ItemView {
       text: "✕",
       attr: { title: "Удалить из истории" },
     });
-    delBtn.addEventListener("click", async (e) => {
+    delBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (this.plugin.history) {
-        await this.plugin.history.remove(item.word);
-        this.render();
-      }
+      void (async () => {
+        if (this.plugin.history) {
+          await this.plugin.history.remove(item.word);
+          this.render();
+        }
+      })();
     });
   }
 }

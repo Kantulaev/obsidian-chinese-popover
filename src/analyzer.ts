@@ -109,9 +109,9 @@ export class TextAnalyzerModal extends Modal {
     // Segment text into Chinese tokens using Intl.Segmenter
     let tokens: string[] = [];
     if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
-      // @ts-ignore - Intl.Segmenter standard in modern runtime
+      // @ts-ignore: Intl.Segmenter standard in modern runtime
       const segmenter = new Intl.Segmenter("zh-CN", { granularity: "word" });
-      // @ts-ignore
+      // @ts-ignore: Intl.Segmenter iterable
       for (const seg of segmenter.segment(text)) {
         const word = seg.segment.trim();
         if (word && /\p{Script=Han}/u.test(word)) {

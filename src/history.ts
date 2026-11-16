@@ -11,6 +11,11 @@ export interface HistoryItem {
   timestamp: number;
 }
 
+interface PluginSavedData {
+  history?: HistoryItem[];
+  [key: string]: unknown;
+}
+
 export class HistoryManager {
   private plugin: ChineseHoverDictPlugin;
   private items: HistoryItem[] = [];
@@ -22,7 +27,7 @@ export class HistoryManager {
 
   async load(): Promise<void> {
     try {
-      const data = await this.plugin.loadData();
+      const data = (await this.plugin.loadData()) as PluginSavedData | null;
       if (data && Array.isArray(data.history)) {
         this.items = data.history;
       }
@@ -98,7 +103,7 @@ export class HistoryManager {
 
   private async persist(): Promise<void> {
     try {
-      const currentData = (await this.plugin.loadData()) || {};
+      const currentData = ((await this.plugin.loadData()) as PluginSavedData | null) || {};
       currentData.history = this.items;
       await this.plugin.saveData(currentData);
     } catch {

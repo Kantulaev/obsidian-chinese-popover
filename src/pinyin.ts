@@ -37,7 +37,7 @@ export function convertSyllable(rawSyllable: string): string {
   if (!rawSyllable) return "";
 
   // Normalize umlauts first
-  let syllable = normalizeUmlaut(rawSyllable);
+  const syllable = normalizeUmlaut(rawSyllable);
 
   // Extract tone number (1-5) if present at end
   const toneMatch = syllable.match(/([1-5])$/);

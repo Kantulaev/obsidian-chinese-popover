@@ -77,15 +77,17 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // Register Status Bar item for Reader Mode
     this.readerStatusBarItem = this.addStatusBarItem();
     this.updateReaderStatusBar();
-    this.readerStatusBarItem.addEventListener("click", async () => {
-      this.settings.readerMode = !this.settings.readerMode;
-      await this.saveSettings();
-      this.updateReaderStatusBar();
-      new Notice(
-        `Режим быстрого чтения: ${
-          this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
-        }`
-      );
+    this.readerStatusBarItem.addEventListener("click", () => {
+      void (async () => {
+        this.settings.readerMode = !this.settings.readerMode;
+        await this.saveSettings();
+        this.updateReaderStatusBar();
+        new Notice(
+          `Режим быстрого чтения: ${
+            this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
+          }`
+        );
+      })();
     });
 
     // Register Right Sidebar View for Vocabulary
@@ -99,7 +101,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       "book-marked",
       "Китайский словарик / Chinese Vocabulary",
       () => {
-        this.activateVocabularyView();
+        void this.activateVocabularyView();
       }
     );
 
@@ -156,10 +158,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.pronounceActiveWord();
       } else if (event.key === "s" || event.key === "S") {
         event.preventDefault();
-        this.toggleStarActiveWord();
+        void this.toggleStarActiveWord();
       } else if (event.key === "n" || event.key === "N") {
         event.preventDefault();
-        this.createActiveWordNote();
+        void this.createActiveWordNote();
       } else if (event.key === "c" || event.key === "C") {
         event.preventDefault();
         this.copyActiveWord();
@@ -274,7 +276,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       id: "open-chinese-vocabulary",
       name: "Открыть словарик в боковой панели / Open vocabulary in sidebar",
       callback: () => {
-        this.activateVocabularyView();
+        void this.activateVocabularyView();
       },
     });
 
@@ -286,7 +288,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView && !this.tooltip.getIsOpen()) return false;
         if (checking) return true;
-        this.toggleStarActiveWord();
+        void this.toggleStarActiveWord();
         return true;
       },
     });
@@ -479,7 +481,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (word) {
           const match = this.dictionary.getExact(word);
           if (match) {
-            createWordNote(this.app, match, contextSentence, {
+            void createWordNote(this.app, match, contextSentence, {
               folderPath: this.settings.wordNotesFolder || "Chinese/Words",
               openAfterCreation: true,
             });
@@ -494,7 +496,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
               }],
               length: Array.from(word).length,
             };
-            createWordNote(this.app, dummyMatch, contextSentence, {
+            void createWordNote(this.app, dummyMatch, contextSentence, {
               folderPath: this.settings.wordNotesFolder || "Chinese/Words",
               openAfterCreation: true,
             });
@@ -631,7 +633,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const loaded = await this.loadData();
+    const loaded = (await this.loadData()) as Partial<ChineseDictSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
     if (loaded && loaded.toneColoring === "phonetics" && !loaded.toneColoringExplicit) {
       this.settings.toneColoring = "off";
@@ -674,15 +676,15 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (targetEl) {
       const sizer = targetEl.closest(
         ".cm-sizer, .markdown-preview-sizer"
-      ) as HTMLElement | null;
-      if (sizer) {
+      );
+      if (sizer instanceof HTMLElement) {
         return this.getSizerInnerBounds(sizer);
       }
 
       // Check if inside a line or paragraph
       const line = targetEl.closest(
         ".cm-line, p, h1, h2, h3, h4, h5, h6, li, pre, blockquote"
-      ) as HTMLElement | null;
+      );
       if (line) {
         const rect = line.getBoundingClientRect();
         if (rect.width > 100) {
@@ -700,11 +702,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (editorView) {
       const sizer = editorView.dom.querySelector(
         ".cm-sizer"
-      ) as HTMLElement | null;
-      if (sizer) {
+      );
+      if (sizer instanceof HTMLElement) {
         return this.getSizerInnerBounds(sizer);
       }
-      const line = editorView.dom.querySelector(".cm-line") as HTMLElement | null;
+      const line = editorView.dom.querySelector(".cm-line");
       if (line) {
         const rect = line.getBoundingClientRect();
         if (rect.width > 100) {
@@ -723,14 +725,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
       document.querySelector(".workspace-leaf.mod-active") || document;
     const sizer = leaf.querySelector(
       ".cm-sizer, .markdown-preview-sizer"
-    ) as HTMLElement | null;
-    if (sizer) {
+    );
+    if (sizer instanceof HTMLElement) {
       return this.getSizerInnerBounds(sizer);
     }
 
     const anyLine = leaf.querySelector(
       ".cm-line, .markdown-preview-section p, .markdown-rendered p"
-    ) as HTMLElement | null;
+    );
     if (anyLine) {
       const rect = anyLine.getBoundingClientRect();
       if (rect.width > 100) {
@@ -976,8 +978,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const container = target.closest(
       ".markdown-rendered, .markdown-preview-view"
-    ) as HTMLElement | null;
-    if (!container) return;
+    );
+    if (!(container instanceof HTMLElement)) return;
 
     const bounds = this.getContentBounds(target, undefined);
     this.handleReadingViewLookup(event.clientX, event.clientY, container, bounds, event);
@@ -1000,8 +1002,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const container = target.closest(
       ".markdown-rendered, .markdown-preview-view"
-    ) as HTMLElement | null;
-    if (!container) {
+    );
+    if (!(container instanceof HTMLElement)) {
       this.cancelHoverLookup();
       return;
     }
@@ -1081,15 +1083,16 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // Determine caret position from coordinates
     let range: Range | null = null;
-    if (document.caretRangeFromPoint) {
-      range = document.caretRangeFromPoint(clientX, clientY);
-    } else if (document.caretPositionFromPoint) {
-      const pos = document.caretPositionFromPoint(clientX, clientY);
-      if (pos && pos.offsetNode) {
+    if ("caretPositionFromPoint" in document) {
+      const pos = (document as unknown as { caretPositionFromPoint(x: number, y: number): { offsetNode: Node; offset: number } | null }).caretPositionFromPoint(clientX, clientY);
+      if (pos?.offsetNode) {
         range = document.createRange();
         range.setStart(pos.offsetNode, pos.offset);
         range.setEnd(pos.offsetNode, pos.offset);
       }
+    } else if ("caretRangeFromPoint" in document) {
+      const docWithRange = document as unknown as { caretRangeFromPoint(x: number, y: number): Range | null };
+      range = docWithRange.caretRangeFromPoint(clientX, clientY);
     }
 
     if (
@@ -1532,7 +1535,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
       if (leaf.view instanceof ChineseVocabularyView) {
         leaf.view.render();
       }

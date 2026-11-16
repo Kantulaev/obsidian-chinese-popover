@@ -1,8 +1,8 @@
 {
   "id": "chinese-popover-dict",
   "name": "Chinese Popover Dictionary",
-  "version": "1.6.9",
-  "minAppVersion": "0.15.0",
+  "version": "1.7.0",
+  "minAppVersion": "1.5.0",
   "description": "Double-click Apple Liquid Glass Chinese popover dictionary with Pinyin, Jyutping, Cantonese pronunciation, and concise definitions.",
   "author": "Kantulaev",
   "authorUrl": "https://www.youtube.com/@ChineseWithKantulaev",

@@ -28,7 +28,7 @@ export class StrokeOrderModal extends Modal {
     contentEl.addClass("ch-dict-stroke-modal");
 
     this.render();
-    this.loadCharData(this.getCurrChar());
+    void this.loadCharData(this.getCurrChar());
   }
 
   override onClose(): void {
@@ -64,7 +64,8 @@ export class StrokeOrderModal extends Modal {
       try {
         const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`;
         const res = await requestUrl({ url });
-        if (res.status === 200 && res.json?.strokes) {
+        const resJson = res.json as { strokes?: string[] } | null;
+        if (res.status === 200 && Array.isArray(resJson?.strokes)) {
           data = res.json as HanziData;
         }
       } catch {
@@ -73,7 +74,8 @@ export class StrokeOrderModal extends Modal {
         if (simp && simp !== char) {
           const fallbackUrl = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(simp)}.json`;
           const resFallback = await requestUrl({ url: fallbackUrl });
-          if (resFallback.status === 200 && resFallback.json?.strokes) {
+          const fallbackJson = resFallback.json as { strokes?: string[] } | null;
+          if (resFallback.status === 200 && Array.isArray(fallbackJson?.strokes)) {
             data = resFallback.json as HanziData;
           }
         }
@@ -109,7 +111,7 @@ export class StrokeOrderModal extends Modal {
         tab.onclick = () => {
           this.currentCharIndex = idx;
           this.render();
-          this.loadCharData(c);
+          void this.loadCharData(c);
         };
       });
     } else {

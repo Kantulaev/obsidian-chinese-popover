@@ -319,7 +319,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           slider
             .setLimits(100, 800, 50)
             .setValue(this.plugin.settings.hoverDelayMs)
-            .setDynamicTooltip()
             .onChange(async (value) => {
               this.plugin.settings.hoverDelayMs = value;
               await this.plugin.saveSettings();
@@ -372,7 +371,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(0.5, 1.4, 0.05)
           .setValue(this.plugin.settings.speechSpeed)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.speechSpeed = value;
             await this.plugin.saveSettings();
@@ -473,7 +471,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(1, 5, 1)
           .setValue(this.plugin.settings.maxDefinitions)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.maxDefinitions = value;
             await this.plugin.saveSettings();
@@ -778,7 +775,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(280, 520, 10)
           .setValue(this.plugin.settings.popoverWidth)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.popoverWidth = value;
             await this.plugin.saveSettings();
@@ -795,7 +791,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(130, 250, 5)
           .setValue(this.plugin.settings.popoverHeight)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.popoverHeight = value;
             await this.plugin.saveSettings();
@@ -812,7 +807,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(0, 60, 2)
           .setValue(this.plugin.settings.blurIntensity)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.blurIntensity = value;
             await this.plugin.saveSettings();
@@ -829,7 +823,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(14, 28, 1)
           .setValue(this.plugin.settings.fontSizeHanzi)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.fontSizeHanzi = value;
             await this.plugin.saveSettings();
@@ -846,7 +839,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(16, 32, 1)
           .setValue(this.plugin.settings.fontSizePinyin)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.fontSizePinyin = value;
             await this.plugin.saveSettings();
@@ -863,7 +855,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(12, 22, 1)
           .setValue(this.plugin.settings.fontSizeTranslation)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.fontSizeTranslation = value;
             await this.plugin.saveSettings();
@@ -943,7 +934,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(10, 100, 5)
           .setValue(this.plugin.settings.maxRecentHistory ?? 50)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.maxRecentHistory = value;
             await this.plugin.saveSettings();
@@ -986,7 +976,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         slider
           .setLimits(2, 10, 1)
           .setValue(this.plugin.settings.maxWordLength)
-          .setDynamicTooltip()
           .onChange(async (value) => {
             this.plugin.settings.maxWordLength = value;
             await this.plugin.saveSettings();
@@ -1239,9 +1228,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       .addButton((btn) =>
         btn
           .setButtonText("Сбросить всё")
-          .setWarning()
+          .setDestructive()
           .onClick(async () => {
-            this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+            this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as ChineseDictSettings;
             await this.plugin.saveSettings();
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);

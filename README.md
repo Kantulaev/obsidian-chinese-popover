@@ -22,130 +22,45 @@
 
 ---
 
-## 🌟 Why Chinese Popover Dictionary?
+## 💎 Popover & Character Anatomy
 
-Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
+<p align="center">
+  <img src="./assets/feature-popover.svg" alt="Liquid Glass Popover and Character Anatomy" width="100%" />
+</p>
 
-* 📌 **Pin (Sticky) Mode** — Freeze the popover on your screen while typing notes or scrolling. Won't dismiss until you press <kbd>Esc</kbd> or click ✕.
-* ✋ **Draggable Popovers** — Grab the top header bar and smoothly drag the popover anywhere on screen to uncover surrounding text.
-* ↔️ **Resizable Popovers** — On-the-fly mouse resizing by pulling the bottom-right corner to match your monitor and text preferences.
-* 🕒 **Recent Lookups History** — Automatically captures your recent lookups in a dedicated sidebar tab with relative timestamps, quick audio, and 1-click ⭐ vocabulary save.
-* 🔍 **Spotlight Dictionary Quick Search** — Command-palette modal (`Alt + S`) to search 118,000+ words by Hanzi (`你好`), Pinyin (`nihao`), Jyutping, or Russian/English translations.
-* ⌨️ **One-Key Popover Actions** — Instant keyboard actions when viewing words: <kbd>Space</kbd>/<kbd>R</kbd> (Audio), <kbd>S</kbd> (Star), <kbd>N</kbd> (Note), <kbd>C</kbd> (Copy), <kbd>P</kbd> (Pin), <kbd>Esc</kbd> (Close).
-* 📋 **Smart Copy Formats** — Copy complete card (`你好 [nǐ hǎo] hello`), Hanzi only, Pinyin only, Obsidian Wikilink (`[[你好]]`), or Markdown table row via click or right-click menu.
-* 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
-* 🇷🇺 **Russian & English Translations** — Choose English (CC-CEDICT default), Russian (БКРС / Большой китайско-русский словарь), or both simultaneously!
-* 🏷️ **Parts of Speech (POS / 词类)** — Identifies parts of speech (verb, noun, adj, adv, classifier, pronoun), including multi-POS behavior (兼类词, e.g. `学习` as noun & verb).
-* 🌈 **Pleco-Style Tone Colors** — Visual tone coding for Pinyin and Jyutping (1st Red, 2nd Green, 3rd Blue, 4th Purple, Neutral Gray).
-* 📊 **Text Difficulty & HSK Level Analyzer** — Evaluates entire notes or selections, showing HSK 1–6 percentage distribution, CEFR estimates, and vocabulary breakdown.
-* 📝 **Zettelkasten Atomic Word Notes** — 1-click generation of structured Markdown notes in `Chinese/Words/` with YAML metadata, tags, readings, and context sentences.
-* 📜 **Chengyu Origin Stories (成语故事)** — Expandable ancient fables, allegorical meanings, and historical dynasty context for 4-character idioms.
-* 💬 **Authentic Example Sentences (例句)** — Contextual example sentences with pinyin, translations, and click-to-pronounce audio.
-* 🖨️ **Printable Calligraphy Worksheets (米字格 Mizige)** — Generate and print practice sheets with stroke tracing and blank grids directly to paper or PDF.
-* 📱 **Pleco Mobile Flashcards Export** — Export vocabulary directly to Pleco `.txt` format for import into Pleco on iOS and Android.
-* 🔄 **Simplified ↔ Traditional Converter** — 1-click bidirectional conversion of selected text between 简体 and 繁體.
-* 🗣️ **Paragraph & Selection TTS** — Listen to whole sentences or paragraphs in Cantonese or Mandarin.
-* ✂️ **Smart Chinese Word Selection (Word Splitting)** — Double-clicking any Chinese character cleanly selects the exact word (`学习` or `香港`) instead of a single character or the entire paragraph, powered by CEDICT and native `Intl.Segmenter`.
-* 🎯 **HSK 1–6 Exam Level Badges** — Instant visual badges for official HSK levels on cards and popovers, plus due review filters.
-* 🖋️ **Official HSK Exam Typography** — Select the standard official HSK exam font **KaiTi (楷体)**, SongTi, HeiTi, FangSong, or LXGW WenKai for your dictionary and editor.
-* 🖌️ **Animated Stroke Order (米字格)** — Step-by-step vector calligraphy animation modal with character tabs and playback controls.
-* 🗃️ **1-Click Anki Integration** — Push cards directly into Anki via AnkiConnect or export offline `.tsv` decks.
-* 🔁 **Spaced Repetition (SRS) Flashcards** — Built-in SM-2 intervals (Again 1d, Hard, Good, Easy) stored permanently in your vault.
-* 🔬 **Kangxi Radicals & Character Breakdown** — Kangxi 214 radicals, stroke counts, and ideogram component breakdowns.
-* 🏮 **Reader Mode** — Instant hover lookup without modifier keys for effortless reading, toggled via status bar or hotkey.
-* 🔤 **Ruby / Furigana Generator** — Generate `<ruby>汉<rt>hàn</rt></ruby>` or Jyutping markup over selected text in 1 click.
-* 📖 **Permanent Personal Vocabulary Notebook** — Star difficult words with `⭐` in 1 click; they are saved permanently into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
-* 🃏 **Interactive Sidebar & Flashcards** — Review saved words in a sleek right sidebar tab with search, filters, audio buttons, and tap-to-reveal quiz mode.
-* 🀄 **Dual Phonetics (Pinyin + Jyutping)** — Perfect for learners of both Mandarin (`Putonghua`) and Cantonese (`Guangdonghua`).
-* 🔊 **Native Voice Pronunciation** — Studio-quality neural audio for both dialects with adjustable playback speed (0.5x – 1.4x) and offline Web Speech support.
-* ⚡ **Instant Multi-Trigger Access** — Double-click, hover with modifier key (`Option / Alt / Shift / Cmd / Ctrl`), or hotkey navigation.
-* 📚 **Massive Vocabulary (118,000+ words)** — Powered by CC-CEDICT merged with Pleco's Cantonese readings, CC-Canto, and Rime Cantonese.
-* 🛡️ **Obsidian Margin Protection** — Automatically stays within your text container and never spills off-screen or into empty side margins.
+* **Apple Liquid Glass UI** — Translucent frosted glass card with fluid blur, draggable header bar, and pin (📌) to freeze on screen.
+* **Character Anatomy & 214 Radicals** — Click any character chip in compound words to reveal its Kangxi radical, stroke count, meaning, and etymological components (`宀 + 子`).
+* **Ultra-Compact Action Palette** — 34px icon-only quick dock (`📋`, `⭐`, `📌`, `📝`, `🖌️`, `✕`) that never spills over or hides prematurely.
+* **Dual Russian & English Translations** — Choose English (CC-CEDICT), Russian (БКРС / Большой китайско-русский словарь), or both simultaneously.
+* **Dual Phonetics & Tone Colors** — Mandarin diacritic Pinyin + Cantonese Jyutping (`粵`) with customizable tone colors.
 
 ---
 
-## 📸 Overview
+## 📚 Study Ecosystem & Flashcards
 
-```text
-┌────────────────────────────────────────────────────────────────┐
-│  你好  [HSK 1]  |  你好   🔊 廣東話 0.8x  🖌️ 📋 ⭐ Star  ✕   │
-├────────────────────────────────────────────────────────────────┤
-│  nǐ hǎo         粵 nei5 hou2                                   │
-├────────────────────────────────────────────────────────────────┤
-│  • hello  • hi  • how are you                                  │
-├────────────────────────────────────────────────────────────────┤
-│  [ 你 nǐ · you ]  [ 好 hǎo · good, well ]                      │
-└────────────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="./assets/feature-study.svg" alt="Study Ecosystem, Vocabulary Book and SRS" width="100%" />
+</p>
+
+* **Permanent Personal Vocabulary Book** — Star difficult words (`⭐`) into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
+* **Spaced Repetition (SRS Flashcards)** — Built-in SM-2 intervals (**Снова 1д**, **Трудно 3д**, **Хорошо 7д**, **Легко 14д**) with due review filters.
+* **Spotlight Quick Search (`Alt + S`)** — Instant modal to search 118,000+ words by Hanzi (`你好`), Pinyin (`nihao`), Jyutping, or Russian/English.
+* **1-Click Anki Sync** — Push cards directly into desktop Anki via AnkiConnect or export offline `.tsv` decks.
+* **Pleco Mobile Export** — Export vocabulary directly to Pleco `.txt` format for flashcards on iOS and Android.
 
 ---
 
-## ✨ Feature Highlights
+## 🛠️ Advanced Chinese Tools Suite
 
-### 1. Dual Phonetic Support
-Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switch modes on the fly:
-* **Both (`both`)**: Displays Mandarin Pinyin with diacritics (`nǐ hǎo`) and a dedicated green Jyutping badge (`粵 nei5 hou2`).
-* **Pinyin only (`pinyin`)**: Focused view for Mandarin learners.
-* **Jyutping only (`jyutping`)**: Tailored for Cantonese learners.
-* **Auto by Dialect (`dialect_auto`)**: Automatically highlights the phonetics corresponding to your selected speech dialect.
+<p align="center">
+  <img src="./assets/feature-tools.svg" alt="Stroke Order, HSK Analyzer and Tools" width="100%" />
+</p>
 
-### 2. Authentic Neural Pronunciation
-* **Cantonese (`廣東話`)**: Natural Hong Kong neural voice (`zh-HK` / `yue`).
-* **Mandarin (`普通话`)**: Clear Putonghua neural voice (`zh-CN`).
-* **Adjustable Speed**: Slow down pronunciation (default `0.8x`) to hear tones with razor-sharp clarity.
-* **Smart Fallback**: Online Google HD TTS with automatic fallback to local Web Speech API.
-
-### 3. Simplified & Traditional Hanzi
-* Displays both Simplified and Traditional characters side-by-side in equal font size.
-* Configurable separator (` - `, ` / `, ` · `, or `( )`).
-* Option to hide Traditional characters for a more compact card.
-
-### 4. Smart Positioning & Margin Clamping
-* Designed specifically for Obsidian's **"Readable line length"** mode.
-* Clamps popovers inside the active note container to avoid hanging awkwardly into empty grey side margins.
-* Auto-flips vertically if a word is near the top edge of your screen.
-
-### 5. 📖 Personal Vocabulary Notebook & Spaced Repetition (SRS)
-* **Permanent Vault Storage**: Star difficult words with `⭐` in the popover or via hotkey. All saved words are stored permanently in a clean Markdown note in your vault (`Chinese Vocabulary.md`).
-* **Right Sidebar Tab**: Access your vocabulary anytime with the ribbon icon (`book-marked`) or command palette.
-* **Interactive Liquid Glass Cards**: Each card shows Simplified/Traditional Hanzi, tone-marked Pinyin, green Jyutping badge, definitions, context sentence, and an instant audio playback button.
-* **🔁 Spaced Repetition (SRS Flashcards)**: Grade your recall with **Again (1d)**, **Hard**, **Good**, or **Easy**. Interval reviews are saved to both plugin data and your Markdown note.
-* **Filter Due Reviews**: Click the `🔁 К повторению` button in the sidebar to review only words scheduled for today.
-
-### 6. 🎯 Official HSK Exam Level Badges (HSK 1 to 6)
-* Color-coded badges indicating official Hànyǔ Shuǐpíng Kǎoshì proficiency levels (HSK 1 through HSK 6).
-* Visible on popovers, sidebar vocabulary cards, and review modes.
-
-### 7. 🖋️ Official HSK Exam Font & Typography
-* **HSK Exam Font (KaiTi / 楷体)**: Standard official font used on Chinese HSK exam papers and textbooks.
-* **Additional Font Presets**:
-  * SongTi (宋体 / SimSun) — Classic print serif
-  * HeiTi (黑体 / PingFang / YaHei) — Modern clean sans-serif
-  * FangSong (仿宋) — Official and academic document style
-  * LXGW WenKai (霞鹜文楷) — Elegant open-source screen calligraphy font
-  * Custom font — Enter any system font name
-* **Scope**: Apply to Popover & Sidebar only, or to the entire Obsidian editor!
-
-### 8. 🖌️ Stroke Order Animation (米字格 Mizige)
-* Click the brush icon `🖌️` or use the command palette to open the stroke order modal.
-* Features pure vector animations, Mizige calligraphic guidelines, step-by-step navigation, and multi-character tabs.
-
-### 9. 🗃️ Anki Integration (AnkiConnect & TSV Export)
-* **1-Click Sync to Anki**: Directly export cards to your desktop Anki via AnkiConnect API (port 8765).
-* **Auto-Sync on Star**: Automatically create an Anki note whenever you star a word!
-* **Offline TSV Export**: Download your entire vocabulary as a `.tsv` file ready for manual import on any device.
-
-### 10. 🔬 Character Breakdown (Разбор по иероглифам)
-* Compound words ($\ge 2$ characters) feature a breakdown row in the popover.
-* Click any character chip to listen to its pronunciation individually.
-
-### 11. 🏮 Reader Mode & 🔤 Ruby Furigana
-* **Reader Mode**: Hover over Chinese words to inspect them instantly without holding down modifier keys. Toggle on/off via the status bar pill (`🏮 Чтение: ВКЛ/ВЫКЛ`) or command palette.
-* **Ruby / Furigana Generator**: Select Chinese text in the editor and run `Добавить пиньинь (Ruby)` to convert it to `<ruby>中<rt>zhōng</rt>文<rt>wén</rt></ruby>`.
-
-### 12. ✂️ Native Word Selection & Cantonese Phrase Intelligence
-* **Obsidian-Native Word Selection**: Standard Chinese words, 4-character idioms (成语 chengyu like `一心一意`), and compounds are selected directly via Obsidian's built-in editor selector without unwanted shrinking or overriding.
-* **🇭🇰 Dedicated Cantonese Phrase Selection (Toggleable)**: Accurately detects and highlights full Cantonese phrases (`唔該晒`, `點解`, `睇唔明`, `去唔去`, `食緊`, `𠵱家`, etc.).
+* **Animated Stroke Order (米字格 Mizige)** — Step-by-step vector calligraphy animation modal with character tabs and playback speed controls.
+* **Text Difficulty & HSK Analyzer (`Alt + A`)** — Evaluates entire notes or selections, showing HSK 1–6 percentage distribution and CEFR difficulty ratings.
+* **Zettelkasten Atomic Word Notes (`Alt + N`)** — 1-click generation of structured Markdown notes in `Chinese/Words/` with YAML metadata, tags, readings, and context sentences.
+* **Chengyu Origin Stories (成语故事)** — Expandable ancient fables, allegorical meanings, and historical dynasty context for 4-character idioms.
+* **Printable Calligraphy Worksheets** — Generate and print practice sheets with stroke tracing and blank Mizige grids directly to paper or PDF.
 
 ---
 

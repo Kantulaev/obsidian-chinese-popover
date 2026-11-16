@@ -180,11 +180,13 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
     }
 
     // HSK Badge
-    const hsk = getHskBadgeInfo(item.word);
-    if (hsk) {
-      const badge = row.createSpan({ cls: "ch-dict-hsk-badge", text: hsk.label });
-      badge.style.setProperty("--hsk-color", hsk.color);
-      badge.style.setProperty("--hsk-bg", hsk.bg);
+    if (this.plugin.settings.showHskBadge) {
+      const hsk = getHskBadgeInfo(item.word);
+      if (hsk) {
+        const badge = row.createSpan({ cls: "ch-dict-hsk-badge", text: hsk.label });
+        badge.style.setProperty("--hsk-color", hsk.color);
+        badge.style.setProperty("--hsk-bg", hsk.bg);
+      }
     }
 
     // Phonetics
@@ -192,13 +194,17 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
     const pyFormatted = formatPinyin(firstEntry?.pinyin || "", true);
     const pyContainer = row.createSpan({ cls: "ch-search-pinyin" });
 
-    const syllables = pyFormatted.split(/\s+/).filter(Boolean);
-    syllables.forEach((syl, idx) => {
-      if (idx > 0) pyContainer.createSpan({ text: " " });
-      const tone = detectPinyinTone(syl);
-      const s = pyContainer.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-      s.style.setProperty("color", getToneColor(tone));
-    });
+    if (this.plugin.settings.toneColoring === "off") {
+      pyContainer.setText(pyFormatted);
+    } else {
+      const syllables = pyFormatted.split(/\s+/).filter(Boolean);
+      syllables.forEach((syl, idx) => {
+        if (idx > 0) pyContainer.createSpan({ text: " " });
+        const tone = detectPinyinTone(syl);
+        const s = pyContainer.createSpan({ text: syl, cls: `ch-tone-${tone}` });
+        s.style.setProperty("color", getToneColor(tone));
+      });
+    }
 
     if (firstEntry?.jyutping) {
       row.createSpan({ cls: "ch-search-jyutping", text: `(粤 ${firstEntry.jyutping})` });

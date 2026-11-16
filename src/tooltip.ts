@@ -501,24 +501,26 @@ export class DictTooltip {
         menu.showAtMouseEvent(e);
       });
 
-      // Zettelkasten Word Note Button
-      const noteBtn = actions.createEl("button", {
-        cls: "ch-dict-glass-btn",
-        text: "📝",
-        attr: {
-          "aria-label": "Create Word Note",
-          title: "Создать атомную заметку слова (Zettelkasten Note)",
-        },
-      });
-      noteBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        if (this.plugin) {
-          await createWordNote(this.plugin.app, match, contextSentence, {
-            folderPath: settings.wordNotesFolder || "Chinese/Words",
-            openAfterCreation: true,
-          });
-        }
-      });
+      // Zettelkasten Word Note Button (Optional)
+      if (settings.showWordNotesButton) {
+        const noteBtn = actions.createEl("button", {
+          cls: "ch-dict-glass-btn",
+          text: "📝",
+          attr: {
+            "aria-label": "Create Word Note",
+            title: "Создать атомную заметку слова (Zettelkasten Note)",
+          },
+        });
+        noteBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (this.plugin) {
+            await createWordNote(this.plugin.app, match, contextSentence, {
+              folderPath: settings.wordNotesFolder || "Chinese/Words",
+              openAfterCreation: true,
+            });
+          }
+        });
+      }
 
       // Stroke Order Animation Button
       if (settings.showStrokeOrder) {

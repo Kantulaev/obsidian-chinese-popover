@@ -77,6 +77,7 @@ export interface ChineseDictSettings {
   showHskBadge: boolean;
   showCharacterBreakdown: boolean;
   showStrokeOrder: boolean;
+  showWordNotesButton: boolean;
 
   // Ruby Furigana
   rubyDialect: "pinyin" | "jyutping";
@@ -151,9 +152,10 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   customChineseFont: "",
   chineseFontScope: "popover_and_sidebar",
 
-  showHskBadge: true,
-  showCharacterBreakdown: true,
-  showStrokeOrder: true,
+  showHskBadge: false,
+  showCharacterBreakdown: false,
+  showStrokeOrder: false,
+  showWordNotesButton: false,
 
   rubyDialect: "pinyin",
 
@@ -161,11 +163,11 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   ankiSyncOnStar: false,
 
   translationLanguage: "en",
-  showPartOfSpeech: true,
-  showRadicals: true,
-  showChengyuStories: true,
-  showExamples: true,
-  toneColoring: "phonetics",
+  showPartOfSpeech: false,
+  showRadicals: false,
+  showChengyuStories: false,
+  showExamples: false,
+  toneColoring: "off",
   wordNotesFolder: "Chinese/Words",
 
   copyFormat: "default",
@@ -563,9 +565,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       .setDesc("Окрашивать транскрипцию в цвета тонов (1-й красный, 2-й зеленый, 3-й синий, 4-й фиолетовый).")
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("phonetics", "В транскрипции (пиньинь / ютпинг, по умолчанию)")
+          .addOption("off", "Отключить цветовую подсветку (по умолчанию)")
+          .addOption("phonetics", "В транскрипции (пиньинь / ютпинг)")
           .addOption("all", "Везде (и в транскрипции, и в иероглифах)")
-          .addOption("off", "Отключить цветовую подсветку")
           .setValue(this.plugin.settings.toneColoring)
           .onChange(async (value) => {
             this.plugin.settings.toneColoring = value as "off" | "phonetics" | "all";
@@ -629,6 +631,21 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.showStrokeOrder)
           .onChange(async (value) => {
             this.plugin.settings.showStrokeOrder = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Кнопка создания заметки слова / Show Word Note Button")
+      .setDesc("Отображать кнопку 📝 создания отдельной атомарной заметки слова (Zettelkasten) в верхнем баре карточки.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showWordNotesButton)
+          .onChange(async (value) => {
+            this.plugin.settings.showWordNotesButton = value;
             await this.plugin.saveSettings();
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);

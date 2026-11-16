@@ -143,6 +143,11 @@ export class StrokeOrderModal extends Modal {
     // Background calligraphic lines (米字格)
     const gridG = document.createElementNS("http://www.w3.org/2000/svg", "g");
     gridG.setAttribute("class", "ch-dict-stroke-grid");
+    gridG.setAttribute("fill", "none");
+    gridG.setAttribute("stroke", "currentColor");
+    gridG.setAttribute("stroke-width", "6");
+    gridG.setAttribute("stroke-dasharray", "16,16");
+    gridG.setAttribute("opacity", "0.22");
 
     const lines = [
       "M 0 512 L 1024 512", // Horizontal center
@@ -164,23 +169,34 @@ export class StrokeOrderModal extends Modal {
     // Render strokes up to currentStrokeStep
     const visibleCount = Math.min(this.currentStrokeStep, totalStrokes);
 
+    // 1. Ghost outlines layer (all strokes rendered faint in background)
+    const ghostG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    ghostG.setAttribute("class", "ch-dict-stroke-ghost-layer");
     for (let i = 0; i < totalStrokes; i++) {
       const strokeD = this.hanziData.strokes[i];
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", strokeD);
-
-      if (i < visibleCount) {
-        if (i === visibleCount - 1 && this.isAnimating) {
-          path.setAttribute("class", "ch-dict-stroke-active");
-        } else {
-          path.setAttribute("class", "ch-dict-stroke-drawn");
-        }
-      } else {
-        // Outline / Ghost stroke
-        path.setAttribute("class", "ch-dict-stroke-ghost");
-      }
-      charG.appendChild(path);
+      const ghostPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      ghostPath.setAttribute("d", strokeD);
+      ghostPath.setAttribute("class", "ch-dict-stroke-ghost");
+      ghostG.appendChild(ghostPath);
     }
+    charG.appendChild(ghostG);
+
+    // 2. Drawn strokes layer (solid text color + active accent stroke)
+    const drawnG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    drawnG.setAttribute("class", "ch-dict-stroke-drawn-layer");
+    for (let i = 0; i < visibleCount; i++) {
+      const strokeD = this.hanziData.strokes[i];
+      const drawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      drawnPath.setAttribute("d", strokeD);
+
+      if (i === visibleCount - 1 && this.isAnimating) {
+        drawnPath.setAttribute("class", "ch-dict-stroke-active");
+      } else {
+        drawnPath.setAttribute("class", "ch-dict-stroke-drawn");
+      }
+      drawnG.appendChild(drawnPath);
+    }
+    charG.appendChild(drawnG);
 
     svg.appendChild(charG);
     canvas.appendChild(svg);

@@ -1,4 +1,4 @@
-import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
+import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { VocabularyItem, VocabularySort } from "./vocabulary.ts";
 import { HistoryItem } from "./history.ts";
@@ -73,114 +73,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const headerActions = titleRow.createDiv({ cls: "ch-vocab-header-actions" });
 
-    // Anki Export Button
-    const ankiBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Экспорт в Anki (TSV)", title: "Экспорт словарика в Anki (.tsv файл)" },
-      text: "📥",
-    });
-    ankiBtn.addEventListener("click", () => {
-      const items = this.plugin.vocabulary.getItems();
-      if (items.length === 0) {
-        new Notice("Словарик пока пуст! Сначала добавьте слова звёздочкой ⭐.");
-        return;
-      }
-      const tsv = generateAnkiTsv(items);
-      const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
-      link.click();
-      URL.revokeObjectURL(url);
-      new Notice(`Экспортировано ${items.length} карточек в TSV для Anki!`);
-    });
-
-    // AnkiConnect direct sync button if enabled in settings
-    if (this.plugin.settings.anki.enabled) {
-      const ankiSyncBtn = headerActions.createEl("button", {
-        cls: "ch-vocab-glass-icon-btn",
-        attr: { "aria-label": "Синхронизировать с Anki", title: "Отправить все слова в AnkiConnect" },
-        text: "🗃️",
-      });
-      ankiSyncBtn.addEventListener("click", async () => {
-        const items = this.plugin.vocabulary.getItems();
-        if (items.length === 0) {
-          new Notice("Словарик пуст!");
-          return;
-        }
-        ankiSyncBtn.setText("⏳");
-        let addedCount = 0;
-        for (const item of items) {
-          const ok = await addNoteToAnki(this.plugin.settings.anki, item);
-          if (ok) addedCount++;
-        }
-        ankiSyncBtn.setText("🗃️");
-        new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
-      });
-    }
-
-    // Pleco Export Button
-    const plecoBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Экспорт в Pleco (.txt)", title: "Экспорт в мобильное приложение Pleco (.txt)" },
-      text: "📱",
-    });
-    plecoBtn.addEventListener("click", () => {
-      const items = this.plugin.vocabulary.getItems();
-      if (items.length === 0) {
-        new Notice("Словарик пока пуст!");
-        return;
-      }
-      const txt = generatePlecoFlashcards(items);
-      const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
-      link.click();
-      URL.revokeObjectURL(url);
-      new Notice(`Экспортировано ${items.length} слов для Pleco!`);
-    });
-
-    // Calligraphy Worksheets Button
-    const worksheetBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Прописи (米字格)", title: "Открыть каллиграфические прописи для печати" },
-      text: "📝",
-    });
-    worksheetBtn.addEventListener("click", () => {
-      const items = this.plugin.vocabulary.getItems();
-      if (items.length === 0) {
-        new Notice("Словарик пока пуст! Добавьте слова ⭐.");
-        return;
-      }
-      new WorksheetModal(this.app, items).open();
-    });
-
-    // Open Markdown File button
-    const openFileBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Открыть заметку в Obsidian (Open Note)", title: "Открыть заметку" },
-      text: "📄",
-    });
-    openFileBtn.addEventListener("click", () => {
-      this.plugin.vocabulary.openMarkdownFile();
-    });
-
-    // Re-sync from file button
-    const syncBtn = headerActions.createEl("button", {
-      cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Синхронизировать с файлом (Sync)", title: "Синхронизировать" },
-      text: "🔄",
-    });
-    syncBtn.addEventListener("click", async () => {
-      const count = await this.plugin.vocabulary.importFromMarkdown();
-      new Notice(`Синхронизировано: ${count} слов`, 2000);
-      this.render();
-    });
-
-    // Quick Search Button (Spotlight)
+    // 1. Quick Search Button (Spotlight)
     const searchModalBtn = headerActions.createEl("button", {
       cls: "ch-vocab-glass-icon-btn",
       attr: { "aria-label": "Поиск по словарю", title: "Быстрый поиск по словарю (Spotlight)" },
@@ -188,6 +81,114 @@ export class ChineseVocabularyView extends ItemView {
     });
     searchModalBtn.addEventListener("click", () => {
       new ChineseSearchModal(this.plugin.app, this.plugin).open();
+    });
+
+    // 2. Consolidated More Actions & Export Menu Button
+    const moreBtn = headerActions.createEl("button", {
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Экспорт и действия", title: "Экспорт и инструменты словарика" },
+      text: "⋯",
+    });
+    moreBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const menu = new Menu();
+
+      menu.addItem((i) =>
+        i.setTitle("📥 Экспорт в Anki (.tsv)")
+          .setIcon("download")
+          .onClick(() => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пока пуст! Сначала добавьте слова звёздочкой ⭐.");
+              return;
+            }
+            const tsv = generateAnkiTsv(items);
+            const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            new Notice(`Экспортировано ${items.length} карточек в TSV для Anki!`);
+          })
+      );
+
+      if (this.plugin.settings.anki.enabled) {
+        menu.addItem((i) =>
+          i.setTitle("🗃️ Синхронизировать с AnkiConnect")
+            .setIcon("sync")
+            .onClick(async () => {
+              const items = this.plugin.vocabulary.getItems();
+              if (items.length === 0) {
+                new Notice("Словарик пуст!");
+                return;
+              }
+              let addedCount = 0;
+              for (const item of items) {
+                const ok = await addNoteToAnki(this.plugin.settings.anki, item);
+                if (ok) addedCount++;
+              }
+              new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
+            })
+        );
+      }
+
+      menu.addItem((i) =>
+        i.setTitle("📱 Экспорт в Pleco (.txt)")
+          .setIcon("smartphone")
+          .onClick(() => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пока пуст!");
+              return;
+            }
+            const txt = generatePlecoFlashcards(items);
+            const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+            new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+          })
+      );
+
+      menu.addItem((i) =>
+        i.setTitle("📝 Прописи для печати (米字格)")
+          .setIcon("pencil")
+          .onClick(() => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пока пуст! Добавьте слова ⭐.");
+              return;
+            }
+            new WorksheetModal(this.app, items).open();
+          })
+      );
+
+      menu.addSeparator();
+
+      menu.addItem((i) =>
+        i.setTitle("📄 Открыть файл словарика (.md)")
+          .setIcon("file-text")
+          .onClick(() => {
+            this.plugin.vocabulary.openMarkdownFile();
+          })
+      );
+
+      menu.addItem((i) =>
+        i.setTitle("🔄 Синхронизировать с файлом")
+          .setIcon("refresh-cw")
+          .onClick(async () => {
+            const count = await this.plugin.vocabulary.importFromMarkdown();
+            new Notice(`Синхронизировано: ${count} слов`, 2000);
+            this.render();
+          })
+      );
+
+      menu.showAtMouseEvent(e);
     });
 
     // 2. Segmented Tab Bar: [⭐ Избранное (N)] [🕒 Недавние (M)]
@@ -767,13 +768,17 @@ export class ChineseVocabularyView extends ItemView {
 
     // Phonetics
     const phonSpan = wordGroup.createSpan({ cls: "ch-vocab-history-phonetics" });
-    const syllables = item.pinyin.split(/\s+/).filter(Boolean);
-    syllables.forEach((syl, idx) => {
-      if (idx > 0) phonSpan.createSpan({ text: " " });
-      const tone = detectPinyinTone(syl);
-      const s = phonSpan.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-      s.style.setProperty("color", getToneColor(tone));
-    });
+    if (this.plugin.settings.toneColoring === "off") {
+      phonSpan.setText(item.pinyin);
+    } else {
+      const syllables = item.pinyin.split(/\s+/).filter(Boolean);
+      syllables.forEach((syl, idx) => {
+        if (idx > 0) phonSpan.createSpan({ text: " " });
+        const tone = detectPinyinTone(syl);
+        const s = phonSpan.createSpan({ text: syl, cls: `ch-tone-${tone}` });
+        s.style.setProperty("color", getToneColor(tone));
+      });
+    }
 
     if (item.jyutping) {
       wordGroup.createSpan({ cls: "ch-vocab-history-jyutping", text: `(粤 ${item.jyutping})` });

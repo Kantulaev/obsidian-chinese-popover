@@ -1,2 +1,3 @@
-declare const moment: any;
+/* eslint-disable */
+declare const moment: unknown;
 export default moment;

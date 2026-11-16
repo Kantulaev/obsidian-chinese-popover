@@ -663,7 +663,7 @@ export class DictTooltip {
     const heroContainer = this.el.createDiv({ cls: "ch-dict-pinyin-hero" });
 
     // Determine what to display based on phoneticDisplay setting
-    const mode = settings.phoneticDisplay || "both";
+    const mode = settings.phoneticDisplay || "pinyin";
     let showBoth = false;
     let showJyutpingOnly = false;
 

@@ -568,7 +568,11 @@ export class ChineseVocabularyView extends ItemView {
 
     renderColoredSyllables(phoneticsRow, item.pinyin, "pinyin");
 
-    if (item.jyutping) {
+    const showJyut = this.plugin.settings.phoneticDisplay === "both" ||
+      this.plugin.settings.phoneticDisplay === "jyutping" ||
+      (this.plugin.settings.phoneticDisplay === "dialect_auto" && this.plugin.settings.dialect === "cantonese");
+
+    if (item.jyutping && showJyut) {
       const jBadge = phoneticsRow.createSpan({ cls: "ch-vocab-jyutping-badge" });
       jBadge.createSpan({ cls: "ch-vocab-jyutping-tag", text: "粵" });
       renderColoredSyllables(jBadge, item.jyutping, "jyutping");
@@ -810,7 +814,11 @@ export class ChineseVocabularyView extends ItemView {
       });
     }
 
-    if (item.jyutping) {
+    const showHistJyut = this.plugin.settings.phoneticDisplay === "both" ||
+      this.plugin.settings.phoneticDisplay === "jyutping" ||
+      (this.plugin.settings.phoneticDisplay === "dialect_auto" && this.plugin.settings.dialect === "cantonese");
+
+    if (item.jyutping && showHistJyut) {
       wordGroup.createSpan({ cls: "ch-vocab-history-jyutping", text: `(粤 ${item.jyutping})` });
     }
 

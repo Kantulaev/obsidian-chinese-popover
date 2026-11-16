@@ -101,8 +101,8 @@ export class WorksheetModal extends Modal {
       return;
     }
 
-    const styleEl = doc.createElement("style");
-    styleEl.textContent = `
+    const styleEl = createEl("style", {
+      text: `
       @page { size: A4 portrait; margin: 12mm; }
       body { font-family: "KaiTi", "楷体", "Noto Serif SC", serif; margin: 0; padding: 0; color: #000; }
       .ch-worksheet-title { text-align: center; font-size: 18px; margin-bottom: 4px; }
@@ -123,7 +123,8 @@ export class WorksheetModal extends Modal {
       }
       .ch-worksheet-char { font-size: 32px; line-height: 1; font-family: "KaiTi", "楷体", serif; }
       .trace-char { color: #cbd5e1; }
-    `;
+      `,
+    });
     doc.head.appendChild(styleEl);
 
     const cloned = preview.cloneNode(true);

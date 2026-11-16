@@ -117,12 +117,12 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   hoverModifierKey: "Alt",
   hoverDelayMs: 300,
 
-  dialect: "cantonese",
+  dialect: "mandarin",
   speechSpeed: 0.8,
   audioEngine: "google_neural",
   autoPlayAudio: false,
 
-  phoneticDisplay: "both",
+  phoneticDisplay: "pinyin",
   showAccentedPinyin: true,
   showTraditional: true,
   traditionalSeparator: " - ",
@@ -145,7 +145,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   practiceMode: false,
   vocabularySort: "date_desc",
 
-  selectCantonesePhrases: true,
+  selectCantonesePhrases: false,
 
   readerMode: false,
 
@@ -336,11 +336,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Диалект произношения / Pronunciation Dialect")
-      .setDesc("Выберите диалект для озвучки: Кантонский (Гуандунхуа) или Мандарин (Путунхуа).")
+      .setDesc("Выберите диалект для озвучки: Путунхуа (Мандарин) по умолчанию или Гуандунхуа (Кантонский).")
       .addDropdown((dropdown) =>
         dropdown
+          .addOption("mandarin", "Путунхуа / Мандарин (普通话 / zh-CN) — по умолчанию")
           .addOption("cantonese", "Гуандунхуа / Кантонский (廣東話 / zh-yue)")
-          .addOption("mandarin", "Путунхуа / Мандарин (普通话 / zh-CN)")
           .setValue(this.plugin.settings.dialect)
           .onChange(async (value) => {
             this.plugin.settings.dialect = value as ChineseDialect;
@@ -400,13 +400,13 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Режим отображения фонетики / Phonetics Display")
-      .setDesc("Как отображать транскрипцию в заголовке карточки.")
+      .setDesc("Как отображать транскрипцию в заголовке карточки. По умолчанию — только пиньинь (Путунхуа), с возможностью включить ютпинг (Кантонский).")
       .addDropdown((dropdown) =>
         dropdown
+          .addOption("pinyin", "Только пиньинь (Pinyin only) — по умолчанию")
           .addOption("both", "И пиньинь, и ютпинг (Pinyin / Jyutping)")
-          .addOption("pinyin", "Только пиньинь (Pinyin only)")
           .addOption("jyutping", "Только ютпинг (Jyutping only)")
-          .addOption("dialect_auto", "Авто по диалекту (Кантонский: оба / Путунхуа: пиньинь)")
+          .addOption("dialect_auto", "Авто по диалекту (Путунхуа: пиньинь / Кантонский: оба)")
           .setValue(this.plugin.settings.phoneticDisplay)
           .onChange(async (value) => {
             this.plugin.settings.phoneticDisplay = value as PhoneticDisplay;

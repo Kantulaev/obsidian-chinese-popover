@@ -1178,7 +1178,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const bounds = this.getContentBounds(targetEl, view);
 
       if (view) {
-        if ((view as { destroyed?: boolean }).destroyed) return;
+        if ((view as unknown as { destroyed?: boolean }).destroyed) return;
         this.handleEditorLookup(
           this.lastHoverCoords.x,
           this.lastHoverCoords.y,

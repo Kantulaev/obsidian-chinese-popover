@@ -1,4 +1,5 @@
-types/**
+node_modules/**
 dist/**
+main.js
 build.ts
 scripts/**

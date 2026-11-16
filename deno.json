@@ -6,10 +6,9 @@
     "noImplicitOverride": false
   },
   "imports": {
-    "obsidian": "./types/obsidian.d.ts",
-    "@codemirror/view": "./types/codemirror.d.ts",
-    "@codemirror/state": "./types/codemirror.d.ts",
-    "moment": "./types/moment.d.ts"
+    "obsidian": "npm:obsidian@^1.7.0",
+    "@codemirror/view": "npm:@codemirror/view@^6.0.0",
+    "@codemirror/state": "npm:@codemirror/state@^6.0.0"
   },
   "tasks": {
     "build": "deno run -A build.ts production",

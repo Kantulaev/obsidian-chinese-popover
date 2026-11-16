@@ -1,12 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {
-      "obsidian": ["types/obsidian.d.ts"],
-      "@codemirror/view": ["types/codemirror.d.ts"],
-      "@codemirror/state": ["types/codemirror.d.ts"],
-      "moment": ["types/moment.d.ts"]
-    },
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "ESNext",

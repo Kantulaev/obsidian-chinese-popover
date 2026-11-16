@@ -7,6 +7,8 @@
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
   <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.6.6-blue.svg" alt="Version 1.6.6" /></a>
+  <a href="https://www.youtube.com/@ChineseWithKantulaev"><img src="https://img.shields.io/badge/YouTube-@ChineseWithKantulaev-FF0000?logo=youtube&logoColor=white" alt="English YouTube Channel" /></a>
+  <a href="https://www.youtube.com/@kantulaevCN"><img src="https://img.shields.io/badge/YouTube-@kantulaevCN-FF0000?logo=youtube&logoColor=white" alt="Russian YouTube Channel" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Translations-English%20%7C%20Russian%20(БКРС)-blue.svg" alt="EN | RU" />
   <img src="https://img.shields.io/badge/HSK%20Levels-1%20to%206-emerald.svg" alt="HSK 1-6" />
@@ -137,6 +139,17 @@ We believe your notes and thoughts belong solely to you:
 * 🌐 **External Connections**:
   1. **Google TTS API** (`translate.google.com`): When the audio button is clicked, an audio stream is fetched for the selected word. You can switch to **Web Speech API** in settings for 100% offline pronunciation.
   2. **CEDICT Database Download**: On first run, the plugin downloads the offline dictionary database (`cedict.json`, ~42 MB) from GitHub Releases and caches it in your plugin folder for lifetime offline use.
+
+---
+
+## 📺 Free Chinese Video Courses by Author
+
+Learn Chinese for free with structured video courses created by the author of this plugin:
+
+| Channel | Language | Description & Content | Link |
+| :--- | :---: | :--- | :---: |
+| **Chinese with Kantulaev** | 🇬🇧 English | Free comprehensive Chinese video courses from beginner to fluent: pronunciation, tones, character stroke order, and grammar. | [**@ChineseWithKantulaev**](https://www.youtube.com/@ChineseWithKantulaev) |
+| **Курсы китайского языка** | 🇷🇺 Русский | Бесплатные пошаговые видеоуроки китайского языка с нуля: фонетика, ключи Канси, разбор уровней HSK и живая разговорная речь. | [**@kantulaevCN**](https://www.youtube.com/@kantulaevCN) |
 
 ---
 

@@ -1243,5 +1243,45 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             this.display();
           })
       );
+
+    // ==========================================
+    // 9. FREE CHINESE COURSES BY AUTHOR (YOUTUBE)
+    // ==========================================
+    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
+
+    new Setting(containerEl)
+      .setName("📺 Бесплатные курсы китайского языка / Free Chinese Courses")
+      .setHeading();
+
+    const aboutBox = containerEl.createDiv({ cls: "ch-dict-about-box" });
+    aboutBox.createEl("p", {
+      text: "Создатель плагина ведет бесплатные подробные видеокурсы по изучению китайского языка (фонетика, пиньинь, тоны, разбор HSK и грамматика) на двух YouTube-каналах:",
+    });
+
+    const channelRow = aboutBox.createDiv({ cls: "ch-dict-channels-row" });
+
+    // English YouTube Channel
+    const engCard = channelRow.createEl("a", {
+      cls: "ch-dict-channel-card",
+      href: "https://www.youtube.com/@ChineseWithKantulaev",
+    });
+    engCard.setAttribute("target", "_blank");
+    engCard.setAttribute("rel", "noopener noreferrer");
+    engCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇬🇧" });
+    const engInfo = engCard.createDiv({ cls: "ch-dict-channel-info" });
+    engInfo.createSpan({ cls: "ch-dict-channel-title", text: "@ChineseWithKantulaev (English)" });
+    engInfo.createSpan({ cls: "ch-dict-channel-sub", text: "Free structured Chinese courses from scratch" });
+
+    // Russian YouTube Channel
+    const ruCard = channelRow.createEl("a", {
+      cls: "ch-dict-channel-card",
+      href: "https://www.youtube.com/@kantulaevCN",
+    });
+    ruCard.setAttribute("target", "_blank");
+    ruCard.setAttribute("rel", "noopener noreferrer");
+    ruCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇷🇺" });
+    const ruInfo = ruCard.createDiv({ cls: "ch-dict-channel-info" });
+    ruInfo.createSpan({ cls: "ch-dict-channel-title", text: "@kantulaevCN (Русский)" });
+    ruInfo.createSpan({ cls: "ch-dict-channel-sub", text: "Бесплатные видеоуроки китайского языка с нуля" });
   }
 }

@@ -188,6 +188,24 @@ export class ChineseVocabularyView extends ItemView {
           })
       );
 
+      menu.addSeparator();
+
+      menu.addItem((i) =>
+        i.setTitle("📺 YouTube (EN): @ChineseWithKantulaev")
+          .setIcon("play-circle")
+          .onClick(() => {
+            window.open("https://www.youtube.com/@ChineseWithKantulaev", "_blank");
+          })
+      );
+
+      menu.addItem((i) =>
+        i.setTitle("📺 YouTube (RU): @kantulaevCN")
+          .setIcon("play-circle")
+          .onClick(() => {
+            window.open("https://www.youtube.com/@kantulaevCN", "_blank");
+          })
+      );
+
       menu.showAtMouseEvent(e);
     });
 

@@ -19,6 +19,11 @@ import { applyChineseFontToDOM } from "./font.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
 import { formatPinyin } from "./pinyin.ts";
+import { TextAnalyzerModal } from "./analyzer.ts";
+import { createWordNote } from "./word-notes.ts";
+import { convertToSimplified, convertToTraditional } from "./converter.ts";
+import { generatePlecoFlashcards } from "./pleco.ts";
+import { WorksheetModal } from "./worksheet.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -375,6 +380,174 @@ export default class ChineseHoverDictPlugin extends Plugin {
           if (ok) count++;
         }
         new Notice(`Синхронизация завершена: ${count} карточек отправлено в Anki.`);
+      },
+    });
+
+    // 16. Text Difficulty & HSK Analyzer
+    this.addCommand({
+      id: "analyze-text-difficulty",
+      name: "Анализатор сложности текста и уровни HSK / Analyze Text Difficulty & HSK",
+      callback: () => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        let text = "";
+        if (activeView?.editor) {
+          text = activeView.editor.getSelection().trim() || activeView.editor.getValue();
+        }
+        if (!text) {
+          new Notice("Нет открытого текста для анализа сложности по HSK.");
+          return;
+        }
+        new TextAnalyzerModal(this.app, text).open();
+      },
+    });
+
+    // 17. Create Zettelkasten Word Note
+    this.addCommand({
+      id: "create-word-note",
+      name: "Создать атомную заметку слова (Zettelkasten) / Create Word Note",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView && !this.tooltip.getIsOpen()) return false;
+        if (checking) return true;
+
+        let word = "";
+        let contextSentence: string | undefined = undefined;
+        if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
+          word = this.tooltip.getCurrentWord()!;
+          contextSentence = this.tooltip.getCurrentContextSentence();
+        } else if (activeView?.editor) {
+          word = activeView.editor.getSelection().trim();
+          if (!word) {
+            const cursor = activeView.editor.getCursor();
+            const line = activeView.editor.getLine(cursor.line);
+            const match = this.dictionary.findWordAtOffset(
+              line,
+              cursor.ch,
+              this.settings.maxWordLength
+            );
+            if (match) {
+              word = match.word;
+              contextSentence = line;
+            }
+          }
+        }
+
+        if (word) {
+          const match = this.dictionary.getExact(word);
+          if (match) {
+            createWordNote(this.app, match, contextSentence, {
+              folderPath: this.settings.wordNotesFolder || "Chinese/Words",
+              openAfterCreation: true,
+            });
+          } else {
+            const dummyMatch = {
+              word,
+              entries: [{
+                simplified: word,
+                traditional: word,
+                pinyin: "",
+                definitions: [],
+              }],
+              length: Array.from(word).length,
+            };
+            createWordNote(this.app, dummyMatch, contextSentence, {
+              folderPath: this.settings.wordNotesFolder || "Chinese/Words",
+              openAfterCreation: true,
+            });
+          }
+        } else {
+          new Notice("Поместите курсор на китайское слово или выделите его.");
+        }
+        return true;
+      },
+    });
+
+    // 18. Convert Selection to Traditional Chinese (繁體)
+    this.addCommand({
+      id: "convert-to-traditional",
+      name: "Преобразовать выделенный текст в традиционные иероглифы (繁體) / Convert to Traditional",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) return false;
+        const sel = activeView.editor.getSelection();
+        if (!sel) return false;
+        if (checking) return true;
+        const converted = convertToTraditional(sel);
+        activeView.editor.replaceSelection(converted);
+        new Notice("Преобразовано в традиционные иероглифы (繁體)!");
+        return true;
+      },
+    });
+
+    // 19. Convert Selection to Simplified Chinese (简体)
+    this.addCommand({
+      id: "convert-to-simplified",
+      name: "Преобразовать выделенный текст в упрощенные иероглифы (简体) / Convert to Simplified",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) return false;
+        const sel = activeView.editor.getSelection();
+        if (!sel) return false;
+        if (checking) return true;
+        const converted = convertToSimplified(sel);
+        activeView.editor.replaceSelection(converted);
+        new Notice("Преобразовано в упрощенные иероглифы (简体)!");
+        return true;
+      },
+    });
+
+    // 20. Speak Selected Text (TTS Cantonese / Mandarin)
+    this.addCommand({
+      id: "speak-selected-text",
+      name: "Озвучить выделенный фрагмент текста (TTS) / Speak Selected Text",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) return false;
+        const sel = activeView.editor.getSelection().trim();
+        if (!sel) return false;
+        if (checking) return true;
+        this.tooltip.playSpeech(sel, this.settings);
+        return true;
+      },
+    });
+
+    // 21. Export Pleco Flashcards (.txt)
+    this.addCommand({
+      id: "export-pleco-flashcards",
+      name: "Экспорт словарика в Pleco (.txt) / Export Pleco Flashcards",
+      callback: () => {
+        const items = this.vocabulary.getItems();
+        if (items.length === 0) {
+          new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+          return;
+        }
+        const txt = generatePlecoFlashcards(items);
+        const blob = new Blob([txt], {
+          type: "text/plain;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Pleco_Chinese_Vocabulary_${new Date()
+          .toISOString()
+          .slice(0, 10)}.txt`;
+        link.click();
+        URL.revokeObjectURL(url);
+        new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+      },
+    });
+
+    // 22. Open Calligraphy Worksheets (米字格)
+    this.addCommand({
+      id: "open-calligraphy-worksheets",
+      name: "Открыть каллиграфические прописи (米字格) / Print Calligraphy Worksheets",
+      callback: () => {
+        const items = this.vocabulary.getItems();
+        if (items.length === 0) {
+          new Notice("Словарик пока пуст! Добавьте слова ⭐.");
+          return;
+        }
+        new WorksheetModal(this.app, items).open();
       },
     });
 

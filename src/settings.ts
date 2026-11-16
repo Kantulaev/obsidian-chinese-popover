@@ -7,6 +7,8 @@ import {
   DEFAULT_ANKI_SETTINGS,
   generateAnkiTsv,
 } from "./anki.ts";
+import { generatePlecoFlashcards } from "./pleco.ts";
+import { WorksheetModal } from "./worksheet.ts";
 
 export type ChineseDialect = "cantonese" | "mandarin";
 export type TriggerMode = "dblclick" | "hover_modifier" | "hover" | "command_only";
@@ -81,6 +83,21 @@ export interface ChineseDictSettings {
   // Anki Integration
   anki: AnkiConnectSettings;
   ankiSyncOnStar: boolean;
+
+  // Translation Language
+  translationLanguage: "en" | "ru" | "both";
+
+  // Grammar & Advanced Learning
+  showPartOfSpeech: boolean;
+  showRadicals: boolean;
+  showChengyuStories: boolean;
+  showExamples: boolean;
+
+  // Tone Coloring (Pleco style)
+  toneColoring: "off" | "phonetics" | "all";
+
+  // Zettelkasten Word Notes
+  wordNotesFolder: string;
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -134,6 +151,14 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
 
   anki: DEFAULT_ANKI_SETTINGS,
   ankiSyncOnStar: false,
+
+  translationLanguage: "en",
+  showPartOfSpeech: true,
+  showRadicals: true,
+  showChengyuStories: true,
+  showExamples: true,
+  toneColoring: "phonetics",
+  wordNotesFolder: "Chinese/Words",
 };
 
 interface AppWithSetting extends App {
@@ -487,6 +512,102 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Язык перевода / Translation Language")
+      .setDesc("Выберите язык определений словаря: Английский (по умолчанию), Русский (БКРС с резервным английским) или оба языка одновременно.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("en", "English / Английский (CC-CEDICT, по умолчанию)")
+          .addOption("ru", "Русский (БКРС / Большой словарь)")
+          .addOption("both", "Оба языка (Русский + English)")
+          .setValue(this.plugin.settings.translationLanguage)
+          .onChange(async (value) => {
+            this.plugin.settings.translationLanguage = value as "en" | "ru" | "both";
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Определять части речи / Detect Parts of Speech")
+      .setDesc("Показывать грамматические части речи слова (глагол, существительное, прилагательное и т.д.), включая многофункциональные слова (兼类词).")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showPartOfSpeech)
+          .onChange(async (value) => {
+            this.plugin.settings.showPartOfSpeech = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Цветовая подсветка тонов / Tone Colors (Pleco Style)")
+      .setDesc("Окрашивать транскрипцию в цвета тонов (1-й красный, 2-й зеленый, 3-й синий, 4-й фиолетовый).")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("phonetics", "В транскрипции (пиньинь / ютпинг, по умолчанию)")
+          .addOption("all", "Везде (и в транскрипции, и в иероглифах)")
+          .addOption("off", "Отключить цветовую подсветку")
+          .setValue(this.plugin.settings.toneColoring)
+          .onChange(async (value) => {
+            this.plugin.settings.toneColoring = value as "off" | "phonetics" | "all";
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Ключи Канси и этимология / Radicals & Etymology")
+      .setDesc("Отображать номер ключа Канси (214 ключей), значение радикала и составные компоненты иероглифа.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showRadicals)
+          .onChange(async (value) => {
+            this.plugin.settings.showRadicals = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Истории и притчи чэнъюй / Chengyu Origin Stories")
+      .setDesc("Для 4-значных идиом показывать историческую притчу и аллегорический смысл выражения.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showChengyuStories)
+          .onChange(async (value) => {
+            this.plugin.settings.showChengyuStories = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Примеры предложений / Example Sentences (例句)")
+      .setDesc("Отображать живые примеры предложений с переводом для употребления слова в контексте.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showExamples)
+          .onChange(async (value) => {
+            this.plugin.settings.showExamples = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
       .setName("Анимация порядка черт / Stroke Order Animation")
       .setDesc("Отображать кнопку кисти 🖌️ для просмотра пошаговой каллиграфической анимации написания черт иероглифа в сетке Мицзыгэ (米字格).")
       .addToggle((toggle) =>
@@ -795,6 +916,19 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName("Папка заметок слов / Word Notes Folder")
+      .setDesc("Папка в хранилище для создания отдельных атомарных заметок слов по шаблону (Zettelkasten).")
+      .addText((text) =>
+        text
+          .setPlaceholder("Chinese/Words")
+          .setValue(this.plugin.settings.wordNotesFolder)
+          .onChange(async (val) => {
+            this.plugin.settings.wordNotesFolder = val.trim() || "Chinese/Words";
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
       .setName("Открыть словарик в боковой панели / Open in Sidebar")
       .setDesc("Открыть интерактивную панель словарика в правой боковой панели Obsidian.")
       .addButton((btn) =>
@@ -807,10 +941,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     // ==========================================
-    // 7. ИНТЕГРАЦИЯ С ANKI
+    // 7. ИНТЕГРАЦИЯ С ANKI & PLECO
     // ==========================================
     new Setting(containerEl)
-      .setName("🗃️ Интеграция с Anki / Anki Connect & Export")
+      .setName("🗃️ Интеграция с Anki, Pleco и Прописи")
       .setHeading();
 
     new Setting(containerEl)
@@ -905,6 +1039,46 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             link.click();
             URL.revokeObjectURL(url);
             new Notice(`Экспортировано ${items.length} слов в TSV файл!`);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Экспорт для Pleco (.txt) / Export Pleco Flashcards")
+      .setDesc("Скачать словарик в формате закладок для мобильного приложения Pleco (iOS / Android).")
+      .addButton((btn) =>
+        btn
+          .setButtonText("📱 Экспорт в Pleco (.txt)")
+          .onClick(() => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+              return;
+            }
+            const txt = generatePlecoFlashcards(items);
+            const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
+            link.click();
+            URL.revokeObjectURL(url);
+            new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Генератор прописей / Print Calligraphy Worksheets")
+      .setDesc("Сгенерировать страницу прописей в традиционной сетке Мицзыгэ (米字格) для печати или тренировки на планшете.")
+      .addButton((btn) =>
+        btn
+          .setButtonText("📝 Открыть прописи")
+          .onClick(() => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+              return;
+            }
+            new WorksheetModal(this.app, items).open();
           })
       );
 

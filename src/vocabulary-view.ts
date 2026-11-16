@@ -4,6 +4,12 @@ import { VocabularyItem, VocabularySort } from "./vocabulary.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
+import { generatePlecoFlashcards } from "./pleco.ts";
+import { WorksheetModal } from "./worksheet.ts";
+import { inferPartsOfSpeech, formatPosBadge } from "./pos.ts";
+import { getRussianDefinitions } from "./russian-dict.ts";
+import { createWordNote } from "./word-notes.ts";
+import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 
 export const VIEW_TYPE_CHINESE_VOCABULARY = "chinese-vocabulary-view";
 
@@ -110,6 +116,44 @@ export class ChineseVocabularyView extends ItemView {
         new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
       });
     }
+
+    // Pleco Export Button
+    const plecoBtn = headerActions.createEl("button", {
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Экспорт в Pleco (.txt)", title: "Экспорт в мобильное приложение Pleco (.txt)" },
+      text: "📱",
+    });
+    plecoBtn.addEventListener("click", () => {
+      const items = this.plugin.vocabulary.getItems();
+      if (items.length === 0) {
+        new Notice("Словарик пока пуст!");
+        return;
+      }
+      const txt = generatePlecoFlashcards(items);
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
+      link.click();
+      URL.revokeObjectURL(url);
+      new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+    });
+
+    // Calligraphy Worksheets Button
+    const worksheetBtn = headerActions.createEl("button", {
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Прописи (米字格)", title: "Открыть каллиграфические прописи для печати" },
+      text: "📝",
+    });
+    worksheetBtn.addEventListener("click", () => {
+      const items = this.plugin.vocabulary.getItems();
+      if (items.length === 0) {
+        new Notice("Словарик пока пуст! Добавьте слова ⭐.");
+        return;
+      }
+      new WorksheetModal(this.app, items).open();
+    });
 
     // Open Markdown File button
     const openFileBtn = headerActions.createEl("button", {
@@ -328,8 +372,53 @@ export class ChineseVocabularyView extends ItemView {
       }
     }
 
-    // Header Actions: Stroke Order + Audio + Copy + Delete
+    // POS Badge
+    if (this.plugin.settings.showPartOfSpeech) {
+      const posList = inferPartsOfSpeech(item.word, item.definitions);
+      if (posList.length > 0) {
+        hanziBox.createSpan({
+          cls: "ch-vocab-pos-badge",
+          text: formatPosBadge(posList, this.plugin.settings.translationLanguage === "ru" ? "ru" : "en"),
+          attr: { title: `Часть речи: ${posList.join(", ")}` },
+        });
+      }
+    }
+
+    // Header Actions: Stroke Order + Note + Audio + Copy + Delete
     const actionsBox = topRow.createDiv({ cls: "ch-vocab-actions-box" });
+
+    // Note Button (Zettelkasten)
+    const noteBtn = actionsBox.createEl("button", {
+      cls: "ch-vocab-action-icon-btn",
+      text: "📝",
+      attr: { title: "Создать атомную заметку слова (Zettelkasten Note)" },
+    });
+    noteBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const match = this.plugin.dictionary.getExact(item.word);
+      if (match) {
+        await createWordNote(this.plugin.app, match, item.contextSentence, {
+          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+          openAfterCreation: true,
+        });
+      } else {
+        const dummyMatch = {
+          word: item.word,
+          entries: [{
+            simplified: item.word,
+            traditional: item.traditional || item.word,
+            pinyin: item.pinyin,
+            jyutping: item.jyutping,
+            definitions: item.definitions,
+          }],
+          length: Array.from(item.word).length,
+        };
+        await createWordNote(this.plugin.app, dummyMatch, item.contextSentence, {
+          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+          openAfterCreation: true,
+        });
+      }
+    });
 
     // Stroke Order Button
     if (this.plugin.settings.showStrokeOrder) {
@@ -390,12 +479,30 @@ export class ChineseVocabularyView extends ItemView {
 
     // 2. Phonetics Row
     const phoneticsRow = card.createDiv({ cls: "ch-vocab-phonetics-row" });
-    phoneticsRow.createSpan({ cls: "ch-vocab-pinyin-text", text: item.pinyin });
+    const renderColoredSyllables = (container: HTMLElement, text: string, type: "pinyin" | "jyutping") => {
+      const span = container.createSpan({
+        cls: type === "pinyin" ? "ch-vocab-pinyin-text" : "ch-vocab-jyutping-val",
+      });
+      if (this.plugin.settings.toneColoring === "off") {
+        span.setText(text);
+        return;
+      }
+      const syllables = text.split(/\s+/).filter(Boolean);
+      syllables.forEach((syl, idx) => {
+        if (idx > 0) span.createSpan({ text: " " });
+        const tone = type === "pinyin" ? detectPinyinTone(syl) : detectJyutpingTone(syl);
+        const s = span.createSpan({ text: syl, cls: `ch-tone-${tone}` });
+        s.style.setProperty("color", getToneColor(tone));
+        s.style.setProperty("font-weight", "600");
+      });
+    };
+
+    renderColoredSyllables(phoneticsRow, item.pinyin, "pinyin");
 
     if (item.jyutping) {
       const jBadge = phoneticsRow.createSpan({ cls: "ch-vocab-jyutping-badge" });
       jBadge.createSpan({ cls: "ch-vocab-jyutping-tag", text: "粵" });
-      jBadge.createSpan({ cls: "ch-vocab-jyutping-val", text: item.jyutping });
+      renderColoredSyllables(jBadge, item.jyutping, "jyutping");
     }
 
     // 3. Definitions Section (Practice Mode Masking)
@@ -419,10 +526,23 @@ export class ChineseVocabularyView extends ItemView {
     }
 
     const defsList = defsContainer.createDiv({ cls: "ch-vocab-defs-list" });
-    for (let i = 0; i < Math.min(item.definitions.length, 3); i++) {
+    let displayDefs = item.definitions;
+    if (this.plugin.settings.translationLanguage === "ru") {
+      const ru = getRussianDefinitions(item.word);
+      if (ru && ru.length > 0) {
+        displayDefs = ru;
+      }
+    } else if (this.plugin.settings.translationLanguage === "both") {
+      const ru = getRussianDefinitions(item.word);
+      if (ru && ru.length > 0) {
+        displayDefs = [...ru.slice(0, 2), ...item.definitions.slice(0, 2)];
+      }
+    }
+
+    for (let i = 0; i < Math.min(displayDefs.length, 3); i++) {
       const defRow = defsList.createDiv({ cls: "ch-vocab-def-item" });
       defRow.createSpan({ cls: "ch-vocab-def-bullet", text: "•" });
-      defRow.createSpan({ cls: "ch-vocab-def-text", text: item.definitions[i] });
+      defRow.createSpan({ cls: "ch-vocab-def-text", text: displayDefs[i] });
     }
 
     // Context Quote (if exists)

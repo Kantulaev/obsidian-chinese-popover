@@ -1142,4 +1142,19 @@ export class DictionaryManager {
   get(word: string): DictEntry[] | undefined {
     return this.data[word];
   }
+
+  /**
+   * Returns a complete MatchResult for an exact word if it exists in dictionary
+   */
+  getExact(word: string): MatchResult | null {
+    const entries = this.get(word);
+    if (entries && entries.length > 0) {
+      return {
+        word,
+        entries,
+        length: Array.from(word).length,
+      };
+    }
+    return null;
+  }
 }

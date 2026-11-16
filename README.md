@@ -6,11 +6,12 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.4.0-blue.svg" alt="Version 1.4.0" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.5.0-blue.svg" alt="Version 1.5.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/Translations-English%20%7C%20Russian%20(БКРС)-blue.svg" alt="EN | RU" />
   <img src="https://img.shields.io/badge/HSK%20Levels-1%20to%206-emerald.svg" alt="HSK 1-6" />
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
-  <img src="https://img.shields.io/badge/Anki-AnkiConnect%20%2B%20TSV-8b5cf6.svg" alt="Anki Integration" />
+  <img src="https://img.shields.io/badge/Anki%20%26%20Pleco-Sync%20%2B%20Export-8b5cf6.svg" alt="Anki & Pleco" />
   <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-7C3AED.svg" alt="Apple Liquid Glass" />
 </p>
 
@@ -26,13 +27,24 @@
 Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
 
 * 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
-* ✂️ **Smart Chinese Word Selection (Word Splitting)** — Solves Obsidian's lack of Chinese word boundaries. Double-clicking any Chinese character cleanly selects the exact word (`学习` or `香港`) instead of a single character or the entire paragraph, powered by CEDICT and native `Intl.Segmenter`.
+* 🇷🇺 **Russian & English Translations** — Choose English (CC-CEDICT default), Russian (БКРС / Большой китайско-русский словарь), or both simultaneously!
+* 🏷️ **Parts of Speech (POS / 词类)** — Identifies parts of speech (verb, noun, adj, adv, classifier, pronoun), including multi-POS behavior (兼类词, e.g. `学习` as noun & verb).
+* 🌈 **Pleco-Style Tone Colors** — Visual tone coding for Pinyin and Jyutping (1st Red, 2nd Green, 3rd Blue, 4th Purple, Neutral Gray).
+* 📊 **Text Difficulty & HSK Level Analyzer** — Evaluates entire notes or selections, showing HSK 1–6 percentage distribution, CEFR estimates, and vocabulary breakdown.
+* 📝 **Zettelkasten Atomic Word Notes** — 1-click generation of structured Markdown notes in `Chinese/Words/` with YAML metadata, tags, readings, and context sentences.
+* 📜 **Chengyu Origin Stories (成语故事)** — Expandable ancient fables, allegorical meanings, and historical dynasty context for 4-character idioms.
+* 💬 **Authentic Example Sentences (例句)** — Contextual example sentences with pinyin, translations, and click-to-pronounce audio.
+* 🖨️ **Printable Calligraphy Worksheets (米字格 Mizige)** — Generate and print practice sheets with stroke tracing and blank grids directly to paper or PDF.
+* 📱 **Pleco Mobile Flashcards Export** — Export vocabulary directly to Pleco `.txt` format for import into Pleco on iOS and Android.
+* 🔄 **Simplified ↔ Traditional Converter** — 1-click bidirectional conversion of selected text between 简体 and 繁體.
+* 🗣️ **Paragraph & Selection TTS** — Listen to whole sentences or paragraphs in Cantonese or Mandarin.
+* ✂️ **Smart Chinese Word Selection (Word Splitting)** — Double-clicking any Chinese character cleanly selects the exact word (`学习` or `香港`) instead of a single character or the entire paragraph, powered by CEDICT and native `Intl.Segmenter`.
 * 🎯 **HSK 1–6 Exam Level Badges** — Instant visual badges for official HSK levels on cards and popovers, plus due review filters.
 * 🖋️ **Official HSK Exam Typography** — Select the standard official HSK exam font **KaiTi (楷体)**, SongTi, HeiTi, FangSong, or LXGW WenKai for your dictionary and editor.
 * 🖌️ **Animated Stroke Order (米字格)** — Step-by-step vector calligraphy animation modal with character tabs and playback controls.
 * 🗃️ **1-Click Anki Integration** — Push cards directly into Anki via AnkiConnect or export offline `.tsv` decks.
 * 🔁 **Spaced Repetition (SRS) Flashcards** — Built-in SM-2 intervals (Again 1d, Hard, Good, Easy) stored permanently in your vault.
-* 🔬 **Decomposition by Character** — Multi-character compound words broken down into individual Hanzi with readings and definitions.
+* 🔬 **Kangxi Radicals & Character Breakdown** — Kangxi 214 radicals, stroke counts, and ideogram component breakdowns.
 * 🏮 **Reader Mode** — Instant hover lookup without modifier keys for effortless reading, toggled via status bar or hotkey.
 * 🔤 **Ruby / Furigana Generator** — Generate `<ruby>汉<rt>hàn</rt></ruby>` or Jyutping markup over selected text in 1 click.
 * 📖 **Permanent Personal Vocabulary Notebook** — Star difficult words with `⭐` in 1 click; they are saved permanently into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
@@ -157,6 +169,13 @@ All actions can be bound to your favorite keyboard shortcuts under **Settings** 
 | :--- | :---: | :--- |
 | **Look up word under cursor or selection** | <kbd>Alt</kbd> + <kbd>D</kbd> | Opens popover for active cursor position or selection |
 | **Star or unstar word** | <kbd>Alt</kbd> + <kbd>B</kbd> | Adds or removes word from Personal Vocabulary notebook |
+| **Create Zettelkasten Word Note** | <kbd>Alt</kbd> + <kbd>N</kbd> | Generates an atomic Markdown note with YAML in `Chinese/Words/` |
+| **Analyze Text Difficulty & HSK** | <kbd>Alt</kbd> + <kbd>A</kbd> | Analyzes HSK level distribution and CEFR difficulty |
+| **Open Calligraphy Worksheets** | — | Opens printable Tianzige / Mizige practice sheets modal |
+| **Export Pleco Flashcards** | — | Exports vocabulary as a `.txt` deck for Pleco mobile app |
+| **Speak Selected Text** | <kbd>Alt</kbd> + <kbd>R</kbd> | Reads aloud selected sentences/paragraphs with neural TTS |
+| **Convert to Traditional (繁體)** | — | Bidirectional conversion of selected text to traditional Hanzi |
+| **Convert to Simplified (简体)** | — | Bidirectional conversion of selected text to simplified Hanzi |
 | **Open vocabulary in sidebar** | — | Opens the vocabulary notebook panel in the right sidebar |
 | **Pronounce active word** | <kbd>Alt</kbd> + <kbd>P</kbd> | Plays audio for current word in chosen dialect |
 | **Copy active word card** | <kbd>Alt</kbd> + <kbd>C</kbd> | Copies formatted dictionary entry to clipboard |

@@ -7,6 +7,13 @@ import { getHskBadgeInfo } from "./hsk.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { resolveChineseFontFamily } from "./font.ts";
 import { addNoteToAnki } from "./anki.ts";
+import { formatPosBadge, inferPartsOfSpeech } from "./pos.ts";
+import { formatLocalizedDefinitions } from "./russian-dict.ts";
+import { colorizePinyin, detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
+import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
+import { getChengyuStory } from "./chengyu.ts";
+import { getExampleSentences } from "./examples.ts";
+import { createWordNote } from "./word-notes.ts";
 
 export interface ContentBounds {
   left: number;
@@ -85,7 +92,12 @@ export class DictTooltip {
   /**
    * Extracts concise definitions separated by commas (up to maxCount)
    */
-  private formatConciseDefinitions(entries: DictEntry[], maxCount: number = 3): string {
+  private formatConciseDefinitions(
+    entries: DictEntry[],
+    maxCount: number = 3,
+    word?: string,
+    language: "en" | "ru" | "both" = "en"
+  ): string {
     const words: string[] = [];
 
     for (const entry of entries) {
@@ -114,6 +126,10 @@ export class DictTooltip {
         if (words.length >= maxCount) break;
       }
       if (words.length >= maxCount) break;
+    }
+
+    if (word && language !== "en") {
+      return formatLocalizedDefinitions(word, words, language, maxCount);
     }
 
     if (words.length === 0) {
@@ -318,6 +334,20 @@ export class DictTooltip {
       }
     }
 
+    // Part of Speech (POS) Badge
+    if (settings.showPartOfSpeech) {
+      const allDefs = match.entries.flatMap((e) => e.definitions);
+      const posList = inferPartsOfSpeech(match.word, allDefs);
+      if (posList.length > 0) {
+        const posText = formatPosBadge(posList, settings.translationLanguage === "ru" ? "ru" : "en");
+        pill.createSpan({
+          cls: "ch-dict-pos-badge",
+          text: posText,
+          attr: { title: `Часть речи: ${posList.join(", ")}` },
+        });
+      }
+    }
+
     // Clicking the word triggers high quality pronunciation
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -353,6 +383,25 @@ export class DictTooltip {
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
+      });
+
+      // Zettelkasten Word Note Button
+      const noteBtn = actions.createEl("button", {
+        cls: "ch-dict-glass-btn",
+        text: "📝",
+        attr: {
+          "aria-label": "Create Word Note",
+          title: "Создать атомную заметку слова (Zettelkasten Note)",
+        },
+      });
+      noteBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (this.plugin) {
+          await createWordNote(this.plugin.app, match, contextSentence, {
+            folderPath: settings.wordNotesFolder || "Chinese/Words",
+            openAfterCreation: true,
+          });
+        }
       });
 
       // Stroke Order Animation Button
@@ -430,41 +479,49 @@ export class DictTooltip {
       }
     }
 
-    if (showBoth) {
-      heroContainer.createSpan({
-        cls: "ch-dict-pinyin-part",
-        text: formattedPinyin,
+    const renderColoredSyllables = (container: HTMLElement, text: string, type: "pinyin" | "jyutping") => {
+      const span = container.createSpan({
+        cls: type === "pinyin" ? "ch-dict-pinyin-part" : "ch-dict-jyutping-part",
       });
+      if (settings.toneColoring === "off") {
+        span.setText(text);
+        return;
+      }
+      const syllables = text.split(/\s+/).filter(Boolean);
+      syllables.forEach((syl, idx) => {
+        if (idx > 0) span.createSpan({ text: " " });
+        const tone = type === "pinyin" ? detectPinyinTone(syl) : detectJyutpingTone(syl);
+        const s = span.createSpan({ text: syl, cls: `ch-tone-${tone}` });
+        s.style.setProperty("color", getToneColor(tone));
+        s.style.setProperty("font-weight", "600");
+      });
+    };
+
+    if (showBoth) {
+      renderColoredSyllables(heroContainer, formattedPinyin, "pinyin");
       heroContainer.createSpan({
         cls: "ch-dict-pinyin-slash",
         text: " / ",
       });
-      heroContainer.createSpan({
-        cls: "ch-dict-jyutping-part",
-        text: jyutping,
-      });
+      renderColoredSyllables(heroContainer, jyutping, "jyutping");
       heroContainer.setAttribute(
         "title",
         `${formattedPinyin} / ${jyutping}`
       );
     } else if (showJyutpingOnly) {
-      heroContainer.createSpan({
-        cls: "ch-dict-jyutping-part",
-        text: jyutping,
-      });
+      renderColoredSyllables(heroContainer, jyutping, "jyutping");
       heroContainer.setAttribute("title", jyutping);
     } else {
-      heroContainer.createSpan({
-        cls: "ch-dict-pinyin-part",
-        text: formattedPinyin,
-      });
+      renderColoredSyllables(heroContainer, formattedPinyin, "pinyin");
       heroContainer.setAttribute("title", formattedPinyin);
     }
 
     // 3. Readable Translation: 1 to 5 words separated by commas
     const translationText = this.formatConciseDefinitions(
       match.entries,
-      settings.maxDefinitions || 3
+      settings.maxDefinitions || 3,
+      match.word,
+      settings.translationLanguage || "en"
     );
     this.el.createDiv({
       cls: "ch-dict-translations",
@@ -483,23 +540,99 @@ export class DictTooltip {
             const py = formatPinyin(charEntries[0].pinyin, true);
             const jp = charEntries[0].jyutping;
             const phon = isCantonese && jp ? jp : py;
-            const def = this.formatConciseDefinitions(charEntries, 1);
+            const def = this.formatConciseDefinitions(
+              charEntries,
+              1,
+              char,
+              settings.translationLanguage || "en"
+            );
+
+            let extraTitle = "";
+            let radInfo = null;
+            if (settings.showRadicals) {
+              radInfo = getCharacterRadical(char);
+              if (radInfo) {
+                const radMeaning = settings.translationLanguage === "ru" ? radInfo.meaningRu : radInfo.meaningEn;
+                extraTitle += `\nКлюч #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning}, ${radInfo.strokeCount} черт)`;
+              }
+              const comps = getCharacterComponents(char);
+              if (comps && comps.length > 0) {
+                extraTitle += `\nСостав: ${comps.join(" + ")}`;
+              }
+            }
 
             const chip = decompRow.createDiv({
               cls: "ch-dict-decomp-chip",
               attr: {
-                title: `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}\nНажмите для озвучки иероглифа`,
+                title: `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}${extraTitle}\nНажмите для озвучки иероглифа`,
               },
             });
             chip.createSpan({ cls: "ch-dict-decomp-char", text: char });
             chip.createSpan({ cls: "ch-dict-decomp-phon", text: phon });
             chip.createSpan({ cls: "ch-dict-decomp-def", text: def });
+            if (radInfo) {
+              chip.createSpan({
+                cls: "ch-dict-decomp-rad",
+                text: radInfo.radical,
+                attr: { title: `Ключ: ${radInfo.radical} (${radInfo.meaningRu})` },
+              });
+            }
 
             chip.addEventListener("click", (e) => {
               e.stopPropagation();
               this.playSpeech(char, settings);
             });
           }
+        }
+      }
+    }
+
+    // 5. Chengyu Origin Story Drawer
+    if (settings.showChengyuStories) {
+      const chengyu = getChengyuStory(match.word);
+      if (chengyu) {
+        const storyEl = this.el.createDiv({ cls: "ch-dict-chengyu-drawer" });
+        const header = storyEl.createDiv({ cls: "ch-dict-drawer-header" });
+        header.createSpan({ cls: "ch-dict-drawer-tag", text: "成语故事 Притча" });
+        if (chengyu.dynasty) {
+          header.createSpan({ cls: "ch-dict-drawer-dynasty", text: chengyu.dynasty });
+        }
+
+        const storyBody = storyEl.createDiv({ cls: "ch-dict-drawer-body" });
+        const isRu = settings.translationLanguage !== "en";
+        storyBody.createDiv({
+          cls: "ch-dict-chengyu-lit",
+          text: `«${chengyu.literal}» — ${chengyu.figurative}`,
+        });
+        storyBody.createDiv({
+          cls: "ch-dict-chengyu-story",
+          text: isRu ? chengyu.storyRu : chengyu.storyEn,
+        });
+      }
+    }
+
+    // 6. Example Sentences Drawer
+    if (settings.showExamples) {
+      const examples = getExampleSentences(match.word);
+      if (examples && examples.length > 0) {
+        const exEl = this.el.createDiv({ cls: "ch-dict-example-drawer" });
+        const exHeader = exEl.createDiv({ cls: "ch-dict-drawer-header" });
+        exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: "例句 Примеры" });
+
+        const isRu = settings.translationLanguage !== "en";
+        for (const ex of examples.slice(0, 2)) {
+          const row = exEl.createDiv({ cls: "ch-dict-example-row" });
+          const zhSpan = row.createSpan({
+            cls: "ch-dict-ex-zh",
+            text: ex.chinese,
+            attr: { title: "Нажмите, чтобы прослушать пример" },
+          });
+          zhSpan.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.playSpeech(ex.chinese, settings);
+          });
+          row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+          row.createDiv({ cls: "ch-dict-ex-tr", text: isRu ? ex.russian : ex.english });
         }
       }
     }

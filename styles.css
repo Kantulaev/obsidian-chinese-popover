@@ -4,16 +4,16 @@
   position: fixed;
   z-index: 10000;
   width: var(--ch-dict-width, 330px);
-  height: var(--ch-dict-height, 165px);
   min-width: var(--ch-dict-width, 330px);
   max-width: var(--ch-dict-width, 330px);
   min-height: var(--ch-dict-height, 165px);
-  max-height: var(--ch-dict-height, 165px);
+  max-height: 480px;
   box-sizing: border-box;
   padding: 13px 16px;
   flex-direction: column;
   justify-content: space-between;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   /* Hidden by default */
   display: none;
@@ -1178,4 +1178,365 @@ rt {
   color: var(--text-accent, #0284c7);
   user-select: none;
   font-weight: 500;
+}
+
+/* ==========================================
+   Popover Scrollbar & Expandable Drawers
+   ========================================== */
+.ch-dict-tooltip::-webkit-scrollbar {
+  width: 5px;
+}
+.ch-dict-tooltip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.theme-light .ch-dict-tooltip::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================================
+   Parts of Speech (POS) Badge
+   ========================================== */
+.ch-dict-pos-badge,
+.ch-vocab-pos-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+  user-select: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.theme-light .ch-dict-pos-badge,
+.theme-light .ch-vocab-pos-badge {
+  color: #475569;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================
+   Radicals in Character Breakdown
+   ========================================== */
+.ch-dict-decomp-rad {
+  font-size: 10px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-top: 2px;
+}
+
+/* ==========================================
+   Chengyu Origin Stories Drawer
+   ========================================== */
+.ch-dict-chengyu-drawer {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.22);
+}
+
+.ch-dict-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ch-dict-drawer-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #facc15;
+}
+
+.ch-dict-drawer-dynasty {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.theme-light .ch-dict-drawer-dynasty {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.ch-dict-chengyu-lit {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.theme-light .ch-dict-chengyu-lit {
+  color: #0f172a;
+}
+
+.ch-dict-chengyu-story {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.theme-light .ch-dict-chengyu-story {
+  color: #334155;
+}
+
+/* ==========================================
+   Example Sentences Drawer
+   ========================================== */
+.ch-dict-example-drawer {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ch-dict-example-row {
+  margin-top: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.ch-dict-example-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.ch-dict-ex-zh {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.ch-dict-ex-zh:hover {
+  color: #38bdf8;
+  text-decoration: underline;
+}
+
+.theme-light .ch-dict-ex-zh {
+  color: #0f172a;
+}
+
+.ch-dict-ex-py {
+  font-size: 11px;
+  color: #93c5fd;
+  margin-top: 1px;
+}
+
+.ch-dict-ex-tr {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
+}
+
+.theme-light .ch-dict-ex-tr {
+  color: #475569;
+}
+
+/* ==========================================
+   Tone Color Classes (Pleco / Hanping Palette)
+   ========================================== */
+.ch-tone-1 { color: #ef4444 !important; }
+.ch-tone-2 { color: #10b981 !important; }
+.ch-tone-3 { color: #3b82f6 !important; }
+.ch-tone-4 { color: #a855f7 !important; }
+.ch-tone-5 { color: #94a3b8 !important; }
+
+/* ==========================================
+   Text Analyzer Modal
+   ========================================== */
+.ch-analyzer-modal {
+  padding: 16px;
+  max-width: 600px;
+}
+
+.ch-analyzer-header h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.ch-analyzer-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ch-analyzer-stat-card {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  text-align: center;
+}
+
+.ch-analyzer-stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.ch-analyzer-stat-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.ch-analyzer-breakdown h4 {
+  margin-bottom: 12px;
+}
+
+.ch-analyzer-bar-row {
+  margin-bottom: 10px;
+}
+
+.ch-analyzer-bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.ch-analyzer-lvl-badge {
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--background-modifier-accent);
+  color: var(--text-on-accent);
+  font-size: 11px;
+}
+
+.ch-analyzer-lvl-badge.non-hsk {
+  background: #64748b;
+}
+
+.ch-analyzer-bar-track {
+  width: 100%;
+  height: 8px;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ch-analyzer-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.ch-analyzer-advice {
+  margin-top: 20px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  font-size: 12px;
+}
+
+/* ==========================================
+   Calligraphy Worksheets Modal
+   ========================================== */
+.ch-worksheet-modal {
+  padding: 16px;
+  max-width: 800px;
+}
+
+.ch-worksheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ch-worksheet-preview {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 16px;
+  background: #ffffff;
+  color: #000000;
+}
+
+.ch-worksheet-sheet {
+  font-family: "KaiTi", "楷体", serif;
+}
+
+.ch-worksheet-title {
+  text-align: center;
+  font-size: 20px;
+  margin-bottom: 6px;
+  color: #111;
+}
+
+.ch-worksheet-meta {
+  text-align: right;
+  font-size: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 6px;
+  color: #555;
+}
+
+.ch-worksheet-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ch-worksheet-info {
+  width: 90px;
+  display: flex;
+  flex-direction: column;
+  padding-right: 8px;
+}
+
+.ch-worksheet-info-pinyin {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.ch-worksheet-info-trans {
+  font-size: 11px;
+  color: #4b5563;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ch-worksheet-cells {
+  display: flex;
+  gap: 4px;
+}
+
+.ch-worksheet-cell {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #dc2626;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image:
+    linear-gradient(to right, transparent 49%, rgba(220, 38, 38, 0.25) 50%, transparent 51%),
+    linear-gradient(to bottom, transparent 49%, rgba(220, 38, 38, 0.25) 50%, transparent 51%),
+    linear-gradient(45deg, transparent 49%, rgba(220, 38, 38, 0.15) 50%, transparent 51%),
+    linear-gradient(-45deg, transparent 49%, rgba(220, 38, 38, 0.15) 50%, transparent 51%);
+}
+
+.ch-worksheet-char {
+  font-size: 32px;
+  line-height: 1;
+  color: #000;
+  z-index: 1;
+}
+
+.ch-worksheet-char.trace-char {
+  color: rgba(0, 0, 0, 0.22);
 }

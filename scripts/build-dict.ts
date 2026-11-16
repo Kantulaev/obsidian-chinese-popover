@@ -230,7 +230,7 @@ async function main() {
   const cedictRegex = /^(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+\/(.+)\/$/;
   let cedictCount = 0;
 
-  for await (const line of lineStream) {
+  for await (const line of (lineStream as unknown as AsyncIterable<string>)) {
     if (!line || line.startsWith("#")) continue;
 
     const match = line.match(cedictRegex);
@@ -243,8 +243,8 @@ async function main() {
 
     const definitions = rawDefs
       .split("/")
-      .map((d) => d.trim())
-      .filter((d) => d.length > 0);
+      .map((d: string) => d.trim())
+      .filter((d: string) => d.length > 0);
 
     const jyutping = resolveJyutping(
       traditional,
@@ -330,7 +330,7 @@ async function main() {
     }
     console.log(`CC-Canto added ${cantoAdded} unique Cantonese entries.`);
   } catch (err) {
-    console.warn("Could not merge CC-Canto:", err.message);
+    console.warn("Could not merge CC-Canto:", (err as Error)?.message ?? err);
   }
 
   console.log("Writing final JSON dictionary...");

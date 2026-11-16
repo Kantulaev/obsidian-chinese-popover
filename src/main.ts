@@ -814,7 +814,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
             }
             return EditorSelection.create([range]);
           },
-          update(_update) {},
+          update(_update: any) {},
         };
       }),
       EditorView.domEventHandlers({

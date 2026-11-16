@@ -510,6 +510,29 @@ export const CANTONESE_CORE_DICT: DictionaryData = {
   ],
 };
 
+/**
+ * High-frequency colloquial Cantonese words and expressions.
+ * Used for targeted Cantonese phrase boundary detection without interfering
+ * with Obsidian's standard Chinese word segmentation for chengyu and regular words.
+ */
+export const CANTONESE_SPECIFIC_WORDS: Set<string> = new Set([
+  // Words in CANTONESE_CORE_DICT
+  "咁樣", "點樣樣", "𨋢", "搭𨋢", "𠵱家", "依家", "而家", "做咩事", "乜水",
+  "搭船", "搭飛機", "睇得明", "睇唔明", "聽得明", "聽唔明", "搞得掂", "搞唔掂",
+  "食得落", "食唔落", "識唔識", "知唔知", "去唔去", "有搞錯", "冇搞錯",
+  "成日都", "一齊去", "得唔得閒", "食唔食", "睇唔睇", "等陣先", "一陣間",
+  "冇所謂", "真係㗎", "好耐冇見", "好耐唔見",
+  "㗎啦", "嘅啫", "㗎咋", "喇噃", "得㗎", "㗎喇", "嘅喇", "喇喎", "囉喎", "呀嘛", "呀嗱",
+  // Common colloquial Cantonese phrases typically fragmented by Mandarin ICU segmenters
+  "唔該", "唔該晒", "多謝晒", "唔好意思", "冇問題", "冇相干", "冇緊要", "有冇搞錯",
+  "點解", "做咩", "乜嘢", "幾多", "點樣", "有冇", "得唔得", "係唔係", "好唔好",
+  "邊度", "呢度", "嗰度", "邊個", "呢個", "嗰個", "呢啲", "嗰啲", "邊啲",
+  "屋企", "屋企人", "返屋企", "出街", "行街", "買嘢", "食嘢",
+  "返工", "收工", "放工", "放假", "瞓覺", "起身", "傾偈", "搭車",
+  "睇戲", "飲茶", "拍拖", "睇書", "真係", "一齊", "大約", "差唔多",
+  "犀利", "巴閉", "論盡", "叻仔", "靚仔", "靚女", "肥佬", "瘦蜢蜢", "得戚"
+]);
+
 export class DictionaryManager {
   private data: DictionaryData = {};
   private isLoaded: boolean = false;
@@ -558,7 +581,7 @@ export class DictionaryManager {
     const dictPath = `${this.plugin.manifest.dir}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
 
-    const version = this.plugin.manifest.version || "1.3.1";
+    const version = this.plugin.manifest.version || "1.3.2";
     const downloadUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/${version}/cedict.json`;
     const fallbackUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.0.0/cedict.json`;
 
@@ -599,6 +622,210 @@ export class DictionaryManager {
   isChinese(text: string): boolean {
     if (!text) return false;
     return /\p{Script=Han}/u.test(text);
+  }
+
+  /**
+   * Specifically detects whether the character at `offset` belongs to a colloquial
+   * Cantonese phrase, idiom, or grammatical construction (A-not-A, aspect particles, complements).
+   * Returns the MatchResult if a Cantonese phrase is detected, or null otherwise
+   * so Obsidian's built-in word selector can handle standard Chinese words and chengyu cleanly.
+   */
+  findCantonesePhraseAtOffset(
+    fullText: string,
+    offset: number,
+    maxLen: number = 6
+  ): MatchResult | null {
+    if (!this.isLoaded || !fullText || offset < 0 || offset >= fullText.length) {
+      return null;
+    }
+
+    if (offset > 0 && offset < fullText.length) {
+      const code = fullText.charCodeAt(offset);
+      if (code >= 0xdc00 && code <= 0xdfff) {
+        offset--;
+      }
+    }
+
+    const codePoint = fullText.codePointAt(offset);
+    if (codePoint === undefined) return null;
+    const clickedChar = String.fromCodePoint(codePoint);
+    if (!this.isChinese(clickedChar)) {
+      return null;
+    }
+
+    // 1. Check against Cantonese specific vocabulary
+    for (let len = Math.min(maxLen * 2, fullText.length); len >= 2; len--) {
+      for (let s = Math.max(0, offset - len + 1); s <= offset; s++) {
+        if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+        const e = s + len;
+        if (e < fullText.length && fullText.charCodeAt(e) >= 0xdc00 && fullText.charCodeAt(e) <= 0xdfff) continue;
+        if (offset >= s && offset < e && e <= fullText.length) {
+          const cand = fullText.slice(s, e);
+          if (CANTONESE_SPECIFIC_WORDS.has(cand)) {
+            const entries = this.data[cand] || [];
+            return {
+              word: cand,
+              entries,
+              length: Array.from(cand).length,
+              start: s,
+              end: e,
+            };
+          }
+        }
+      }
+    }
+
+    // 2. A-not-A 5-character pattern: XY唔XY (e.g. 鍾意唔鍾意, 清楚唔清楚, 開心唔開心)
+    for (let s = Math.max(0, offset - 4); s <= offset && s + 5 <= fullText.length; s++) {
+      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+      if (offset < s || offset >= s + 5) continue;
+      const w1 = fullText.slice(s, s + 2);
+      const mid = fullText[s + 2];
+      const w2 = fullText.slice(s + 3, s + 5);
+      if (w1 === w2 && (mid === "唔" || mid === "不") && this.isChinese(w1)) {
+        const word = fullText.slice(s, s + 5);
+        const baseEntries = this.data[w1] || [];
+        const baseDef = baseEntries[0]?.definitions?.[0] || w1;
+        const baseJyut = baseEntries[0]?.jyutping || "";
+        const basePin = baseEntries[0]?.pinyin || "";
+        const synthesizedEntries: DictEntry[] = [
+          {
+            traditional: word,
+            pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
+            jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
+            definitions: [`whether or not ${baseDef}? (Cantonese A-not-A question)`],
+          },
+        ];
+        return {
+          word,
+          entries: this.data[word] || synthesizedEntries,
+          length: 5,
+          start: s,
+          end: s + 5,
+        };
+      }
+    }
+
+    // 3. A-not-A 3-character pattern: X唔X or X不X (e.g. 去唔去, 識唔識, 知唔知, 食唔食)
+    for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
+      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+      if (offset < s || offset >= s + 3) continue;
+      const c0 = fullText[s];
+      const c1 = fullText[s + 1];
+      const c2 = fullText[s + 2];
+      if (c0 === c2 && (c1 === "唔" || c1 === "不") && this.isChinese(c0)) {
+        const word = fullText.slice(s, s + 3);
+        const baseEntries = this.data[c0] || [];
+        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
+        const baseJyut = baseEntries[0]?.jyutping || "";
+        const basePin = baseEntries[0]?.pinyin || "";
+        const synthesizedEntries: DictEntry[] = [
+          {
+            traditional: word,
+            pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
+            jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
+            definitions: [`whether or not to ${baseDef}? (Cantonese A-not-A question)`],
+          },
+        ];
+        return {
+          word,
+          entries: this.data[word] || synthesizedEntries,
+          length: 3,
+          start: s,
+          end: s + 3,
+        };
+      }
+    }
+
+    // 4. Potential / Resultative complements: X得Y or X唔Y (e.g. 睇唔明, 聽得明, 搞得掂, 食唔落)
+    const resultComplements = new Set(["明", "掂", "到", "落", "出", "入", "完", "好", "成", "開", "走"]);
+    for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
+      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+      if (offset < s || offset >= s + 3) continue;
+      const c0 = fullText[s];
+      const c1 = fullText[s + 1];
+      const c2 = fullText[s + 2];
+      if ((c1 === "得" || c1 === "唔") && resultComplements.has(c2) && this.isChinese(c0)) {
+        const word = fullText.slice(s, s + 3);
+        const baseEntries = this.data[c0] || [];
+        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
+        const baseJyut = baseEntries[0]?.jyutping || "";
+        const isAffirmative = c1 === "得";
+        const synthesizedEntries: DictEntry[] = [
+          {
+            traditional: word,
+            pinyin: "",
+            jyutping: baseJyut ? `${baseJyut} ${isAffirmative ? "dak1" : "m4"} ...` : "",
+            definitions: [
+              isAffirmative
+                ? `able to ${baseDef} successfully (Cantonese potential complement)`
+                : `unable to ${baseDef} (Cantonese negative potential complement)`,
+            ],
+          },
+        ];
+        return {
+          word,
+          entries: this.data[word] || synthesizedEntries,
+          length: 3,
+          start: s,
+          end: s + 3,
+        };
+      }
+    }
+
+    // 5. Verb + Cantonese Aspect marker: X緊, X咗, X晒, X埋, X返, X番, X吓, X下
+    const aspectMarkers: Record<string, { jyut: string; desc: string }> = {
+      "緊": { jyut: "gan2", desc: "currently doing (progressive aspect)" },
+      "咗": { jyut: "zo2", desc: "completed / finished doing (perfective aspect)" },
+      "晒": { jyut: "saai3", desc: "completely / entirely finished doing" },
+      "埋": { jyut: "maai4", desc: "finish up / also doing" },
+      "返": { jyut: "faan1", desc: "doing back / returning" },
+      "番": { jyut: "faan1", desc: "doing back / again" },
+      "吓": { jyut: "haa5", desc: "do a little bit / have a try" },
+      "下": { jyut: "haa5", desc: "do a little bit / briefly" },
+    };
+
+    for (let s = Math.max(0, offset - 1); s <= offset && s + 2 <= fullText.length; s++) {
+      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+      if (offset < s || offset >= s + 2) continue;
+      const c0 = fullText[s];
+      const c1 = fullText[s + 1];
+      const asp = aspectMarkers[c1];
+      if (asp && this.isChinese(c0)) {
+        const word = fullText.slice(s, s + 2);
+        const baseEntries = this.data[c0] || [];
+        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
+        const baseJyut = baseEntries[0]?.jyutping || "";
+        const synthesizedEntries: DictEntry[] = [
+          {
+            traditional: word,
+            pinyin: "",
+            jyutping: baseJyut ? `${baseJyut} ${asp.jyut}` : "",
+            definitions: [`${baseDef} (${asp.desc})`],
+          },
+        ];
+        return {
+          word,
+          entries: this.data[word] || synthesizedEntries,
+          length: 2,
+          start: s,
+          end: s + 2,
+        };
+      }
+    }
+
+    // 6. Single Cantonese unique character (like 𨋢)
+    if (CANTONESE_SPECIFIC_WORDS.has(clickedChar)) {
+      return {
+        word: clickedChar,
+        entries: this.get(clickedChar) || [],
+        length: Array.from(clickedChar).length,
+        start: offset,
+        end: offset + clickedChar.length,
+      };
+    }
+
+    return null;
   }
 
   /**

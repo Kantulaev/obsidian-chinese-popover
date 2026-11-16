@@ -366,11 +366,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
    */
   private buildCodeMirrorExtension(): Extension {
     return [
-      // Mouse selection style facet: overrides double-click word selection in CodeMirror 6
+      // Mouse selection style facet: overrides double-click word selection ONLY for Cantonese phrases
+      // Standard words and 4-character chengyu pass through to Obsidian's built-in word selector
       EditorView.mouseSelectionStyle.of((view: EditorView, event: MouseEvent) => {
         if (
           !this.settings.enabled ||
-          !this.settings.smartWordSelection ||
+          !this.settings.selectCantonesePhrases ||
           event.button !== 0 ||
           event.detail !== 2
         ) {
@@ -381,7 +382,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (pos === null) return null;
 
         const doc = view.state.doc.toString();
-        const match = this.dictionary.findWordAtOffset(
+        // Check ONLY for Cantonese colloquial phrases; for all other words, return null so Obsidian's built-in selector acts!
+        const match = this.dictionary.findCantonesePhraseAtOffset(
           doc,
           pos,
           this.settings.maxWordLength
@@ -472,7 +474,64 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const doc = view.state.doc;
     const fullDoc = doc.toString();
+    const resolvedBounds = bounds || this.getContentBounds(null, view);
+    const context = this.settings.autoSaveContextSentence
+      ? this.extractContextSentence(fullDoc, pos)
+      : undefined;
 
+    // 1. Act on Obsidian's internal selection:
+    // If Obsidian's built-in selector already selected text covering pos (e.g. 4-character chengyu),
+    // look it up directly without shrinking or overriding Obsidian's selection!
+    const selection = view.state.selection.main;
+    let selectedText = "";
+    if (!selection.empty && pos >= selection.from && pos <= selection.to) {
+      selectedText = view.state.sliceDoc(selection.from, selection.to).trim();
+    }
+
+    if (selectedText && this.dictionary.isChinese(selectedText)) {
+      const directEntries = this.dictionary.get(selectedText);
+      if (directEntries && directEntries.length > 0) {
+        this.tooltip.show(
+          {
+            word: selectedText,
+            entries: directEntries,
+            length: Array.from(selectedText).length,
+            start: selection.from,
+            end: selection.to,
+          },
+          clientX,
+          clientY,
+          this.settings,
+          resolvedBounds,
+          context
+        );
+        return;
+      }
+
+      const match = this.dictionary.findLongestMatch(
+        selectedText,
+        this.settings.maxWordLength
+      );
+      if (match) {
+        this.tooltip.show(
+          {
+            word: match.word,
+            entries: match.entries,
+            length: match.length,
+            start: selection.from,
+            end: selection.to,
+          },
+          clientX,
+          clientY,
+          this.settings,
+          resolvedBounds,
+          context
+        );
+        return;
+      }
+    }
+
+    // 2. Fallback: if selection is empty (e.g. hover trigger), find word at pos
     const match = this.dictionary.findWordAtOffset(
       fullDoc,
       pos,
@@ -480,20 +539,6 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
-      if (
-        this.settings.smartWordSelection &&
-        match.start !== undefined &&
-        match.end !== undefined
-      ) {
-        view.dispatch({
-          selection: { anchor: match.start, head: match.end },
-        });
-      }
-
-      const resolvedBounds = bounds || this.getContentBounds(null, view);
-      const context = this.settings.autoSaveContextSentence
-        ? this.extractContextSentence(fullDoc, pos)
-        : undefined;
       this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
     }
   }
@@ -576,7 +621,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const resolvedBounds = bounds || this.getContentBounds(container, undefined);
 
-    // Check if user selected text
+    // 1. Act on Obsidian / browser internal selection if present
     const selection = window.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (selectedText && this.dictionary.isChinese(selectedText)) {
@@ -586,7 +631,26 @@ export default class ChineseHoverDictPlugin extends Plugin {
           {
             word: selectedText,
             entries: directEntries,
-            length: selectedText.length,
+            length: Array.from(selectedText).length,
+          },
+          clientX,
+          clientY,
+          this.settings,
+          resolvedBounds
+        );
+        return;
+      }
+
+      const match = this.dictionary.findLongestMatch(
+        selectedText,
+        this.settings.maxWordLength
+      );
+      if (match) {
+        this.tooltip.show(
+          {
+            word: match.word,
+            entries: match.entries,
+            length: match.length,
           },
           clientX,
           clientY,
@@ -622,24 +686,20 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const offset = range.startOffset;
     const fullText = textNode.textContent || "";
 
-    const match = this.dictionary.findWordAtOffset(
-      fullText,
-      offset,
-      this.settings.maxWordLength
-    );
-
-    if (match) {
-      if (
-        this.settings.smartWordSelection &&
-        match.start !== undefined &&
-        match.end !== undefined
-      ) {
+    // If selectCantonesePhrases is enabled, check for Cantonese phrases
+    if (this.settings.selectCantonesePhrases) {
+      const cantoMatch = this.dictionary.findCantonesePhraseAtOffset(
+        fullText,
+        offset,
+        this.settings.maxWordLength
+      );
+      if (cantoMatch && cantoMatch.start !== undefined && cantoMatch.end !== undefined) {
         try {
           const sel = window.getSelection();
           if (sel) {
             const wordRange = document.createRange();
-            wordRange.setStart(textNode, match.start);
-            wordRange.setEnd(textNode, match.end);
+            wordRange.setStart(textNode, cantoMatch.start);
+            wordRange.setEnd(textNode, cantoMatch.end);
             sel.removeAllRanges();
             sel.addRange(wordRange);
           }
@@ -649,8 +709,21 @@ export default class ChineseHoverDictPlugin extends Plugin {
         } catch {
           // ignore
         }
+        const context = this.settings.autoSaveContextSentence
+          ? this.extractContextSentence(fullText, offset)
+          : undefined;
+        this.tooltip.show(cantoMatch, clientX, clientY, this.settings, resolvedBounds, context);
+        return;
       }
+    }
 
+    const match = this.dictionary.findWordAtOffset(
+      fullText,
+      offset,
+      this.settings.maxWordLength
+    );
+
+    if (match) {
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(fullText, offset)
         : undefined;
@@ -747,7 +820,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const directEntries = this.dictionary.get(selection);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
-          { word: selection, entries: directEntries, length: selection.length },
+          { word: selection, entries: directEntries, length: Array.from(selection).length },
+          clientX,
+          clientY,
+          this.settings,
+          bounds
+        );
+        return;
+      }
+      const match = this.dictionary.findLongestMatch(selection, this.settings.maxWordLength);
+      if (match) {
+        this.tooltip.show(
+          { word: match.word, entries: match.entries, length: match.length },
           clientX,
           clientY,
           this.settings,
@@ -767,7 +851,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     if (match) {
       if (
-        this.settings.smartWordSelection &&
+        this.settings.selectCantonesePhrases &&
         match.start !== undefined &&
         match.end !== undefined
       ) {

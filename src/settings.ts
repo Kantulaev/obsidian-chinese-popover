@@ -51,8 +51,9 @@ export interface ChineseDictSettings {
   practiceMode: boolean;
   vocabularySort: "date_desc" | "date_asc" | "alpha";
 
-  // Smart Chinese Word Splitting & Selection
-  smartWordSelection: boolean;
+  // Word Selection
+  selectCantonesePhrases: boolean;
+  smartWordSelection?: boolean;
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -90,7 +91,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   practiceMode: false,
   vocabularySort: "date_desc",
 
-  smartWordSelection: true,
+  selectCantonesePhrases: true,
 };
 
 interface AppWithSetting extends App {
@@ -184,13 +185,13 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Умное выделение китайских слов / Smart Word Selection")
-      .setDesc("При двойном клике автоматически выделяет в редакторе китайское слово целиком (вместо одного иероглифа или всего предложения), используя CEDICT и встроенный Intl.Segmenter.")
+      .setName("Выделять кантонские фразы / Select Cantonese Phrases")
+      .setDesc("При двойном клике автоматически выделять специфические кантонские разговорные фразы (唔該晒, 點解, 咁樣, 睇唔明, 去唔去, 食緊 и др.), которые стандартный движок Obsidian может разбивать на отдельные иероглифы. Для обычных слов и чэнъюй используется встроенное выделение Obsidian.")
       .addToggle((toggle) =>
         toggle
-          .setValue(this.plugin.settings.smartWordSelection)
+          .setValue(this.plugin.settings.selectCantonesePhrases ?? true)
           .onChange(async (value) => {
-            this.plugin.settings.smartWordSelection = value;
+            this.plugin.settings.selectCantonesePhrases = value;
             await this.plugin.saveSettings();
           })
       );

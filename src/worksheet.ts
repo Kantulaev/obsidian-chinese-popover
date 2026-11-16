@@ -78,51 +78,62 @@ export class WorksheetModal extends Modal {
   }
 
   private printWorksheet(): void {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      new Notice("Пожалуйста, разрешите всплывающие окна для печати.");
-      return;
-    }
-
     const preview = this.contentEl.querySelector(".ch-worksheet-sheet");
     if (!preview) return;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Китайские прописи • Chinese Worksheets</title>
-        <style>
-          @page { size: A4 portrait; margin: 12mm; }
-          body { font-family: "KaiTi", "楷体", "Noto Serif SC", serif; margin: 0; padding: 0; color: #000; }
-          .ch-worksheet-title { text-align: center; font-size: 18px; margin-bottom: 4px; }
-          .ch-worksheet-meta { text-align: right; font-size: 12px; margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
-          .ch-worksheet-row { display: flex; align-items: center; margin-bottom: 10px; page-break-inside: avoid; }
-          .ch-worksheet-info { width: 100px; display: flex; flex-direction: column; font-size: 11px; padding-right: 10px; text-align: right; }
-          .ch-worksheet-info-pinyin { font-weight: bold; color: #333; font-size: 13px; }
-          .ch-worksheet-info-trans { color: #666; font-size: 10px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-          .ch-worksheet-cells { display: flex; gap: 4px; }
-          .ch-worksheet-cell {
-            width: 44px; height: 44px; position: relative; border: 1px solid #c4b5fd;
-            display: flex; align-items: center; justify-content: center;
-            background:
-              linear-gradient(to right, transparent 49%, #f1f5f9 49%, #f1f5f9 51%, transparent 51%),
-              linear-gradient(to bottom, transparent 49%, #f1f5f9 49%, #f1f5f9 51%, transparent 51%),
-              linear-gradient(45deg, transparent 49%, #f8fafc 49%, #f8fafc 51%, transparent 51%),
-              linear-gradient(-45deg, transparent 49%, #f8fafc 49%, #f8fafc 51%, transparent 51%);
-          }
-          .ch-worksheet-char { font-size: 32px; line-height: 1; font-family: "KaiTi", "楷体", serif; }
-          .trace-char { color: #cbd5e1; }
-        </style>
-      </head>
-      <body>
-        ${preview.outerHTML}
-        <script>
-          window.onload = function() { window.print(); }
-        </script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
+    // Use a clean hidden iframe for seamless printing without popup windows or document.write
+    const iframe = createEl("iframe");
+    iframe.setCssStyles({
+      position: "fixed",
+      right: "0",
+      bottom: "0",
+      width: "0",
+      height: "0",
+      border: "0",
+      visibility: "hidden",
+    });
+    activeDocument.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) {
+      iframe.remove();
+      new Notice("Не удалось открыть окно печати.");
+      return;
+    }
+
+    const styleEl = doc.createElement("style");
+    styleEl.textContent = `
+      @page { size: A4 portrait; margin: 12mm; }
+      body { font-family: "KaiTi", "楷体", "Noto Serif SC", serif; margin: 0; padding: 0; color: #000; }
+      .ch-worksheet-title { text-align: center; font-size: 18px; margin-bottom: 4px; }
+      .ch-worksheet-meta { text-align: right; font-size: 12px; margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+      .ch-worksheet-row { display: flex; align-items: center; margin-bottom: 10px; page-break-inside: avoid; }
+      .ch-worksheet-info { width: 100px; display: flex; flex-direction: column; font-size: 11px; padding-right: 10px; text-align: right; }
+      .ch-worksheet-info-pinyin { font-weight: bold; color: #333; font-size: 13px; }
+      .ch-worksheet-info-trans { color: #666; font-size: 10px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .ch-worksheet-cells { display: flex; gap: 4px; }
+      .ch-worksheet-cell {
+        width: 44px; height: 44px; position: relative; border: 1px solid #c4b5fd;
+        display: flex; align-items: center; justify-content: center;
+        background:
+          linear-gradient(to right, transparent 49%, #f1f5f9 49%, #f1f5f9 51%, transparent 51%),
+          linear-gradient(to bottom, transparent 49%, #f1f5f9 49%, #f1f5f9 51%, transparent 51%),
+          linear-gradient(45deg, transparent 49%, #f8fafc 49%, #f8fafc 51%, transparent 51%),
+          linear-gradient(-45deg, transparent 49%, #f8fafc 49%, #f8fafc 51%, transparent 51%);
+      }
+      .ch-worksheet-char { font-size: 32px; line-height: 1; font-family: "KaiTi", "楷体", serif; }
+      .trace-char { color: #cbd5e1; }
+    `;
+    doc.head.appendChild(styleEl);
+
+    const cloned = preview.cloneNode(true);
+    doc.body.appendChild(cloned);
+
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+
+    window.setTimeout(() => {
+      iframe.remove();
+    }, 1000);
   }
 }

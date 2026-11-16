@@ -546,13 +546,29 @@ const ASPECT_MARKERS: Record<string, { jyut: string; desc: string }> = {
   "下": { jyut: "haa5", desc: "do a little bit / briefly" },
 };
 
-let cachedZhSegmenter: any = null;
-function getSharedZhSegmenter(): any {
+interface ZhSegmentData {
+  segment: string;
+  index: number;
+}
+
+interface ZhSegmenterLike {
+  segment(input: string): Iterable<ZhSegmentData>;
+}
+
+let cachedZhSegmenter: ZhSegmenterLike | null = null;
+function getSharedZhSegmenter(): ZhSegmenterLike | null {
   if (!cachedZhSegmenter && typeof Intl !== "undefined" && "Segmenter" in Intl) {
     try {
-      cachedZhSegmenter = new (Intl as any).Segmenter(["zh-HK", "yue", "zh-Hant", "zh-TW", "zh-CN", "zh"], {
-        granularity: "word",
-      });
+      const SegmenterCtor = (Intl as unknown as {
+        Segmenter: new (
+          locales: string[],
+          options: { granularity: string }
+        ) => ZhSegmenterLike;
+      }).Segmenter;
+      cachedZhSegmenter = new SegmenterCtor(
+        ["zh-HK", "yue", "zh-Hant", "zh-TW", "zh-CN", "zh"],
+        { granularity: "word" }
+      );
     } catch {
       cachedZhSegmenter = null;
     }

@@ -67,8 +67,10 @@ export class TextAnalyzerModal extends Modal {
 
       const track = barRow.createDiv({ cls: "ch-analyzer-bar-track" });
       const fill = track.createDiv({ cls: "ch-analyzer-bar-fill" });
-      fill.style.width = `${pct}%`;
-      fill.style.backgroundColor = color;
+      fill.setCssStyles({
+        width: `${pct}%`,
+        backgroundColor: color,
+      });
     }
 
     // Advanced / Non-HSK
@@ -79,9 +81,10 @@ export class TextAnalyzerModal extends Modal {
     nonHskLabel.createSpan({ text: `${stats.nonHskCount} слов (${nonHskPct}%)` });
 
     const nonHskTrack = nonHskRow.createDiv({ cls: "ch-analyzer-bar-track" });
-    const nonHskFill = nonHskTrack.createDiv({ cls: "ch-analyzer-bar-fill" });
-    nonHskFill.style.width = `${nonHskPct}%`;
-    nonHskFill.style.backgroundColor = "#64748b";
+    const nonHskFill = nonHskTrack.createDiv({ cls: "ch-analyzer-bar-fill non-hsk" });
+    nonHskFill.setCssStyles({
+      width: `${nonHskPct}%`,
+    });
 
     // Footer with recommendations
     const adviceBox = contentEl.createDiv({ cls: "ch-analyzer-advice" });

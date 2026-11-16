@@ -2,10 +2,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "obsidian": ["src/types/obsidian.d.ts"],
-      "@codemirror/view": ["src/types/codemirror.d.ts"],
-      "@codemirror/state": ["src/types/codemirror.d.ts"],
-      "moment": ["src/types/moment.d.ts"]
+      "obsidian": ["types/obsidian.d.ts"],
+      "@codemirror/view": ["types/codemirror.d.ts"],
+      "@codemirror/state": ["types/codemirror.d.ts"],
+      "moment": ["types/moment.d.ts"]
     },
     "inlineSourceMap": true,
     "inlineSources": true,

@@ -207,10 +207,8 @@ export async function fetchDynamicChengyuStory(word: string): Promise<ChengyuSto
     return CHENGYU_DATABASE[clean];
   }
 
-  // Query open-source Xinhua idiom archive via CDN
+  // Query summary via Wikipedia REST API fallback
   try {
-    const url = `https://cdn.jsdelivr.net/gh/pwxcoo/chinese-xinhua@master/data/idiom.json`;
-    // We avoid downloading 10MB during user hover. Instead, we use local fallback or Wikipedia summary
     const wikiUrl = `https://zh.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(clean)}`;
     const res = await requestUrl({
       url: wikiUrl,

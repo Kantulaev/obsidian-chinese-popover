@@ -393,11 +393,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
           type: "text/tab-separated-values;charset=utf-8;",
         });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `Anki_Chinese_Vocabulary_${new Date()
-          .toISOString()
-          .slice(0, 10)}.tsv`;
+        const link = createEl("a", {
+          href: url,
+          attr: {
+            download: `Anki_Chinese_Vocabulary_${new Date()
+              .toISOString()
+              .slice(0, 10)}.tsv`,
+          },
+        });
         link.click();
         URL.revokeObjectURL(url);
         new Notice(`Экспортировано ${items.length} слов в TSV файл для Anki!`);
@@ -567,11 +570,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
           type: "text/plain;charset=utf-8;",
         });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `Pleco_Chinese_Vocabulary_${new Date()
-          .toISOString()
-          .slice(0, 10)}.txt`;
+        const link = createEl("a", {
+          href: url,
+          attr: {
+            download: `Pleco_Chinese_Vocabulary_${new Date()
+              .toISOString()
+              .slice(0, 10)}.txt`,
+          },
+        });
         link.click();
         URL.revokeObjectURL(url);
         new Notice(`Экспортировано ${items.length} слов для Pleco!`);
@@ -814,7 +820,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
             }
             return EditorSelection.create([range]);
           },
-          update(_update: any) {},
+          update(_update: unknown) {},
         };
       }),
       EditorView.domEventHandlers({
@@ -1172,7 +1178,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const bounds = this.getContentBounds(targetEl, view);
 
       if (view) {
-        if ((view as any).destroyed) return;
+        if ((view as { destroyed?: boolean }).destroyed) return;
         this.handleEditorLookup(
           this.lastHoverCoords.x,
           this.lastHoverCoords.y,

@@ -1152,9 +1152,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             const tsv = generateAnkiTsv(items);
             const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
+            const link = createEl("a", {
+              href: url,
+              attr: {
+                download: `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`,
+              },
+            });
             link.click();
             URL.revokeObjectURL(url);
             new Notice(`Экспортировано ${items.length} слов в TSV файл!`);
@@ -1176,9 +1179,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             const txt = generatePlecoFlashcards(items);
             const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
+            const link = createEl("a", {
+              href: url,
+              attr: {
+                download: `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`,
+              },
+            });
             link.click();
             URL.revokeObjectURL(url);
             new Notice(`Экспортировано ${items.length} слов для Pleco!`);

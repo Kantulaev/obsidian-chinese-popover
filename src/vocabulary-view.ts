@@ -65,7 +65,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const titleGroup = titleRow.createDiv({ cls: "ch-vocab-title-group" });
     titleGroup.createSpan({ cls: "ch-vocab-lantern", text: "🏮" });
-    titleGroup.createEl("span", { cls: "ch-vocab-title-text", text: "Мой словарик" });
+    titleGroup.createSpan({ cls: "ch-vocab-title-text", text: "Мой словарик" });
     titleGroup.createSpan({
       cls: "ch-vocab-count-badge",
       text: `${allItems.length}`,
@@ -105,9 +105,12 @@ export class ChineseVocabularyView extends ItemView {
             const tsv = generateAnkiTsv(items);
             const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
+            const link = createEl("a", {
+              href: url,
+              attr: {
+                download: `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`,
+              },
+            });
             link.click();
             URL.revokeObjectURL(url);
             new Notice(`Экспортировано ${items.length} карточек в TSV для Anki!`);
@@ -146,9 +149,12 @@ export class ChineseVocabularyView extends ItemView {
             const txt = generatePlecoFlashcards(items);
             const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`;
+            const link = createEl("a", {
+              href: url,
+              attr: {
+                download: `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`,
+              },
+            });
             link.click();
             URL.revokeObjectURL(url);
             new Notice(`Экспортировано ${items.length} слов для Pleco!`);
@@ -381,11 +387,11 @@ export class ChineseVocabularyView extends ItemView {
     if (items.length === 0) {
       const emptyWrap = container.createDiv({ cls: "ch-vocab-empty" });
       emptyWrap.createDiv({ cls: "ch-vocab-empty-icon", text: "🏮" });
-      emptyWrap.createEl("div", {
+      emptyWrap.createDiv({
         cls: "ch-vocab-empty-title",
         text: this.searchQuery ? "Ничего не найдено" : (this.filterDueOnly ? "На сегодня всё повторено! 🎉" : "Словарик пока пуст"),
       });
-      emptyWrap.createEl("div", {
+      emptyWrap.createDiv({
         cls: "ch-vocab-empty-desc",
         text: this.searchQuery
           ? "Попробуйте изменить поисковый запрос"
@@ -426,8 +432,10 @@ export class ChineseVocabularyView extends ItemView {
           text: hsk.label,
           attr: { title: `Официальный уровень HSK: ${hsk.level}` },
         });
-        hskBadge.style.setProperty("--hsk-color", hsk.color);
-        hskBadge.style.setProperty("--hsk-bg", hsk.bg);
+        hskBadge.setCssProps({
+          "--hsk-color": hsk.color,
+          "--hsk-bg": hsk.bg,
+        });
       }
     }
 
@@ -520,7 +528,7 @@ export class ChineseVocabularyView extends ItemView {
       const clipText = `${item.word}${item.traditional ? ` (${item.traditional})` : ""} [${item.pinyin}${item.jyutping ? ` / 粵 ${item.jyutping}` : ""}] - ${item.definitions.join("; ")}`;
       navigator.clipboard.writeText(clipText).then(() => {
         copyBtn.setText("✓");
-        setTimeout(() => copyBtn.setText("📋"), 1500);
+        window.setTimeout(() => copyBtn.setText("📋"), 1500);
         new Notice(`Скопировано: ${item.word}`);
       }).catch(() => {
         new Notice(`Не удалось скопировать в буфер обмена`);
@@ -554,8 +562,7 @@ export class ChineseVocabularyView extends ItemView {
         if (idx > 0) span.createSpan({ text: " " });
         const tone = type === "pinyin" ? detectPinyinTone(syl) : detectJyutpingTone(syl);
         const s = span.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-        s.style.setProperty("color", getToneColor(tone));
-        s.style.setProperty("font-weight", "600");
+        s.setCssStyles({ color: getToneColor(tone) });
       });
     };
 
@@ -799,7 +806,7 @@ export class ChineseVocabularyView extends ItemView {
         if (idx > 0) phonSpan.createSpan({ text: " " });
         const tone = detectPinyinTone(syl);
         const s = phonSpan.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-        s.style.setProperty("color", getToneColor(tone));
+        s.setCssStyles({ color: getToneColor(tone) });
       });
     }
 

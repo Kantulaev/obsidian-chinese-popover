@@ -184,8 +184,10 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
       const hsk = getHskBadgeInfo(item.word);
       if (hsk) {
         const badge = row.createSpan({ cls: "ch-dict-hsk-badge", text: hsk.label });
-        badge.style.setProperty("--hsk-color", hsk.color);
-        badge.style.setProperty("--hsk-bg", hsk.bg);
+        badge.setCssProps({
+          "--hsk-color": hsk.color,
+          "--hsk-bg": hsk.bg,
+        });
       }
     }
 
@@ -202,7 +204,7 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
         if (idx > 0) pyContainer.createSpan({ text: " " });
         const tone = detectPinyinTone(syl);
         const s = pyContainer.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-        s.style.setProperty("color", getToneColor(tone));
+        s.setCssStyles({ color: getToneColor(tone) });
       });
     }
 

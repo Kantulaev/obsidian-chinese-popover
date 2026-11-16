@@ -9,7 +9,7 @@ import { resolveChineseFontFamily } from "./font.ts";
 import { addNoteToAnki } from "./anki.ts";
 import { formatPosBadge, inferPartsOfSpeech } from "./pos.ts";
 import { formatLocalizedDefinitions } from "./russian-dict.ts";
-import { colorizePinyin, detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
+import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
 import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
 import { ExampleSentence, fetchDynamicExamples, getExampleSentences } from "./examples.ts";
@@ -690,8 +690,7 @@ export class DictTooltip {
         if (idx > 0) span.createSpan({ text: " " });
         const tone = type === "pinyin" ? detectPinyinTone(syl) : detectJyutpingTone(syl);
         const s = span.createSpan({ text: syl, cls: `ch-tone-${tone}` });
-        s.style.setProperty("color", getToneColor(tone));
-        s.style.setProperty("font-weight", "600");
+        s.setCssStyles({ color: getToneColor(tone) });
       });
     };
 
@@ -1270,8 +1269,10 @@ export class DictTooltip {
         const nextLeft = Math.max(10, Math.min(maxLeft, this.dragInitialLeft + dx));
         const nextTop = Math.max(10, Math.min(maxTop, this.dragInitialTop + dy));
 
-        this.el.style.left = `${Math.round(nextLeft)}px`;
-        this.el.style.top = `${Math.round(nextTop)}px`;
+        this.el.setCssStyles({
+          left: `${Math.round(nextLeft)}px`,
+          top: `${Math.round(nextTop)}px`,
+        });
         this.hasCustomPosition = true;
       };
 

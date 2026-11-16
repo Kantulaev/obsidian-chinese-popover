@@ -88,7 +88,7 @@ export async function addNoteToAnki(
       return false;
     }
     return true;
-  } catch (_err) {
+  } catch {
     new Notice("Не удалось подключиться к AnkiConnect. Проверьте запущен ли Anki и включен ли плагин AnkiConnect.", 4000);
     return false;
   }

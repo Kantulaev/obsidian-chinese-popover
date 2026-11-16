@@ -1,4 +1,4 @@
-import { App, Modal, Notice, requestUrl } from "obsidian";
+import { App, Modal, requestUrl } from "obsidian";
 import { convertToSimplified } from "./converter.ts";
 
 interface HanziData {
@@ -161,20 +161,25 @@ export class StrokeOrderModal extends Modal {
     if (!canvas || !this.hanziData) return;
     canvas.empty();
 
-    // Create SVG element with Mizige background
+    // Create SVG element with Mizige background using Obsidian's createSvg helper
     const totalStrokes = this.hanziData.strokes.length;
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 1024 1024");
-    svg.setAttribute("class", "ch-dict-stroke-svg");
+    const canvasEl = canvas as HTMLElement;
+    const svg = canvasEl.createSvg("svg", {
+      cls: "ch-dict-stroke-svg",
+      attr: { viewBox: "0 0 1024 1024" },
+    });
 
     // Background calligraphic lines (米字格)
-    const gridG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    gridG.setAttribute("class", "ch-dict-stroke-grid");
-    gridG.setAttribute("fill", "none");
-    gridG.setAttribute("stroke", "currentColor");
-    gridG.setAttribute("stroke-width", "6");
-    gridG.setAttribute("stroke-dasharray", "16,16");
-    gridG.setAttribute("opacity", "0.22");
+    const gridG = svg.createSvg("g", {
+      cls: "ch-dict-stroke-grid",
+      attr: {
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "6",
+        "stroke-dasharray": "16,16",
+        opacity: "0.22",
+      },
+    });
 
     const lines = [
       "M 0 512 L 1024 512", // Horizontal center
@@ -183,50 +188,39 @@ export class StrokeOrderModal extends Modal {
       "M 1024 0 L 0 1024",   // Diagonal 2
     ];
     lines.forEach((d) => {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", d);
-      gridG.appendChild(path);
+      gridG.createSvg("path", { attr: { d } });
     });
-    svg.appendChild(gridG);
 
     // Group for character strokes (Hanzi Writer uses inverted Y-axis 1024 coordinate system)
-    const charG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    charG.setAttribute("transform", "scale(1, -1) translate(0, -900)");
+    const charG = svg.createSvg("g", {
+      attr: { transform: "scale(1, -1) translate(0, -900)" },
+    });
 
     // Render strokes up to currentStrokeStep
     const visibleCount = Math.min(this.currentStrokeStep, totalStrokes);
 
     // 1. Ghost outlines layer (all strokes rendered faint in background)
-    const ghostG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    ghostG.setAttribute("class", "ch-dict-stroke-ghost-layer");
+    const ghostG = charG.createSvg("g", { cls: "ch-dict-stroke-ghost-layer" });
     for (let i = 0; i < totalStrokes; i++) {
       const strokeD = this.hanziData.strokes[i];
-      const ghostPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      ghostPath.setAttribute("d", strokeD);
-      ghostPath.setAttribute("class", "ch-dict-stroke-ghost");
-      ghostG.appendChild(ghostPath);
+      ghostG.createSvg("path", {
+        cls: "ch-dict-stroke-ghost",
+        attr: { d: strokeD },
+      });
     }
-    charG.appendChild(ghostG);
 
     // 2. Drawn strokes layer (solid text color + active accent stroke)
-    const drawnG = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    drawnG.setAttribute("class", "ch-dict-stroke-drawn-layer");
+    const drawnG = charG.createSvg("g", { cls: "ch-dict-stroke-drawn-layer" });
     for (let i = 0; i < visibleCount; i++) {
       const strokeD = this.hanziData.strokes[i];
-      const drawnPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      drawnPath.setAttribute("d", strokeD);
-
-      if (i === visibleCount - 1 && this.isAnimating) {
-        drawnPath.setAttribute("class", "ch-dict-stroke-active");
-      } else {
-        drawnPath.setAttribute("class", "ch-dict-stroke-drawn");
-      }
-      drawnG.appendChild(drawnPath);
+      const cls = (i === visibleCount - 1 && this.isAnimating)
+        ? "ch-dict-stroke-active"
+        : "ch-dict-stroke-drawn";
+      drawnG.createSvg("path", {
+        cls,
+        attr: { d: strokeD },
+      });
     }
-    charG.appendChild(drawnG);
-
-    svg.appendChild(charG);
-    canvas.appendChild(svg);
 
     // Counter badge (e.g. "Черта 4 из 7")
     const counter = canvas.createDiv({ cls: "ch-dict-stroke-counter" });

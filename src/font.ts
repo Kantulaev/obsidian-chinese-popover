@@ -50,7 +50,7 @@ export function applyChineseFontToDOM(
   const root = document.documentElement;
 
   // Set CSS property for popover & vocabulary components
-  root.style.setProperty("--ch-dict-font-hanzi-family", fontStack);
+  root.setCssProps({ "--ch-dict-font-hanzi-family": fontStack });
 
   const body = document.body;
   body.classList.remove(

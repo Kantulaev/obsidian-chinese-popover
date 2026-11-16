@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.5.1-blue.svg" alt="Version 1.5.1" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.6.0-blue.svg" alt="Version 1.6.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Translations-English%20%7C%20Russian%20(БКРС)-blue.svg" alt="EN | RU" />
   <img src="https://img.shields.io/badge/HSK%20Levels-1%20to%206-emerald.svg" alt="HSK 1-6" />
@@ -26,6 +26,13 @@
 
 Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **Chinese Popover Dictionary** brings a desktop-grade popover experience directly into your notes:
 
+* 📌 **Pin (Sticky) Mode** — Freeze the popover on your screen while typing notes or scrolling. Won't dismiss until you press <kbd>Esc</kbd> or click ✕.
+* ✋ **Draggable Popovers** — Grab the top header bar and smoothly drag the popover anywhere on screen to uncover surrounding text.
+* ↔️ **Resizable Popovers** — On-the-fly mouse resizing by pulling the bottom-right corner to match your monitor and text preferences.
+* 🕒 **Recent Lookups History** — Automatically captures your recent lookups in a dedicated sidebar tab with relative timestamps, quick audio, and 1-click ⭐ vocabulary save.
+* 🔍 **Spotlight Dictionary Quick Search** — Command-palette modal (`Alt + S`) to search 118,000+ words by Hanzi (`你好`), Pinyin (`nihao`), Jyutping, or Russian/English translations.
+* ⌨️ **One-Key Popover Actions** — Instant keyboard actions when viewing words: <kbd>Space</kbd>/<kbd>R</kbd> (Audio), <kbd>S</kbd> (Star), <kbd>N</kbd> (Note), <kbd>C</kbd> (Copy), <kbd>P</kbd> (Pin), <kbd>Esc</kbd> (Close).
+* 📋 **Smart Copy Formats** — Copy complete card (`你好 [nǐ hǎo] hello`), Hanzi only, Pinyin only, Obsidian Wikilink (`[[你好]]`), or Markdown table row via click or right-click menu.
 * 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
 * 🇷🇺 **Russian & English Translations** — Choose English (CC-CEDICT default), Russian (БКРС / Большой китайско-русский словарь), or both simultaneously!
 * 🏷️ **Parts of Speech (POS / 词类)** — Identifies parts of speech (verb, noun, adj, adv, classifier, pronoun), including multi-POS behavior (兼类词, e.g. `学习` as noun & verb).

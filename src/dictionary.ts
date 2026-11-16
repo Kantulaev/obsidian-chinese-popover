@@ -544,6 +544,10 @@ export class DictionaryManager {
     this.isLoaded = true;
   }
 
+  getData(): DictionaryData {
+    return this.data;
+  }
+
   /**
    * Loads dictionary data from plugin's cedict.json file, or downloads it on first run
    */

@@ -24,6 +24,8 @@ import { createWordNote } from "./word-notes.ts";
 import { convertToSimplified, convertToTraditional } from "./converter.ts";
 import { generatePlecoFlashcards } from "./pleco.ts";
 import { WorksheetModal } from "./worksheet.ts";
+import { HistoryManager } from "./history.ts";
+import { ChineseSearchModal } from "./search-modal.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -37,6 +39,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
   settings: ChineseDictSettings = DEFAULT_SETTINGS;
   dictionary!: DictionaryManager;
   vocabulary!: VocabularyManager;
+  history!: HistoryManager;
   tooltip!: DictTooltip;
 
   private hoverTimeout: number | null = null;
@@ -62,6 +65,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.vocabulary = new VocabularyManager(this);
     this.vocabulary.load().catch((err) => {
       console.error("[Chinese Dict] Vocabulary load error:", err);
+    });
+
+    this.history = new HistoryManager(this);
+    this.history.load().catch((err) => {
+      console.error("[Chinese Dict] History load error:", err);
     });
 
     this.tooltip = new DictTooltip(this);
@@ -112,28 +120,61 @@ export default class ChineseHoverDictPlugin extends Plugin {
       this.handleReadingViewMouseMove.bind(this)
     );
 
-    // Dismiss popover on click outside ONLY when popover is actually open
+    // Dismiss popover on click outside ONLY when popover is actually open AND not pinned
     this.registerDomEvent(document, "mousedown", (event: MouseEvent) => {
-      if (!this.tooltip.getIsOpen()) return;
+      if (!this.tooltip.getIsOpen() || this.tooltip.getIsPinned()) return;
       const target = event.target as HTMLElement | null;
       if (target && !target.closest(".ch-dict-tooltip")) {
         this.tooltip.hide();
       }
     });
 
-    // Dismiss popover on Escape key
+    // Handle Escape and One-Key Shortcuts when popover is active
     this.registerDomEvent(document, "keydown", (event: KeyboardEvent) => {
-      if (event.key === "Escape" && this.tooltip.getIsOpen()) {
-        this.tooltip.hide();
+      if (!this.tooltip.getIsOpen()) return;
+
+      // Escape always closes the popover (forces close even if pinned)
+      if (event.key === "Escape") {
+        this.tooltip.hide(true);
+        return;
+      }
+
+      if (this.settings.enablePopoverHotkeys === false) return;
+
+      // If user is actively typing inside an input/textarea or CodeMirror, do not trigger single-letter shortcuts
+      const activeEl = document.activeElement as HTMLElement | null;
+      const tag = activeEl?.tagName?.toLowerCase();
+      const isInput = tag === "input" || tag === "textarea";
+      const isEditor = activeEl?.closest(".cm-editor, .cm-content") !== null;
+
+      if (isInput || isEditor) {
+        return;
+      }
+
+      if (event.code === "Space" || event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        this.pronounceActiveWord();
+      } else if (event.key === "s" || event.key === "S") {
+        event.preventDefault();
+        this.toggleStarActiveWord();
+      } else if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        this.createActiveWordNote();
+      } else if (event.key === "c" || event.key === "C") {
+        event.preventDefault();
+        this.copyActiveWord();
+      } else if (event.key === "p" || event.key === "P") {
+        event.preventDefault();
+        this.tooltip.togglePin();
       }
     });
 
-    // Dismiss popover on scroll
+    // Dismiss popover on scroll ONLY if not pinned
     this.registerDomEvent(
       document,
       "scroll",
       () => {
-        if (this.tooltip.getIsOpen()) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
           this.tooltip.hide();
         }
       },
@@ -548,6 +589,27 @@ export default class ChineseHoverDictPlugin extends Plugin {
           return;
         }
         new WorksheetModal(this.app, items).open();
+      },
+    });
+
+    // 23. Quick Search Dictionary (Spotlight Modal)
+    this.addCommand({
+      id: "search-chinese-dictionary",
+      name: "Быстрый поиск в китайском словаре (Spotlight) / Search Chinese Dictionary",
+      callback: () => {
+        new ChineseSearchModal(this.app, this).open();
+      },
+    });
+
+    // 24. Toggle Pin / Sticky Mode for Popover
+    this.addCommand({
+      id: "toggle-pin-popover",
+      name: "Закрепить или открепить карточку словаря (Pin/Sticky) / Toggle Pin Popover",
+      checkCallback: (checking: boolean) => {
+        if (!this.tooltip.getIsOpen()) return false;
+        if (checking) return true;
+        this.tooltip.togglePin();
+        return true;
       },
     });
 
@@ -1330,6 +1392,64 @@ export default class ChineseHoverDictPlugin extends Plugin {
       }
     }
     new Notice("Нет слова для копирования / No active word to copy");
+  }
+
+  /**
+   * Creates atomic Zettelkasten note for active word
+   */
+  public async createActiveWordNote(): Promise<void> {
+    let word = "";
+    let contextSentence: string | undefined = undefined;
+    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
+      word = this.tooltip.getCurrentWord()!;
+      contextSentence = this.tooltip.getCurrentContextSentence();
+    } else {
+      const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (activeView?.editor) {
+        word = activeView.editor.getSelection().trim();
+        if (!word) {
+          const cursor = activeView.editor.getCursor();
+          const line = activeView.editor.getLine(cursor.line);
+          const match = this.dictionary.findWordAtOffset(
+            line,
+            cursor.ch,
+            this.settings.maxWordLength
+          );
+          if (match) {
+            word = match.word;
+            contextSentence = line;
+          }
+        }
+      }
+    }
+
+    if (!word) {
+      new Notice("Нет активного слова для создания заметки.");
+      return;
+    }
+
+    const match = this.dictionary.getExact(word);
+    if (match) {
+      await createWordNote(this.app, match, contextSentence, {
+        folderPath: this.settings.wordNotesFolder || "Chinese/Words",
+        openAfterCreation: true,
+      });
+    } else {
+      const dummyMatch = {
+        word,
+        entries: [{
+          simplified: word,
+          traditional: word,
+          pinyin: "",
+          definitions: [],
+        }],
+        length: Array.from(word).length,
+      };
+      await createWordNote(this.app, dummyMatch, contextSentence, {
+        folderPath: this.settings.wordNotesFolder || "Chinese/Words",
+        openAfterCreation: true,
+      });
+    }
   }
 
   /**

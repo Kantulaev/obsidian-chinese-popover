@@ -18,6 +18,7 @@ export type PopoverTheme = "auto" | "glass_dark" | "glass_light" | "solid";
 export type TextColorPreset = "white" | "cyan" | "gold" | "obsidian";
 export type TraditionalSeparator = " - " | " / " | " · " | " () ";
 export type AudioEngine = "google_neural" | "web_speech";
+export type CopyFormat = "default" | "hanzi_only" | "pinyin_only" | "wikilink" | "markdown_table";
 
 export interface ChineseDictSettings {
   enabled: boolean;
@@ -98,6 +99,13 @@ export interface ChineseDictSettings {
 
   // Zettelkasten Word Notes
   wordNotesFolder: string;
+
+  // UX & Interactivity
+  copyFormat: CopyFormat;
+  enablePopoverHotkeys: boolean;
+  enableDraggablePopover: boolean;
+  enableResizablePopover: boolean;
+  maxRecentHistory: number;
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -159,6 +167,12 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   showExamples: true,
   toneColoring: "phonetics",
   wordNotesFolder: "Chinese/Words",
+
+  copyFormat: "default",
+  enablePopoverHotkeys: true,
+  enableDraggablePopover: true,
+  enableResizablePopover: true,
+  maxRecentHistory: 50,
 };
 
 interface AppWithSetting extends App {
@@ -837,6 +851,83 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);
             }
+          })
+      );
+
+    // ==========================================
+    // ИНТЕРАКТИВНОСТЬ И УДОБСТВО (UX)
+    // ==========================================
+    new Setting(containerEl)
+      .setName("💡 Интерактивность и удобство / Popover UX & Interactivity")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Перетаскивание карточки мышкой / Draggable Popover")
+      .setDesc("Позволяет свободно перемещать карточку словаря мышкой по экрану, если она закрывает текст заметки.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableDraggablePopover ?? true)
+          .onChange(async (value) => {
+            this.plugin.settings.enableDraggablePopover = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Изменение размера карточки / Resizable Popover")
+      .setDesc("Позволяет изменять размер карточки словаря прямо на лету мышкой за нижний правый угол.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableResizablePopover ?? true)
+          .onChange(async (value) => {
+            this.plugin.settings.enableResizablePopover = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Быстрые клавиши при открытой карточке / One-Key Shortcuts")
+      .setDesc("Позволяет нажимать Space/R (озвучка), S (звездочка/словарь), N (заметка слова), C (копировать), P (закрепить карточку 📌), Esc (закрыть).")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enablePopoverHotkeys ?? true)
+          .onChange(async (value) => {
+            this.plugin.settings.enablePopoverHotkeys = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Формат быстрого копирования / Copy Format")
+      .setDesc("Что копировать в буфер обмена по нажатию кнопки 📋 или горячей клавиши C.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("default", "Карточка целиком: 你好 [nǐ hǎo] hello (по умолчанию)")
+          .addOption("hanzi_only", "Только иероглифы: 你好")
+          .addOption("pinyin_only", "Иероглиф + Пиньинь: 你好 nǐ hǎo")
+          .addOption("wikilink", "Вики-ссылка Obsidian: [[你好]]")
+          .addOption("markdown_table", "Строка таблицы Markdown: | 你好 | nǐ hǎo | hello |")
+          .setValue(this.plugin.settings.copyFormat ?? "default")
+          .onChange(async (value) => {
+            this.plugin.settings.copyFormat = value as CopyFormat;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Лимит недавних слов / Max Recent History")
+      .setDesc("Сколько последних просмотренных слов сохранять во вкладке истории боковой панели.")
+      .addSlider((slider) =>
+        slider
+          .setLimits(10, 100, 5)
+          .setValue(this.plugin.settings.maxRecentHistory ?? 50)
+          .setDynamicTooltip()
+          .onChange(async (value) => {
+            this.plugin.settings.maxRecentHistory = value;
+            await this.plugin.saveSettings();
           })
       );
 

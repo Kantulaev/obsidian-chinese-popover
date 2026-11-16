@@ -1,8 +1,8 @@
-import { Notice } from "obsidian";
+import { Menu, Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
-import { ChineseDictSettings } from "./settings.ts";
+import { ChineseDictSettings, CopyFormat } from "./settings.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { resolveChineseFontFamily } from "./font.ts";
@@ -25,6 +25,13 @@ export interface ContentBounds {
 export class DictTooltip {
   private el: HTMLElement;
   private isVisible: boolean = false;
+  private isPinned: boolean = false;
+  private isDragging: boolean = false;
+  private hasCustomPosition: boolean = false;
+  private dragStartX: number = 0;
+  private dragStartY: number = 0;
+  private dragInitialLeft: number = 0;
+  private dragInitialTop: number = 0;
   private currentWord: string | null = null;
   private currentMatch: MatchResult | null = null;
   private currentContextSentence: string | undefined = undefined;
@@ -87,6 +94,13 @@ export class DictTooltip {
       "ch-dict-color-obsidian"
     );
     this.el.addClass(`ch-dict-color-${settings.textColorPreset || "white"}`);
+
+    // Resizable class
+    if (settings.enableResizablePopover ?? true) {
+      this.el.addClass("ch-dict-resizable");
+    } else {
+      this.el.removeClass("ch-dict-resizable");
+    }
   }
 
   /**
@@ -155,6 +169,12 @@ export class DictTooltip {
     this.currentWord = match.word;
     this.currentContextSentence = contextSentence;
 
+    // Record in Recent Lookups History
+    if (this.plugin?.history) {
+      this.plugin.history.add(match);
+      this.plugin.refreshVocabularyViews();
+    }
+
     this.applyDynamicStyles(settings);
     this.render(match, settings, contextSentence);
     this.position(x, y, settings, bounds);
@@ -178,10 +198,14 @@ export class DictTooltip {
   }
 
   /**
-   * Instantly hides the tooltip, cancels any audio, and removes pointer-events entirely
+   * Instantly hides the tooltip, cancels any audio, and removes pointer-events entirely.
+   * If force is false and tooltip is pinned, it stays visible.
    */
-  hide(): void {
+  hide(force: boolean = false): void {
     if (!this.isVisible) return;
+    if (this.isPinned && !force) {
+      return; // Do not dismiss while pinned!
+    }
 
     if (this.currentAudio) {
       this.currentAudio.pause();
@@ -192,13 +216,32 @@ export class DictTooltip {
     }
 
     this.el.removeClass("ch-dict-visible");
+    this.el.removeClass("ch-dict-pinned");
     this.isVisible = false;
+    this.isPinned = false;
+    this.hasCustomPosition = false;
     this.currentWord = null;
     this.currentMatch = null;
   }
 
   getIsOpen(): boolean {
     return this.isVisible;
+  }
+
+  getIsPinned(): boolean {
+    return this.isPinned;
+  }
+
+  togglePin(): boolean {
+    this.isPinned = !this.isPinned;
+    if (this.isPinned) {
+      this.el.addClass("ch-dict-pinned");
+      new Notice("📌 Карточка закреплена (не исчезает при кликах и скролле)");
+    } else {
+      this.el.removeClass("ch-dict-pinned");
+      new Notice("📌 Карточка откреплена");
+    }
+    return this.isPinned;
   }
 
   getCurrentWord(): string | null {
@@ -210,14 +253,23 @@ export class DictTooltip {
   }
 
   /**
-   * Copies formatted entry to clipboard
+   * Copies formatted entry to clipboard (uses setting or specific format)
    */
-  copyCurrentEntry(settings: ChineseDictSettings): void {
+  copyCurrentEntry(settings: ChineseDictSettings, format?: CopyFormat): void {
     if (!this.currentMatch) return;
-    this.copyEntryDirect(this.currentMatch, settings);
+    this.copyEntryFormatted(this.currentMatch, settings, format);
   }
 
   copyEntryDirect(match: MatchResult, settings: ChineseDictSettings): void {
+    this.copyEntryFormatted(match, settings, "default");
+  }
+
+  copyEntryFormatted(
+    match: MatchResult,
+    settings: ChineseDictSettings,
+    format?: CopyFormat
+  ): void {
+    const activeFormat = format || settings.copyFormat || "default";
     const firstEntry = match.entries[0];
     const simplified = firstEntry?.simplified || match.word;
     const trads = Array.from(
@@ -248,21 +300,42 @@ export class DictTooltip {
 
     const defsText = this.formatConciseDefinitions(
       match.entries,
-      settings.maxDefinitions
+      settings.maxDefinitions,
+      match.word,
+      settings.translationLanguage
     );
 
-    let wordText = simplified;
-    if (settings.showTraditional && trads.length > 0) {
-      const sep = settings.traditionalSeparator || " - ";
-      wordText =
-        sep === " () "
-          ? `${simplified} (${trads.join(", ")})`
-          : `${simplified}${sep}${trads.join(", ")}`;
+    let textToCopy = "";
+    switch (activeFormat) {
+      case "hanzi_only":
+        textToCopy = simplified;
+        break;
+      case "pinyin_only":
+        textToCopy = `${simplified} ${phonetics}`;
+        break;
+      case "wikilink":
+        textToCopy = `[[${simplified}]]`;
+        break;
+      case "markdown_table":
+        textToCopy = `| ${simplified} | ${phonetics} | ${defsText} |`;
+        break;
+      case "default":
+      default: {
+        let wordText = simplified;
+        if (settings.showTraditional && trads.length > 0) {
+          const sep = settings.traditionalSeparator || " - ";
+          wordText =
+            sep === " () "
+              ? `${simplified} (${trads.join(", ")})`
+              : `${simplified}${sep}${trads.join(", ")}`;
+        }
+        textToCopy = `${wordText} [${phonetics}] ${defsText}`;
+        break;
+      }
     }
 
-    const clipText = `${wordText} [${phonetics}] ${defsText}`;
-    navigator.clipboard.writeText(clipText);
-    new Notice(`Скопировано: ${clipText}`);
+    navigator.clipboard.writeText(textToCopy);
+    new Notice(`Скопировано (${activeFormat}): ${textToCopy}`);
   }
 
   /**
@@ -278,6 +351,7 @@ export class DictTooltip {
 
     // 1. Top Bar: Clickable Pill with Hanzi and Action buttons
     const topBar = this.el.createDiv({ cls: "ch-dict-top-bar" });
+    this.setupDraggable(topBar, settings);
 
     const pill = topBar.createDiv({
       cls: "ch-dict-pill ch-dict-clickable-word",
@@ -374,15 +448,45 @@ export class DictTooltip {
         this.playSpeech(match.word, settings);
       });
 
-      // Copy Button
+      // Copy Button (Left-click: configured format, Right-click: format selector)
       const copyBtn = actions.createEl("button", {
         cls: "ch-dict-glass-btn",
         text: "📋",
-        attr: { "aria-label": "Copy dictionary entry", title: "Копировать" },
+        attr: {
+          "aria-label": "Copy dictionary entry",
+          title: "Копировать карточку (Клик - стандарт, Правый клик - выбор формата)",
+        },
       });
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
+      });
+      copyBtn.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const menu = new Menu();
+        menu.addItem((i) =>
+          i.setTitle("📋 Полная карточка (Стандарт)")
+           .setIcon("copy")
+           .onClick(() => this.copyEntryFormatted(match, settings, "default"))
+        );
+        menu.addItem((i) =>
+          i.setTitle("🀄 Только иероглифы (汉字)")
+           .onClick(() => this.copyEntryFormatted(match, settings, "hanzi_only"))
+        );
+        menu.addItem((i) =>
+          i.setTitle("🔤 Иероглиф + Пиньинь (汉字 + Pinyin)")
+           .onClick(() => this.copyEntryFormatted(match, settings, "pinyin_only"))
+        );
+        menu.addItem((i) =>
+          i.setTitle("🔗 Вики-ссылка Obsidian ([[Слово]])")
+           .onClick(() => this.copyEntryFormatted(match, settings, "wikilink"))
+        );
+        menu.addItem((i) =>
+          i.setTitle("📊 Строка таблицы Markdown (| 汉字 | py | def |)")
+           .onClick(() => this.copyEntryFormatted(match, settings, "markdown_table"))
+        );
+        menu.showAtMouseEvent(e);
       });
 
       // Zettelkasten Word Note Button
@@ -451,6 +555,35 @@ export class DictTooltip {
             }
           }
         }
+      });
+
+      // Pin / Sticky Mode Toggle Button
+      const pinBtn = actions.createEl("button", {
+        cls: `ch-dict-glass-btn ch-dict-pin-btn ${this.isPinned ? "ch-dict-btn-pinned" : ""}`,
+        text: "📌",
+        attr: {
+          "aria-label": this.isPinned ? "Unpin popover" : "Pin popover",
+          title: this.isPinned ? "Открепить карточку (Unpin)" : "Закрепить карточку на экране (Pin / Sticky)",
+        },
+      });
+      pinBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const pinned = this.togglePin();
+        pinBtn.toggleClass("ch-dict-btn-pinned", pinned);
+      });
+
+      // Close Button
+      const closeBtn = actions.createEl("button", {
+        cls: "ch-dict-glass-btn ch-dict-close-btn",
+        text: "✕",
+        attr: {
+          "aria-label": "Close popover",
+          title: "Закрыть карточку (Esc)",
+        },
+      });
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.hide(true);
       });
     }
 
@@ -806,6 +939,10 @@ export class DictTooltip {
     settings: ChineseDictSettings,
     bounds?: ContentBounds
   ): void {
+    if (this.hasCustomPosition && this.isPinned) {
+      return;
+    }
+
     const width = settings.popoverWidth || 330;
     const height = settings.popoverHeight || 165;
     const padding = 10;
@@ -883,5 +1020,54 @@ export class DictTooltip {
     if (this.el && this.el.parentNode) {
       this.el.parentNode.removeChild(this.el);
     }
+  }
+
+  private setupDraggable(topBar: HTMLElement, settings: ChineseDictSettings): void {
+    if (settings.enableDraggablePopover === false) return;
+
+    topBar.addClass("ch-dict-drag-handle");
+
+    topBar.addEventListener("pointerdown", (e: PointerEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("button, .ch-dict-clickable-word, a, input, textarea")) {
+        return;
+      }
+
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartY = e.clientY;
+
+      const rect = this.el.getBoundingClientRect();
+      this.dragInitialLeft = rect.left;
+      this.dragInitialTop = rect.top;
+
+      this.el.addClass("ch-dict-is-dragging");
+
+      const onPointerMove = (moveEv: PointerEvent) => {
+        if (!this.isDragging) return;
+        const dx = moveEv.clientX - this.dragStartX;
+        const dy = moveEv.clientY - this.dragStartY;
+
+        const maxLeft = Math.max(10, window.innerWidth - this.el.offsetWidth - 10);
+        const maxTop = Math.max(10, window.innerHeight - this.el.offsetHeight - 10);
+
+        const nextLeft = Math.max(10, Math.min(maxLeft, this.dragInitialLeft + dx));
+        const nextTop = Math.max(10, Math.min(maxTop, this.dragInitialTop + dy));
+
+        this.el.style.left = `${Math.round(nextLeft)}px`;
+        this.el.style.top = `${Math.round(nextTop)}px`;
+        this.hasCustomPosition = true;
+      };
+
+      const onPointerUp = () => {
+        this.isDragging = false;
+        this.el.removeClass("ch-dict-is-dragging");
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      };
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+    });
   }
 }

@@ -1,6 +1,8 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { VocabularyItem, VocabularySort } from "./vocabulary.ts";
+import { HistoryItem } from "./history.ts";
+import { ChineseSearchModal } from "./search-modal.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
@@ -20,6 +22,7 @@ export class ChineseVocabularyView extends ItemView {
   private practiceMode: boolean = false;
   private filterDueOnly: boolean = false;
   private revealedCardIds: Set<string> = new Set();
+  private activeTab: "saved" | "history" = "saved";
 
   constructor(leaf: WorkspaceLeaf, plugin: ChineseHoverDictPlugin) {
     super(leaf);
@@ -177,7 +180,44 @@ export class ChineseVocabularyView extends ItemView {
       this.render();
     });
 
-    // 2. Search Bar
+    // Quick Search Button (Spotlight)
+    const searchModalBtn = headerActions.createEl("button", {
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Поиск по словарю", title: "Быстрый поиск по словарю (Spotlight)" },
+      text: "🔍",
+    });
+    searchModalBtn.addEventListener("click", () => {
+      new ChineseSearchModal(this.plugin.app, this.plugin).open();
+    });
+
+    // 2. Segmented Tab Bar: [⭐ Избранное (N)] [🕒 Недавние (M)]
+    const historyItems = this.plugin.history?.getItems() || [];
+    const tabBar = container.createDiv({ cls: "ch-vocab-tab-bar" });
+
+    const savedTabBtn = tabBar.createEl("button", {
+      cls: `ch-vocab-tab-btn ${this.activeTab === "saved" ? "ch-vocab-tab-active" : ""}`,
+      text: `⭐ Избранное (${allItems.length})`,
+    });
+    savedTabBtn.addEventListener("click", () => {
+      this.activeTab = "saved";
+      this.render();
+    });
+
+    const historyTabBtn = tabBar.createEl("button", {
+      cls: `ch-vocab-tab-btn ${this.activeTab === "history" ? "ch-vocab-tab-active" : ""}`,
+      text: `🕒 Недавние (${historyItems.length})`,
+    });
+    historyTabBtn.addEventListener("click", () => {
+      this.activeTab = "history";
+      this.render();
+    });
+
+    if (this.activeTab === "history") {
+      this.renderHistory(container, historyItems);
+      return;
+    }
+
+    // 3. Search Bar for Saved Items
     const searchWrap = container.createDiv({ cls: "ch-vocab-search-wrap" });
     searchWrap.createSpan({ cls: "ch-vocab-search-icon", text: "🔍" });
 
@@ -621,5 +661,188 @@ export class ChineseVocabularyView extends ItemView {
       new Notice(`Запомнено! Следующее повторение: ${item.nextReviewDate}`);
       this.renderList(listContainer);
     });
+  }
+
+  private renderHistory(container: HTMLElement, items: HistoryItem[]): void {
+    const historyWrap = container.createDiv({ cls: "ch-vocab-history-wrap" });
+
+    const topBar = historyWrap.createDiv({ cls: "ch-vocab-history-top" });
+    topBar.createSpan({
+      cls: "ch-vocab-history-subtitle",
+      text: `История недавних просмотров (${items.length})`,
+    });
+
+    if (items.length > 0) {
+      const clearBtn = topBar.createEl("button", {
+        cls: "ch-vocab-history-clear-btn",
+        text: "Очистить всё 🗑️",
+      });
+      clearBtn.addEventListener("click", async () => {
+        if (this.plugin.history) {
+          await this.plugin.history.clear();
+          this.render();
+        }
+      });
+    }
+
+    if (items.length === 0) {
+      const emptyEl = historyWrap.createDiv({ cls: "ch-vocab-empty" });
+      emptyEl.createDiv({ cls: "ch-vocab-empty-icon", text: "🕒" });
+      emptyEl.createDiv({
+        cls: "ch-vocab-empty-title",
+        text: "История просмотров пуста",
+      });
+      emptyEl.createDiv({
+        cls: "ch-vocab-empty-desc",
+        text: "Наводите курсор на китайские слова или дважды кликайте по ним в заметках — они будут автоматически сохраняться здесь для повторения в конце чтения!",
+      });
+      return;
+    }
+
+    const listEl = historyWrap.createDiv({ cls: "ch-vocab-history-list" });
+
+    for (const item of items) {
+      const card = listEl.createDiv({ cls: "ch-vocab-history-card" });
+
+      // Click card to open dictionary popover
+      card.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button")) return;
+        const match = this.plugin.dictionary.getExact(item.word) || {
+          word: item.word,
+          entries: [
+            {
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            },
+          ],
+          length: Array.from(item.word).length,
+        };
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2 - 80;
+        this.plugin.tooltip.show(match, x, y, this.plugin.settings);
+      });
+
+      const mainRow = card.createDiv({ cls: "ch-vocab-history-main" });
+
+      // Left: Hanzi & Phonetics
+      const wordGroup = mainRow.createDiv({ cls: "ch-vocab-history-word-group" });
+      wordGroup.createSpan({ cls: "ch-vocab-history-hanzi", text: item.word });
+
+      // Phonetics
+      const phonSpan = wordGroup.createSpan({ cls: "ch-vocab-history-phonetics" });
+      const syllables = item.pinyin.split(/\s+/).filter(Boolean);
+      syllables.forEach((syl, idx) => {
+        if (idx > 0) phonSpan.createSpan({ text: " " });
+        const tone = detectPinyinTone(syl);
+        const s = phonSpan.createSpan({ text: syl, cls: `ch-tone-${tone}` });
+        s.style.setProperty("color", getToneColor(tone));
+      });
+
+      if (item.jyutping) {
+        wordGroup.createSpan({ cls: "ch-vocab-history-jyutping", text: `(粤 ${item.jyutping})` });
+      }
+
+      // Time relative string
+      const timeDiff = Date.now() - item.timestamp;
+      let timeStr = "только что";
+      if (timeDiff >= 86400000) {
+        timeStr = `${Math.floor(timeDiff / 86400000)} д назад`;
+      } else if (timeDiff >= 3600000) {
+        timeStr = `${Math.floor(timeDiff / 3600000)} ч назад`;
+      } else if (timeDiff >= 60000) {
+        timeStr = `${Math.floor(timeDiff / 60000)} мин назад`;
+      }
+      mainRow.createSpan({ cls: "ch-vocab-history-time", text: timeStr });
+
+      // Translation
+      const defStr = item.definitions.slice(0, 3).join("; ");
+      if (defStr) {
+        card.createDiv({ cls: "ch-vocab-history-def", text: defStr });
+      }
+
+      // Action row
+      const actions = card.createDiv({ cls: "ch-vocab-history-actions" });
+
+      // 🔊 Voice
+      const voiceBtn = actions.createEl("button", {
+        cls: "ch-vocab-card-btn",
+        text: "🔊",
+        attr: { title: "Прослушать озвучку" },
+      });
+      voiceBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.plugin.tooltip.playSpeech(item.word, this.plugin.settings);
+      });
+
+      // ⭐ Star / Add to saved vocabulary
+      const isStarred = this.plugin.vocabulary.hasWord(item.word);
+      const starBtn = actions.createEl("button", {
+        cls: `ch-vocab-card-btn ${isStarred ? "ch-vocab-btn-starred" : ""}`,
+        text: isStarred ? "⭐ В словарике" : "☆ В словарик",
+        attr: { title: isStarred ? "Удалить из словарика" : "Сохранить в личный словарик" },
+      });
+      starBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const match = this.plugin.dictionary.getExact(item.word) || {
+          word: item.word,
+          entries: [
+            {
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            },
+          ],
+          length: Array.from(item.word).length,
+        };
+        const nowStarred = await this.plugin.vocabulary.toggleWord(match);
+        starBtn.setText(nowStarred ? "⭐ В словарике" : "☆ В словарик");
+        starBtn.toggleClass("ch-vocab-btn-starred", nowStarred);
+        this.render();
+      });
+
+      // 📝 Note
+      const noteBtn = actions.createEl("button", {
+        cls: "ch-vocab-card-btn",
+        text: "📝 Заметка",
+        attr: { title: "Создать заметку слова (Zettelkasten)" },
+      });
+      noteBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const match = this.plugin.dictionary.getExact(item.word) || {
+          word: item.word,
+          entries: [
+            {
+              traditional: item.traditional || item.word,
+              pinyin: item.pinyin,
+              jyutping: item.jyutping,
+              definitions: item.definitions,
+            },
+          ],
+          length: Array.from(item.word).length,
+        };
+        await createWordNote(this.plugin.app, match, undefined, {
+          folderPath: this.plugin.settings.wordNotesFolder || "Chinese/Words",
+          openAfterCreation: true,
+        });
+      });
+
+      // ✕ Remove from history
+      const delBtn = actions.createEl("button", {
+        cls: "ch-vocab-card-btn ch-vocab-card-del-btn",
+        text: "✕",
+        attr: { title: "Удалить из истории" },
+      });
+      delBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (this.plugin.history) {
+          await this.plugin.history.remove(item.word);
+          this.render();
+        }
+      });
+    }
   }
 }

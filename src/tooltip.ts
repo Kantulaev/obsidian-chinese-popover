@@ -214,6 +214,7 @@ export class DictTooltip {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    this.el.querySelector(".ch-audio-playing")?.removeClass("ch-audio-playing");
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
@@ -347,6 +348,11 @@ export class DictTooltip {
   private render(match: MatchResult, settings: ChineseDictSettings, contextSentence?: string): void {
     this.el.empty();
 
+    // Subtle Apple-style drag grabber pill at the top of the card
+    const grabber = this.el.createDiv({ cls: "ch-dict-drag-grabber" });
+    grabber.setAttribute("title", "Потяните, чтобы переместить карточку / Drag to move");
+    this.setupDraggable(grabber, settings);
+
     const isCantonese = settings.dialect === "cantonese";
 
     // 1. Top Bar: Clickable Pill with Hanzi and Action buttons
@@ -460,6 +466,12 @@ export class DictTooltip {
       copyBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
+        copyBtn.setText("✓");
+        copyBtn.addClass("ch-dict-btn-success");
+        window.setTimeout(() => {
+          copyBtn.setText("📋");
+          copyBtn.removeClass("ch-dict-btn-success");
+        }, 1200);
       });
       copyBtn.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -539,6 +551,8 @@ export class DictTooltip {
       starBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (this.plugin?.vocabulary) {
+          starBtn.addClass("ch-star-bouncing");
+          window.setTimeout(() => starBtn.removeClass("ch-star-bouncing"), 450);
           const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
           starBtn.setText(nowStarred ? "⭐" : "☆");
           starBtn.toggleClass("ch-dict-btn-starred", nowStarred);
@@ -818,6 +832,7 @@ export class DictTooltip {
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    this.el.querySelector(".ch-audio-playing")?.removeClass("ch-audio-playing");
 
     const isCantonese = settings.dialect === "cantonese";
     const speed = settings.speechSpeed || 0.8;
@@ -833,19 +848,31 @@ export class DictTooltip {
       text
     )}`;
 
+    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child") as HTMLElement | null;
+    if (audioBtn) {
+      audioBtn.addClass("ch-audio-playing");
+    }
+    const stopAudioAnim = () => {
+      audioBtn?.removeClass("ch-audio-playing");
+    };
+
     try {
       const audio = new Audio(url);
       audio.playbackRate = speed;
       this.currentAudio = audio;
+      audio.onended = stopAudioAnim;
+      audio.onerror = stopAudioAnim;
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
+          stopAudioAnim();
           console.warn("[Chinese Dict] Online audio failed, using offline TTS fallback:", err);
           this.fallbackSpeechSynthesis(text, isCantonese ? "zh-HK" : "zh-CN", speed);
         });
       }
     } catch {
+      stopAudioAnim();
       this.fallbackSpeechSynthesis(text, isCantonese ? "zh-HK" : "zh-CN", speed);
     }
   }
@@ -862,6 +889,16 @@ export class DictTooltip {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = langCode;
     utterance.rate = speed;
+
+    const audioBtn = this.el.querySelector(".ch-dict-actions button:first-child") as HTMLElement | null;
+    if (audioBtn) {
+      audioBtn.addClass("ch-audio-playing");
+    }
+    const stopAudioAnim = () => {
+      audioBtn?.removeClass("ch-audio-playing");
+    };
+    utterance.onend = stopAudioAnim;
+    utterance.onerror = stopAudioAnim;
 
     if (langCode === "zh-HK") {
       const voices = window.speechSynthesis.getVoices();

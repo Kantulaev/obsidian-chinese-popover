@@ -128,7 +128,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   showActionButtons: true,
 
   theme: "auto",
-  popoverWidth: 330,
+  popoverWidth: 370,
   popoverHeight: 165,
   blurIntensity: 34,
   textColorPreset: "white",
@@ -754,10 +754,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Ширина карточки / Popover Width")
-      .setDesc("Фиксированная ширина всплывающего окна в пикселях (по умолчанию 330px).")
+      .setDesc("Фиксированная ширина всплывающего окна в пикселях (по умолчанию 370px).")
       .addSlider((slider) =>
         slider
-          .setLimits(260, 460, 10)
+          .setLimits(280, 520, 10)
           .setValue(this.plugin.settings.popoverWidth)
           .setDynamicTooltip()
           .onChange(async (value) => {

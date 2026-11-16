@@ -4,11 +4,35 @@ import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { detectPinyinTone, getToneColor } from "./tones.ts";
+import { getRussianDefinitions } from "./russian-dict.ts";
 
 export interface SearchMatchItem {
   word: string;
   entries: DictEntry[];
   highlightField: "word" | "pinyin" | "definition";
+}
+
+function renderHighlighted(container: HTMLElement, fullText: string, query: string): void {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    container.setText(fullText);
+    return;
+  }
+  const lower = fullText.toLowerCase();
+  const idx = lower.indexOf(trimmed);
+  if (idx === -1) {
+    container.setText(fullText);
+    return;
+  }
+  const before = fullText.slice(0, idx);
+  const match = fullText.slice(idx, idx + trimmed.length);
+  const after = fullText.slice(idx + trimmed.length);
+
+  if (before) container.createSpan({ text: before });
+  container.createSpan({ cls: "ch-search-match", text: match });
+  if (after) {
+    renderHighlighted(container, after, query);
+  }
 }
 
 export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
@@ -99,10 +123,16 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
             pinyinMatches.push({ word, entries, highlightField: "pinyin" });
           }
         } else if (defMatches.length < 15) {
-          // Check definition keywords
-          const hasDefMatch = entries.some((e) =>
+          // Check definition keywords (English CC-CEDICT or Russian БКРС)
+          let hasDefMatch = entries.some((e) =>
             e.definitions.some((d) => d.toLowerCase().includes(lowerQ))
           );
+          if (!hasDefMatch && /[а-яё]/i.test(lowerQ)) {
+            const ru = getRussianDefinitions(word);
+            if (ru && ru.some((d) => d.toLowerCase().includes(lowerQ))) {
+              hasDefMatch = true;
+            }
+          }
           if (hasDefMatch) {
             defMatches.push({ word, entries, highlightField: "definition" });
           }
@@ -114,14 +144,40 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
     return combined.slice(0, limit);
   }
 
+  onOpen(): void {
+    super.onOpen();
+    const footer = this.modalEl.createDiv({ cls: "ch-search-footer" });
+    const legend = footer.createDiv({ cls: "ch-search-legend" });
+
+    const kbdNavigate = legend.createSpan();
+    kbdNavigate.createEl("kbd", { text: "↑↓" });
+    kbdNavigate.createSpan({ text: " Навигация" });
+
+    const kbdSelect = legend.createSpan();
+    kbdSelect.createEl("kbd", { text: "↵" });
+    kbdSelect.createSpan({ text: " Открыть карточку" });
+
+    const kbdClose = legend.createSpan();
+    kbdClose.createEl("kbd", { text: "esc" });
+    kbdClose.createSpan({ text: " Закрыть" });
+
+    footer.createSpan({ text: "Словарь CC-CEDICT" });
+  }
+
   renderSuggestion(item: SearchMatchItem, el: HTMLElement): void {
     el.empty();
     el.addClass("ch-search-suggestion-item");
 
+    const query = this.inputEl?.value?.trim() || "";
     const row = el.createDiv({ cls: "ch-search-row" });
 
     // Word (Hanzi)
-    const wordSpan = row.createSpan({ cls: "ch-search-word", text: item.word });
+    const wordSpan = row.createSpan({ cls: "ch-search-word" });
+    if (query && item.word.toLowerCase().includes(query.toLowerCase())) {
+      renderHighlighted(wordSpan, item.word, query);
+    } else {
+      wordSpan.setText(item.word);
+    }
 
     // HSK Badge
     const hsk = getHskBadgeInfo(item.word);
@@ -149,12 +205,32 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
     }
 
     // Definition snippet
-    const defSnippet = item.entries
-      .flatMap((e) => e.definitions)
-      .slice(0, 3)
-      .join("; ");
+    let defSnippet = "";
+    if (this.plugin.settings.translationLanguage === "ru") {
+      const ru = getRussianDefinitions(item.word);
+      if (ru && ru.length > 0) {
+        defSnippet = ru.slice(0, 3).join("; ");
+      }
+    } else if (this.plugin.settings.translationLanguage === "both") {
+      const ru = getRussianDefinitions(item.word);
+      if (ru && ru.length > 0) {
+        defSnippet = `${ru.slice(0, 2).join("; ")} | ${item.entries.flatMap((e) => e.definitions).slice(0, 2).join("; ")}`;
+      }
+    }
+    if (!defSnippet) {
+      defSnippet = item.entries
+        .flatMap((e) => e.definitions)
+        .slice(0, 3)
+        .join("; ");
+    }
+
     if (defSnippet) {
-      el.createDiv({ cls: "ch-search-def", text: defSnippet });
+      const defEl = el.createDiv({ cls: "ch-search-def" });
+      if (query && defSnippet.toLowerCase().includes(query.toLowerCase())) {
+        renderHighlighted(defEl, defSnippet, query);
+      } else {
+        defEl.setText(defSnippet);
+      }
     }
   }
 

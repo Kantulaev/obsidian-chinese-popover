@@ -36,6 +36,7 @@ export class DictTooltip {
   private currentMatch: MatchResult | null = null;
   private currentContextSentence: string | undefined = undefined;
   private currentAudio: HTMLAudioElement | null = null;
+  private cleanupActiveDrag: (() => void) | null = null;
   private plugin: ChineseHoverDictPlugin | null = null;
 
   constructor(plugin?: ChineseHoverDictPlugin) {
@@ -207,6 +208,11 @@ export class DictTooltip {
       return; // Do not dismiss while pinned!
     }
 
+    if (this.cleanupActiveDrag) {
+      this.cleanupActiveDrag();
+      this.cleanupActiveDrag = null;
+    }
+
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
@@ -335,8 +341,11 @@ export class DictTooltip {
       }
     }
 
-    navigator.clipboard.writeText(textToCopy);
-    new Notice(`Скопировано (${activeFormat}): ${textToCopy}`);
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      new Notice(`Скопировано (${activeFormat}): ${textToCopy}`);
+    }).catch(() => {
+      new Notice("Не удалось скопировать в буфер обмена");
+    });
   }
 
   /**
@@ -482,7 +491,10 @@ export class DictTooltip {
       // --- Item: Copy ---
       const copyItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-copy",
-        attr: { title: "Копировать (Клик - стандарт, Правый клик - выбор формата)" },
+        attr: {
+          title: "Копировать (Клик - стандарт, Правый клик - выбор формата)",
+          "aria-label": "Копировать",
+        },
       });
       const copyIcon = copyItem.createSpan({ cls: "ch-dict-burger-icon", text: "📋" });
       const copyLabel = copyItem.createSpan({ cls: "ch-dict-burger-label", text: "Копировать" });
@@ -505,7 +517,10 @@ export class DictTooltip {
       const isStarred = this.plugin?.vocabulary?.hasWord(match.word) ?? false;
       const starItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-star",
-        attr: { title: isStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик" },
+        attr: {
+          title: isStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик",
+          "aria-label": isStarred ? "Удалить из словарика" : "Сохранить в словарик",
+        },
       });
       const starIcon = starItem.createSpan({
         cls: "ch-dict-burger-icon",
@@ -542,7 +557,10 @@ export class DictTooltip {
       // --- Item: Pin / Sticky Mode ---
       const pinItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-pin",
-        attr: { title: this.isPinned ? "Открепить карточку" : "Закрепить карточку на экране" },
+        attr: {
+          title: this.isPinned ? "Открепить карточку" : "Закрепить карточку на экране",
+          "aria-label": this.isPinned ? "Открепить карточку" : "Закрепить карточку",
+        },
       });
       const pinIcon = pinItem.createSpan({ cls: "ch-dict-burger-icon", text: "📌" });
       const pinLabel = pinItem.createSpan({
@@ -554,12 +572,16 @@ export class DictTooltip {
         const pinned = this.togglePin();
         pinLabel.setText(pinned ? "Открепить" : "Закрепить");
         pinItem.setAttribute("title", pinned ? "Открепить карточку" : "Закрепить карточку на экране");
+        pinItem.setAttribute("aria-label", pinned ? "Открепить карточку" : "Закрепить карточку");
       });
 
       // --- Item: Word Note (Zettelkasten) ---
       const noteItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-note",
-        attr: { title: "Создать атомную заметку слова (Zettelkasten Note)" },
+        attr: {
+          title: "Создать атомную заметку слова (Zettelkasten Note)",
+          "aria-label": "Создать заметку слова",
+        },
       });
       noteItem.createSpan({ cls: "ch-dict-burger-icon", text: "📝" });
       noteItem.createSpan({ cls: "ch-dict-burger-label", text: "Заметка слова" });
@@ -576,7 +598,10 @@ export class DictTooltip {
       // --- Item: Stroke Order Animation ---
       const strokeItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-stroke",
-        attr: { title: "Порядок черт (Анимация написания)" },
+        attr: {
+          title: "Порядок черт (Анимация написания)",
+          "aria-label": "Порядок черт",
+        },
       });
       strokeItem.createSpan({ cls: "ch-dict-burger-icon", text: "🖌️" });
       strokeItem.createSpan({ cls: "ch-dict-burger-label", text: "Порядок черт" });
@@ -593,7 +618,10 @@ export class DictTooltip {
       // --- Item: Close ---
       const closeItem = burgerMenu.createEl("button", {
         cls: "ch-dict-burger-item ch-dict-burger-close",
-        attr: { title: "Закрыть карточку (Esc)" },
+        attr: {
+          title: "Закрыть карточку (Esc)",
+          "aria-label": "Закрыть карточку",
+        },
       });
       closeItem.createSpan({ cls: "ch-dict-burger-icon", text: "✕" });
       closeItem.createSpan({ cls: "ch-dict-burger-label", text: "Закрыть (Esc)" });
@@ -1079,9 +1107,16 @@ export class DictTooltip {
    * Cleans up DOM element on plugin unload
    */
   destroy(): void {
+    if (this.cleanupActiveDrag) {
+      this.cleanupActiveDrag();
+      this.cleanupActiveDrag = null;
+    }
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     if (this.el && this.el.parentNode) {
       this.el.parentNode.removeChild(this.el);
@@ -1130,7 +1165,10 @@ export class DictTooltip {
         this.el.removeClass("ch-dict-is-dragging");
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("pointerup", onPointerUp);
+        this.cleanupActiveDrag = null;
       };
+
+      this.cleanupActiveDrag = onPointerUp;
 
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);

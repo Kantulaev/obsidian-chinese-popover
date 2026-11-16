@@ -533,6 +533,33 @@ export const CANTONESE_SPECIFIC_WORDS: Set<string> = new Set([
   "犀利", "巴閉", "論盡", "叻仔", "靚仔", "靚女", "肥佬", "瘦蜢蜢", "得戚"
 ]);
 
+const RESULT_COMPLEMENTS = new Set(["明", "掂", "到", "落", "出", "入", "完", "好", "成", "開", "走"]);
+
+const ASPECT_MARKERS: Record<string, { jyut: string; desc: string }> = {
+  "緊": { jyut: "gan2", desc: "currently doing (progressive aspect)" },
+  "咗": { jyut: "zo2", desc: "completed / finished doing (perfective aspect)" },
+  "晒": { jyut: "saai3", desc: "completely / entirely finished doing" },
+  "埋": { jyut: "maai4", desc: "finish up / also doing" },
+  "返": { jyut: "faan1", desc: "doing back / returning" },
+  "番": { jyut: "faan1", desc: "doing back / again" },
+  "吓": { jyut: "haa5", desc: "do a little bit / have a try" },
+  "下": { jyut: "haa5", desc: "do a little bit / briefly" },
+};
+
+let cachedZhSegmenter: any = null;
+function getSharedZhSegmenter(): any {
+  if (!cachedZhSegmenter && typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    try {
+      cachedZhSegmenter = new (Intl as any).Segmenter(["zh-HK", "yue", "zh-Hant", "zh-TW", "zh-CN", "zh"], {
+        granularity: "word",
+      });
+    } catch {
+      cachedZhSegmenter = null;
+    }
+  }
+  return cachedZhSegmenter;
+}
+
 export class DictionaryManager {
   private data: DictionaryData = {};
   private isLoaded: boolean = false;
@@ -541,7 +568,7 @@ export class DictionaryManager {
   constructor(plugin: Plugin) {
     this.plugin = plugin;
     this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-    this.isLoaded = true;
+    this.isLoaded = false;
   }
 
   getData(): DictionaryData {
@@ -970,14 +997,13 @@ export class DictionaryManager {
       }
 
       // 2c. Potential / Resultative complements: X得Y or X唔Y (e.g. 睇唔明, 聽得明, 搞得掂, 食唔落)
-      const resultComplements = new Set(["明", "掂", "到", "落", "出", "入", "完", "好", "成", "開", "走"]);
       for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
         if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
         if (offset < s || offset >= s + 3) continue;
         const c0 = fullText[s];
         const c1 = fullText[s + 1];
         const c2 = fullText[s + 2];
-        if ((c1 === "得" || c1 === "唔") && resultComplements.has(c2) && this.isChinese(c0)) {
+        if ((c1 === "得" || c1 === "唔") && RESULT_COMPLEMENTS.has(c2) && this.isChinese(c0)) {
           const word = fullText.slice(s, s + 3);
           const baseEntries = this.data[c0] || [];
           const baseDef = baseEntries[0]?.definitions?.[0] || c0;
@@ -1014,23 +1040,12 @@ export class DictionaryManager {
     }
 
     // 2d. Verb + Cantonese Aspect marker: X緊, X咗, X晒, X埋, X返, X番, X吓, X下
-    const aspectMarkers: Record<string, { jyut: string; desc: string }> = {
-      "緊": { jyut: "gan2", desc: "currently doing (progressive aspect)" },
-      "咗": { jyut: "zo2", desc: "completed / finished doing (perfective aspect)" },
-      "晒": { jyut: "saai3", desc: "completely / entirely finished doing" },
-      "埋": { jyut: "maai4", desc: "finish up / also doing" },
-      "返": { jyut: "faan1", desc: "doing back / returning" },
-      "番": { jyut: "faan1", desc: "doing back / again" },
-      "吓": { jyut: "haa5", desc: "do a little bit / have a try" },
-      "下": { jyut: "haa5", desc: "do a little bit / briefly" },
-    };
-
     for (let s = Math.max(0, offset - 1); s <= offset && s + 2 <= fullText.length; s++) {
       if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
       if (offset < s || offset >= s + 2) continue;
       const c0 = fullText[s];
       const c1 = fullText[s + 1];
-      const asp = aspectMarkers[c1];
+      const asp = ASPECT_MARKERS[c1];
       if (asp && this.isChinese(c0)) {
         const word = fullText.slice(s, s + 2);
         const baseEntries = this.data[c0] || [];
@@ -1061,18 +1076,9 @@ export class DictionaryManager {
     }
 
     // 3. Fallback: Native Intl.Segmenter (with Cantonese 'zh-HK', 'yue' prioritized)
-    if (typeof Intl !== "undefined" && "Segmenter" in Intl) {
+    const segmenter = getSharedZhSegmenter();
+    if (segmenter) {
       try {
-        interface SegmenterType {
-          segment(input: string): Iterable<{ segment: string; index: number }>;
-        }
-        interface IntlWithSegmenter {
-          Segmenter: new (locales: string[], options: { granularity: string }) => SegmenterType;
-        }
-        const IntlSegmenter = (Intl as unknown as IntlWithSegmenter).Segmenter;
-        const segmenter = new IntlSegmenter(["zh-HK", "yue", "zh-Hant", "zh-TW", "zh-CN", "zh"], {
-          granularity: "word",
-        });
         const segments = segmenter.segment(fullText);
         for (const seg of segments) {
           const s = seg.index;

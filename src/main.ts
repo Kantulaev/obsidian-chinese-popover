@@ -1172,6 +1172,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const bounds = this.getContentBounds(targetEl, view);
 
       if (view) {
+        if ((view as any).destroyed) return;
         this.handleEditorLookup(
           this.lastHoverCoords.x,
           this.lastHoverCoords.y,
@@ -1315,7 +1316,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const bounds = this.getContentBounds(null, undefined);
 
       this.tooltip.show(
-        { word: selectedText, entries: directEntries, length: selectedText.length },
+        { word: selectedText, entries: directEntries, length: Array.from(selectedText).length },
         clientX,
         clientY,
         this.settings,
@@ -1377,7 +1378,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         const entries = this.dictionary.get(selection);
         if (entries && entries.length > 0) {
           this.tooltip.copyEntryDirect(
-            { word: selection, entries, length: selection.length },
+            { word: selection, entries, length: Array.from(selection).length },
             this.settings
           );
           return;

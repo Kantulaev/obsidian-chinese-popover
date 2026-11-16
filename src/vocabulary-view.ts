@@ -1,6 +1,6 @@
 import { ItemView, Menu, Notice, WorkspaceLeaf } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
-import { VocabularyItem, VocabularySort } from "./vocabulary.ts";
+import { VocabularyItem, VocabularySort, getLocalDateString } from "./vocabulary.ts";
 import { HistoryItem } from "./history.ts";
 import { ChineseSearchModal } from "./search-modal.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
@@ -341,7 +341,7 @@ export class ChineseVocabularyView extends ItemView {
     }
 
     if (this.filterDueOnly) {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = getLocalDateString();
       items = items.filter((item) => !item.nextReviewDate || item.nextReviewDate <= todayStr);
     }
 
@@ -500,10 +500,13 @@ export class ChineseVocabularyView extends ItemView {
     copyBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       const clipText = `${item.word}${item.traditional ? ` (${item.traditional})` : ""} [${item.pinyin}${item.jyutping ? ` / 粵 ${item.jyutping}` : ""}] - ${item.definitions.join("; ")}`;
-      navigator.clipboard.writeText(clipText);
-      copyBtn.setText("✓");
-      setTimeout(() => copyBtn.setText("📋"), 1500);
-      new Notice(`Скопировано: ${item.word}`);
+      navigator.clipboard.writeText(clipText).then(() => {
+        copyBtn.setText("✓");
+        setTimeout(() => copyBtn.setText("📋"), 1500);
+        new Notice(`Скопировано: ${item.word}`);
+      }).catch(() => {
+        new Notice(`Не удалось скопировать в буфер обмена`);
+      });
     });
 
     // Delete Button
@@ -603,7 +606,7 @@ export class ChineseVocabularyView extends ItemView {
     footer.createSpan({ cls: "ch-vocab-date-tag", text: `📅 ${item.dateString}` });
 
     if (item.nextReviewDate) {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = getLocalDateString();
       const isDue = item.nextReviewDate <= todayStr;
       footer.createSpan({
         cls: `ch-vocab-srs-due-tag ${isDue ? "ch-vocab-is-due" : ""}`,
@@ -648,7 +651,8 @@ export class ChineseVocabularyView extends ItemView {
     btnGood.addEventListener("click", async (e) => {
       e.stopPropagation();
       await this.plugin.vocabulary.updateSrsRating(item.word, "good");
-      new Notice(`Отлично! Следующее повторение: ${item.nextReviewDate}`);
+      const updated = this.plugin.vocabulary.getItem(item.word);
+      new Notice(`Отлично! Следующее повторение: ${updated?.nextReviewDate || ""}`);
       this.renderList(listContainer);
     });
 
@@ -659,7 +663,8 @@ export class ChineseVocabularyView extends ItemView {
     btnEasy.addEventListener("click", async (e) => {
       e.stopPropagation();
       await this.plugin.vocabulary.updateSrsRating(item.word, "easy");
-      new Notice(`Запомнено! Следующее повторение: ${item.nextReviewDate}`);
+      const updated = this.plugin.vocabulary.getItem(item.word);
+      new Notice(`Запомнено! Следующее повторение: ${updated?.nextReviewDate || ""}`);
       this.renderList(listContainer);
     });
   }

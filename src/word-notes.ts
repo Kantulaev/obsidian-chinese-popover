@@ -37,7 +37,8 @@ export async function createWordNote(
   }
 
   const word = match.word;
-  const fileName = folder ? `${folder}/${word}.md` : `${word}.md`;
+  const safeWord = word.replace(/[\\/:*?"<>|]/g, "_").trim() || "word";
+  const fileName = folder ? `${folder}/${safeWord}.md` : `${safeWord}.md`;
 
   if (await adapter.exists(fileName)) {
     new Notice(`Заметка для "${word}" уже существует в ${fileName}`);

@@ -1,4 +1,5 @@
-import { App, Modal, Notice } from "obsidian";
+import { App, Modal, Notice, requestUrl } from "obsidian";
+import { convertToSimplified } from "./converter.ts";
 
 interface HanziData {
   strokes: string[];
@@ -6,6 +7,7 @@ interface HanziData {
 }
 
 export class StrokeOrderModal extends Modal {
+  private static charCache: Map<string, HanziData> = new Map();
   private word: string;
   private currentCharIndex: number = 0;
   private hanziData: HanziData | null = null;
@@ -50,11 +52,36 @@ export class StrokeOrderModal extends Modal {
       canvas.createDiv({ cls: "ch-dict-stroke-loading", text: `Загрузка черт для ${char}...` });
     }
 
+    if (StrokeOrderModal.charCache.has(char)) {
+      this.hanziData = StrokeOrderModal.charCache.get(char)!;
+      this.currentStrokeStep = this.hanziData.strokes.length;
+      this.renderSvg();
+      return;
+    }
+
     try {
-      const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: HanziData = await res.json();
+      let data: HanziData | null = null;
+      try {
+        const url = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(char)}.json`;
+        const res = await requestUrl({ url });
+        if (res.status === 200 && res.json?.strokes) {
+          data = res.json as HanziData;
+        }
+      } catch {
+        // Try simplified character fallback if traditional was not found
+        const simp = convertToSimplified(char);
+        if (simp && simp !== char) {
+          const fallbackUrl = `https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${encodeURIComponent(simp)}.json`;
+          const resFallback = await requestUrl({ url: fallbackUrl });
+          if (resFallback.status === 200 && resFallback.json?.strokes) {
+            data = resFallback.json as HanziData;
+          }
+        }
+      }
+
+      if (!data) throw new Error("Character data not found");
+
+      StrokeOrderModal.charCache.set(char, data);
       this.hanziData = data;
       this.currentStrokeStep = data.strokes.length; // initial: show complete
       this.renderSvg();

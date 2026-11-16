@@ -21,12 +21,17 @@ export interface VocabularyItem {
   easeFactor?: number;     // SM-2 ease factor
 }
 
+export function getLocalDateString(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export type VocabularySort = "date_desc" | "date_asc" | "alpha";
 
 export class VocabularyManager {
   private plugin: ChineseHoverDictPlugin;
   private items: VocabularyItem[] = [];
   private isLoaded = false;
+  private persistPromise: Promise<void> = Promise.resolve();
 
   constructor(plugin: ChineseHoverDictPlugin) {
     this.plugin = plugin;
@@ -58,7 +63,7 @@ export class VocabularyManager {
   }
 
   getItems(): VocabularyItem[] {
-    return this.items;
+    return [...this.items];
   }
 
   hasWord(word: string): boolean {
@@ -185,26 +190,35 @@ export class VocabularyManager {
 
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + interval);
-    item.nextReviewDate = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
+    item.nextReviewDate = getLocalDateString(nextDate);
 
     await this.persist();
     await this.syncToMarkdown();
   }
 
   getDueItems(): VocabularyItem[] {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const todayStr = getLocalDateString();
     return this.items.filter((item) => !item.nextReviewDate || item.nextReviewDate <= todayStr);
   }
 
   getDueItemsCount(): number {
-    return this.getDueItems().length;
+    const todayStr = getLocalDateString();
+    let count = 0;
+    for (const item of this.items) {
+      if (!item.nextReviewDate || item.nextReviewDate <= todayStr) {
+        count++;
+      }
+    }
+    return count;
   }
 
   private async persist(): Promise<void> {
-    const currentData = (await this.plugin.loadData()) || {};
-    currentData.vocabulary = this.items;
-    await this.plugin.saveData(currentData);
+    this.persistPromise = this.persistPromise.then(async () => {
+      const currentData = (await this.plugin.loadData()) || {};
+      currentData.vocabulary = this.items;
+      await this.plugin.saveData(currentData);
+    });
+    return this.persistPromise;
   }
 
   /**
@@ -317,16 +331,17 @@ export class VocabularyManager {
           if (dateMatch) date = dateMatch[1];
 
           if (word) {
+            const parsedDate = date ? new Date(date).getTime() : Date.now();
             parsedItems.push({
-              id: `${word}-${Date.now()}`,
+              id: `${word}-${Date.now()}-${parsedItems.length}`,
               word,
               traditional: trad || undefined,
               pinyin,
               jyutping,
               definitions: defs.length > 0 ? defs : ["No definition"],
               contextSentence: ctx || undefined,
-              dateAdded: Date.now(),
-              dateString: date || new Date().toISOString().slice(0, 10),
+              dateAdded: isNaN(parsedDate) ? Date.now() : parsedDate,
+              dateString: date || getLocalDateString(),
               tags: [],
             });
           }
@@ -341,16 +356,17 @@ export class VocabularyManager {
           const date = cols[6] || "";
 
           if (word) {
+            const parsedDate = date ? new Date(date).getTime() : Date.now();
             parsedItems.push({
-              id: `${word}-${Date.now()}`,
+              id: `${word}-${Date.now()}-${parsedItems.length}`,
               word,
               traditional: trad || undefined,
               pinyin,
               jyutping,
               definitions: defs.length > 0 ? defs : ["No definition"],
               contextSentence: ctx || undefined,
-              dateAdded: Date.now(),
-              dateString: date || new Date().toISOString().slice(0, 10),
+              dateAdded: isNaN(parsedDate) ? Date.now() : parsedDate,
+              dateString: date || getLocalDateString(),
               tags: [],
             });
           }

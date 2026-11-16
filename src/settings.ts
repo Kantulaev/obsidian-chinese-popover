@@ -1008,7 +1008,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setPlaceholder("Chinese Vocabulary.md")
           .setValue(this.plugin.settings.vocabularyFilePath)
           .onChange(async (value) => {
-            this.plugin.settings.vocabularyFilePath = value.trim() || "Chinese Vocabulary.md";
+            let clean = value.trim().replace(/^[/\\]+/, "").replace(/\.\./g, "");
+            if (clean && !clean.endsWith(".md")) clean += ".md";
+            this.plugin.settings.vocabularyFilePath = clean || "Chinese Vocabulary.md";
             await this.plugin.saveSettings();
           })
       );
@@ -1079,7 +1081,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             .setPlaceholder("http://127.0.0.1:8765")
             .setValue(this.plugin.settings.anki.serverUrl)
             .onChange(async (val) => {
-              this.plugin.settings.anki.serverUrl = val.trim() || "http://127.0.0.1:8765";
+              const url = val.trim();
+              if (/^https?:\/\//i.test(url)) {
+                this.plugin.settings.anki.serverUrl = url;
+              } else if (url) {
+                this.plugin.settings.anki.serverUrl = `http://${url}`;
+              } else {
+                this.plugin.settings.anki.serverUrl = "http://127.0.0.1:8765";
+              }
               await this.plugin.saveSettings();
             })
         );
@@ -1226,7 +1235,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setButtonText("Сбросить всё")
           .setWarning()
           .onClick(async () => {
-            this.plugin.settings = Object.assign({}, DEFAULT_SETTINGS);
+            this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
             await this.plugin.saveSettings();
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);

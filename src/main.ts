@@ -713,11 +713,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
         if (pos === null) return null;
 
-        const doc = view.state.doc.toString();
+        const line = view.state.doc.lineAt(pos);
+        const lineOffset = pos - line.from;
         // Check ONLY for Cantonese colloquial phrases; for all other words, return null so Obsidian's built-in selector acts!
         const match = this.dictionary.findCantonesePhraseAtOffset(
-          doc,
-          pos,
+          line.text,
+          lineOffset,
           this.settings.maxWordLength
         );
 
@@ -725,7 +726,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
           return null;
         }
 
-        const { start, end } = match;
+        const start = line.from + match.start;
+        const end = line.from + match.end;
 
         return {
           get(curEvent: MouseEvent, _extend: boolean, multiple: boolean) {
@@ -805,11 +807,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const pos = view.posAtCoords({ x: clientX, y: clientY });
     if (pos === null) return;
 
-    const doc = view.state.doc;
-    const fullDoc = doc.toString();
+    const line = view.state.doc.lineAt(pos);
+    const lineText = line.text;
+    const lineOffset = pos - line.from;
     const resolvedBounds = bounds || this.getContentBounds(null, view);
     const context = this.settings.autoSaveContextSentence
-      ? this.extractContextSentence(fullDoc, pos)
+      ? this.extractContextSentence(lineText, lineOffset)
       : undefined;
 
     // 1. Act on Obsidian's internal selection:
@@ -866,13 +869,22 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // 2. Fallback: if selection is empty (e.g. hover trigger), find word at pos
     const match = this.dictionary.findWordAtOffset(
-      fullDoc,
-      pos,
+      lineText,
+      lineOffset,
       this.settings.maxWordLength
     );
 
     if (match) {
-      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
+      const absStart = match.start !== undefined ? line.from + match.start : undefined;
+      const absEnd = match.end !== undefined ? line.from + match.end : undefined;
+      this.tooltip.show(
+        { ...match, start: absStart, end: absEnd },
+        clientX,
+        clientY,
+        this.settings,
+        resolvedBounds,
+        context
+      );
     }
   }
 
@@ -1075,6 +1087,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
     containerEl?: HTMLElement,
     targetEl?: HTMLElement
   ): void {
+    // Jitter guard: avoid resetting timer if cursor only moved < 4px
+    if (this.lastHoverCoords && this.hoverTimeout !== null) {
+      const dist = Math.hypot(x - this.lastHoverCoords.x, y - this.lastHoverCoords.y);
+      if (dist < 4) {
+        return;
+      }
+    }
+
     this.lastHoverCoords = { x, y };
     this.cancelHoverLookup();
 

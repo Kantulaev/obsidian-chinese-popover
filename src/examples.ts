@@ -1,6 +1,9 @@
 /**
  * Context Sentence Examples (例句) Database for Chinese Vocabulary
+ * Supports both high-speed offline core database and dynamic live fetching from Tatoeba Open API.
  */
+
+import { requestUrl } from "obsidian";
 
 export interface ExampleSentence {
   chinese: string;
@@ -67,6 +70,12 @@ export const EXAMPLES_DATABASE: Record<string, ExampleSentence[]> = {
       english: "China has many famous historical places.",
       russian: "В Китае много знаменитых исторических достопримечательностей.",
     },
+    {
+      chinese: "我打算明年去中国旅游。",
+      pinyin: "Wǒ dǎsuàn míngnián qù zhōngguó lǚyóu.",
+      english: "I plan to travel to China next year.",
+      russian: "Я планирую поехать в Китай в следующем году.",
+    },
   ],
   "喜欢": [
     {
@@ -74,6 +83,12 @@ export const EXAMPLES_DATABASE: Record<string, ExampleSentence[]> = {
       pinyin: "Wǒ fēicháng xǐhuān hē zhōngguó lǜchá.",
       english: "I really like drinking Chinese green tea.",
       russian: "Мне очень нравится пить китайский зеленый чай.",
+    },
+    {
+      chinese: "你喜欢听什么音乐？",
+      pinyin: "Nǐ xǐhuān tīng shénme yīnyuè?",
+      english: "What kind of music do you like listening to?",
+      russian: "Какую музыку ты любишь слушать?",
     },
   ],
   "电脑": [
@@ -100,12 +115,193 @@ export const EXAMPLES_DATABASE: Record<string, ExampleSentence[]> = {
       russian: "У нас есть свобода выбирать свой жизненный путь.",
     },
   ],
+  "时间": [
+    {
+      chinese: "时间过得真快啊！",
+      pinyin: "Shíjiān guò de zhēn kuài a!",
+      english: "Time flies so fast!",
+      russian: "Время летит так быстро!",
+    },
+    {
+      chinese: "你明天有时间吗？",
+      pinyin: "Nǐ míngtiān yǒu shíjiān ma?",
+      english: "Do you have time tomorrow?",
+      russian: "У тебя есть завтра время?",
+    },
+  ],
+  "看": [
+    {
+      chinese: "我看了一本很有意思的书。",
+      pinyin: "Wǒ kànle yī běn hěn yǒuyìsi de shū.",
+      english: "I read a very interesting book.",
+      russian: "Я прочитал очень интересную книгу.",
+    },
+  ],
+  "听": [
+    {
+      chinese: "你听懂他在说什么了吗？",
+      pinyin: "Nǐ tīng dǒng tā zài shuō shénme le ma?",
+      english: "Did you understand what he said?",
+      russian: "Ты понял, что он сказал?",
+    },
+  ],
+  "吃": [
+    {
+      chinese: "你吃过北京烤鸭吗？",
+      pinyin: "Nǐ chīguo běijīng kǎoyā ma?",
+      english: "Have you ever eaten Peking duck?",
+      russian: "Ты пробовал пекинскую утку?",
+    },
+  ],
+  "喝": [
+    {
+      chinese: "你想喝茶还是咖啡？",
+      pinyin: "Nǐ xiǎng hē chá háishì kāfēi?",
+      english: "Would you like tea or coffee?",
+      russian: "Ты хочешь чай или кофе?",
+    },
+  ],
+  "买": [
+    {
+      chinese: "我想买这件衬衫，多少钱？",
+      pinyin: "Wǒ xiǎng mǎi zhè jiàn chènshān, duōshao qián?",
+      english: "I want to buy this shirt, how much is it?",
+      russian: "Я хочу купить эту рубашку, сколько она стоит?",
+    },
+  ],
+  "准备": [
+    {
+      chinese: "我们正在认真准备考试。",
+      pinyin: "Wǒmen zhèngzài rènzhēn zhǔnbèi kǎoshì.",
+      english: "We are carefully preparing for the exam.",
+      russian: "Мы тщательно готовимся к экзамену.",
+    },
+  ],
+  "帮助": [
+    {
+      chinese: "非常感谢你对我的帮助。",
+      pinyin: "Fēicháng gǎnxiè nǐ duì wǒ de bāngzhù.",
+      english: "Thank you very much for your help.",
+      russian: "Большое спасибо за твою помощь.",
+    },
+  ],
+  "希望": [
+    {
+      chinese: "我希望一切都会好起来。",
+      pinyin: "Wǒ xīwàng yīqiè dōu huì hǎo qǐlai.",
+      english: "I hope everything will be fine.",
+      russian: "Я надеюсь, что всё наладится.",
+    },
+  ],
 };
 
+const DYNAMIC_EXAMPLES_CACHE = new Map<string, ExampleSentence[]>();
+const MAX_CACHE_SIZE = 300;
+
 /**
- * Returns example sentences for a word if available
+ * Returns instant synchronous example sentences if present in local offline database
  */
 export function getExampleSentences(word: string): ExampleSentence[] | null {
   if (!word) return null;
-  return EXAMPLES_DATABASE[word.trim()] || null;
+  const clean = word.trim();
+  if (DYNAMIC_EXAMPLES_CACHE.has(clean)) {
+    return DYNAMIC_EXAMPLES_CACHE.get(clean)!;
+  }
+  return EXAMPLES_DATABASE[clean] || null;
+}
+
+/**
+ * Fetches authentic parallel sentences dynamically from Tatoeba Open API with in-memory caching.
+ * Non-blocking, fails gracefully to empty array on timeout or offline mode.
+ */
+export async function fetchDynamicExamples(
+  word: string,
+  targetLang: "rus" | "eng" = "rus"
+): Promise<ExampleSentence[]> {
+  const cleanWord = word.trim();
+  if (!cleanWord) return [];
+
+  const cacheKey = `${cleanWord}:${targetLang}`;
+  if (DYNAMIC_EXAMPLES_CACHE.has(cacheKey)) {
+    return DYNAMIC_EXAMPLES_CACHE.get(cacheKey)!;
+  }
+
+  if (EXAMPLES_DATABASE[cleanWord]) {
+    const list = EXAMPLES_DATABASE[cleanWord];
+    DYNAMIC_EXAMPLES_CACHE.set(cacheKey, list);
+    return list;
+  }
+
+  const url = `https://tatoeba.org/en/api_v0/search?from=cmn&to=${targetLang}&query=${encodeURIComponent(cleanWord)}`;
+
+  try {
+    const res = await requestUrl({
+      url,
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (res.status !== 200 || !res.json || !Array.isArray(res.json.results)) {
+      return [];
+    }
+
+    const sentences: ExampleSentence[] = [];
+    const results = res.json.results;
+
+    for (const item of results) {
+      if (!item.text) continue;
+      const zh = item.text.trim();
+
+      // Find pinyin transcription if present in response
+      let py = "";
+      if (Array.isArray(item.transcriptions)) {
+        const latn = item.transcriptions.find(
+          (t: { script?: string; text?: string }) => t.script === "Latn"
+        );
+        if (latn && latn.text) {
+          py = latn.text.trim();
+        }
+      }
+
+      // Find translation matching target language
+      let trans = "";
+      if (Array.isArray(item.translations)) {
+        for (const subGroup of item.translations) {
+          if (Array.isArray(subGroup)) {
+            const matched = subGroup.find(
+              (t: { lang?: string; text?: string }) => t.lang === targetLang
+            );
+            if (matched && matched.text) {
+              trans = matched.text.trim();
+              break;
+            }
+          }
+        }
+      }
+
+      if (zh && trans) {
+        sentences.push({
+          chinese: zh,
+          pinyin: py,
+          english: targetLang === "eng" ? trans : "",
+          russian: targetLang === "rus" ? trans : "",
+        });
+        if (sentences.length >= 2) break;
+      }
+    }
+
+    // Keep cache bounded
+    if (DYNAMIC_EXAMPLES_CACHE.size >= MAX_CACHE_SIZE) {
+      const firstKey = DYNAMIC_EXAMPLES_CACHE.keys().next().value;
+      if (firstKey) DYNAMIC_EXAMPLES_CACHE.delete(firstKey);
+    }
+
+    DYNAMIC_EXAMPLES_CACHE.set(cacheKey, sentences);
+    DYNAMIC_EXAMPLES_CACHE.set(cleanWord, sentences);
+    return sentences;
+  } catch {
+    return [];
+  }
 }

@@ -11,8 +11,8 @@ import { formatPosBadge, inferPartsOfSpeech } from "./pos.ts";
 import { formatLocalizedDefinitions } from "./russian-dict.ts";
 import { colorizePinyin, detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
-import { getChengyuStory } from "./chengyu.ts";
-import { getExampleSentences } from "./examples.ts";
+import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
+import { ExampleSentence, fetchDynamicExamples, getExampleSentences } from "./examples.ts";
 import { createWordNote } from "./word-notes.ts";
 
 export interface ContentBounds {
@@ -588,9 +588,9 @@ export class DictTooltip {
     }
 
     // 5. Chengyu Origin Story Drawer
-    if (settings.showChengyuStories) {
-      const chengyu = getChengyuStory(match.word);
-      if (chengyu) {
+    if (settings.showChengyuStories && Array.from(match.word).length === 4) {
+      const renderChengyuDrawer = (chengyu: ChengyuStory) => {
+        if (!chengyu || this.el.querySelector(".ch-dict-chengyu-drawer")) return;
         const storyEl = this.el.createDiv({ cls: "ch-dict-chengyu-drawer" });
         const header = storyEl.createDiv({ cls: "ch-dict-drawer-header" });
         header.createSpan({ cls: "ch-dict-drawer-tag", text: "成语故事 Притча" });
@@ -608,19 +608,33 @@ export class DictTooltip {
           cls: "ch-dict-chengyu-story",
           text: isRu ? chengyu.storyRu : chengyu.storyEn,
         });
+      };
+
+      const localStory = getChengyuStory(match.word);
+      if (localStory) {
+        renderChengyuDrawer(localStory);
+      } else {
+        const wordAtFetch = match.word;
+        fetchDynamicChengyuStory(match.word).then((story) => {
+          if (this.isVisible && this.currentWord === wordAtFetch && story) {
+            renderChengyuDrawer(story);
+          }
+        }).catch(() => {});
       }
     }
 
     // 6. Example Sentences Drawer
     if (settings.showExamples) {
-      const examples = getExampleSentences(match.word);
-      if (examples && examples.length > 0) {
+      const renderExampleDrawer = (sentences: ExampleSentence[]) => {
+        if (!sentences || sentences.length === 0) return;
+        if (this.el.querySelector(".ch-dict-example-drawer")) return;
+
         const exEl = this.el.createDiv({ cls: "ch-dict-example-drawer" });
         const exHeader = exEl.createDiv({ cls: "ch-dict-drawer-header" });
         exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: "例句 Примеры" });
 
         const isRu = settings.translationLanguage !== "en";
-        for (const ex of examples.slice(0, 2)) {
+        for (const ex of sentences.slice(0, 2)) {
           const row = exEl.createDiv({ cls: "ch-dict-example-row" });
           const zhSpan = row.createSpan({
             cls: "ch-dict-ex-zh",
@@ -631,9 +645,28 @@ export class DictTooltip {
             e.stopPropagation();
             this.playSpeech(ex.chinese, settings);
           });
-          row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
-          row.createDiv({ cls: "ch-dict-ex-tr", text: isRu ? ex.russian : ex.english });
+          if (ex.pinyin) {
+            row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+          }
+          const trText = isRu ? (ex.russian || ex.english) : (ex.english || ex.russian);
+          if (trText) {
+            row.createDiv({ cls: "ch-dict-ex-tr", text: trText });
+          }
         }
+      };
+
+      const localExamples = getExampleSentences(match.word);
+      if (localExamples && localExamples.length > 0) {
+        renderExampleDrawer(localExamples);
+      } else {
+        // Query Tatoeba live corpus in background
+        const targetLang = settings.translationLanguage === "en" ? "eng" : "rus";
+        const wordAtFetch = match.word;
+        fetchDynamicExamples(match.word, targetLang).then((fetched) => {
+          if (this.isVisible && this.currentWord === wordAtFetch && fetched && fetched.length > 0) {
+            renderExampleDrawer(fetched);
+          }
+        }).catch(() => {});
       }
     }
   }

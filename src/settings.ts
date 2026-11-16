@@ -97,6 +97,7 @@ export interface ChineseDictSettings {
 
   // Tone Coloring (Pleco style)
   toneColoring: "off" | "phonetics" | "all";
+  toneColoringExplicit?: boolean;
 
   // Zettelkasten Word Notes
   wordNotesFolder: string;
@@ -571,6 +572,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.toneColoring)
           .onChange(async (value) => {
             this.plugin.settings.toneColoring = value as "off" | "phonetics" | "all";
+            this.plugin.settings.toneColoringExplicit = true;
             await this.plugin.saveSettings();
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);

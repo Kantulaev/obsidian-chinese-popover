@@ -625,7 +625,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const loaded = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
+    if (loaded && loaded.toneColoring === "phonetics" && !loaded.toneColoringExplicit) {
+      this.settings.toneColoring = "off";
+    }
   }
 
   async saveSettings(): Promise<void> {

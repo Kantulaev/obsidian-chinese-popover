@@ -400,41 +400,13 @@ export class DictTooltip {
       }
     }
 
-    // HSK Level Badge
-    if (settings.showHskBadge) {
-      const hsk = getHskBadgeInfo(match.word);
-      if (hsk) {
-        const badge = pill.createSpan({
-          cls: "ch-dict-hsk-badge",
-          text: hsk.label,
-          attr: { title: `Официальный уровень HSK: ${hsk.level}` },
-        });
-        badge.style.setProperty("--hsk-color", hsk.color);
-        badge.style.setProperty("--hsk-bg", hsk.bg);
-      }
-    }
-
-    // Part of Speech (POS) Badge
-    if (settings.showPartOfSpeech) {
-      const allDefs = match.entries.flatMap((e) => e.definitions);
-      const posList = inferPartsOfSpeech(match.word, allDefs);
-      if (posList.length > 0) {
-        const posText = formatPosBadge(posList, settings.translationLanguage === "ru" ? "ru" : "en");
-        pill.createSpan({
-          cls: "ch-dict-pos-badge",
-          text: posText,
-          attr: { title: `Часть речи: ${posList.join(", ")}` },
-        });
-      }
-    }
-
     // Clicking the word triggers high quality pronunciation
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
       this.playSpeech(match.word, settings);
     });
 
-    // Action buttons (Speaker & Copy) if enabled
+    // Action buttons: Speaker & Hover Burger Menu
     if (settings.showActionButtons) {
       const actions = topBar.createDiv({ cls: "ch-dict-actions" });
 
@@ -454,26 +426,30 @@ export class DictTooltip {
         this.playSpeech(match.word, settings);
       });
 
-      // Copy Button (Left-click: configured format, Right-click: format selector)
-      const copyBtn = actions.createEl("button", {
-        cls: "ch-dict-glass-btn",
-        text: "📋",
+      // 2. Burger Action Menu (reveals on hover and click)
+      const burgerWrap = actions.createDiv({ cls: "ch-dict-burger-wrap" });
+      const burgerBtn = burgerWrap.createEl("button", {
+        cls: "ch-dict-glass-btn ch-dict-burger-btn",
+        text: "☰",
         attr: {
-          "aria-label": "Copy dictionary entry",
-          title: "Копировать карточку (Клик - стандарт, Правый клик - выбор формата)",
+          "aria-label": "Actions Menu",
+          title: "Действия карточки (наведите или нажмите) / Card Actions",
         },
       });
-      copyBtn.addEventListener("click", (e) => {
+
+      const burgerMenu = burgerWrap.createDiv({ cls: "ch-dict-burger-menu" });
+
+      // Click toggles menu
+      burgerBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.copyCurrentEntry(settings);
-        copyBtn.setText("✓");
-        copyBtn.addClass("ch-dict-btn-success");
-        window.setTimeout(() => {
-          copyBtn.setText("📋");
-          copyBtn.removeClass("ch-dict-btn-success");
-        }, 1200);
+        burgerMenu.toggleClass("is-open", !burgerMenu.hasClass("is-open"));
       });
-      copyBtn.addEventListener("contextmenu", (e) => {
+      burgerWrap.addEventListener("mouseleave", () => {
+        burgerMenu.removeClass("is-open");
+      });
+
+      // Helper to open Obsidian context menu on top of popover
+      const showCopyFormatMenu = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         const menu = new Menu();
@@ -499,66 +475,56 @@ export class DictTooltip {
            .onClick(() => this.copyEntryFormatted(match, settings, "markdown_table"))
         );
         menu.showAtMouseEvent(e);
+      };
+
+      burgerBtn.addEventListener("contextmenu", showCopyFormatMenu);
+
+      // --- Item: Copy ---
+      const copyItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-copy",
+        attr: { title: "Копировать (Клик - стандарт, Правый клик - выбор формата)" },
       });
+      const copyIcon = copyItem.createSpan({ cls: "ch-dict-burger-icon", text: "📋" });
+      const copyLabel = copyItem.createSpan({ cls: "ch-dict-burger-label", text: "Копировать" });
 
-      // Zettelkasten Word Note Button (Optional)
-      if (settings.showWordNotesButton) {
-        const noteBtn = actions.createEl("button", {
-          cls: "ch-dict-glass-btn",
-          text: "📝",
-          attr: {
-            "aria-label": "Create Word Note",
-            title: "Создать атомную заметку слова (Zettelkasten Note)",
-          },
-        });
-        noteBtn.addEventListener("click", async (e) => {
-          e.stopPropagation();
-          if (this.plugin) {
-            await createWordNote(this.plugin.app, match, contextSentence, {
-              folderPath: settings.wordNotesFolder || "Chinese/Words",
-              openAfterCreation: true,
-            });
-          }
-        });
-      }
+      copyItem.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.copyCurrentEntry(settings);
+        copyIcon.setText("✓");
+        copyLabel.setText("Скопировано!");
+        copyItem.addClass("ch-dict-btn-success");
+        window.setTimeout(() => {
+          copyIcon.setText("📋");
+          copyLabel.setText("Копировать");
+          copyItem.removeClass("ch-dict-btn-success");
+        }, 1200);
+      });
+      copyItem.addEventListener("contextmenu", showCopyFormatMenu);
 
-      // Stroke Order Animation Button
-      if (settings.showStrokeOrder) {
-        const strokeBtn = actions.createEl("button", {
-          cls: "ch-dict-glass-btn",
-          text: "🖌️",
-          attr: {
-            "aria-label": "Stroke Order Animation",
-            title: "Порядок черт (Анимация написания)",
-          },
-        });
-        strokeBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (this.plugin) {
-            new StrokeOrderModal(this.plugin.app, match.word).open();
-          }
-        });
-      }
-
-      // Star / Personal Vocabulary Button
+      // --- Item: Star (Vocabulary) ---
       const isStarred = this.plugin?.vocabulary?.hasWord(match.word) ?? false;
-      const starBtn = actions.createEl("button", {
-        cls: `ch-dict-glass-btn ch-dict-star-btn ${isStarred ? "ch-dict-btn-starred" : "ch-dict-btn-unstarred"}`,
-        text: isStarred ? "⭐" : "☆",
-        attr: {
-          "aria-label": isStarred ? "Remove from Vocabulary" : "Add to Vocabulary",
-          title: isStarred ? "Удалить из личного словарика" : "Добавить в личный словарик (Save to Vocabulary)",
-        },
+      const starItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-star",
+        attr: { title: isStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик" },
       });
-      starBtn.addEventListener("click", async (e) => {
+      const starIcon = starItem.createSpan({
+        cls: "ch-dict-burger-icon",
+        text: isStarred ? "⭐" : "☆",
+      });
+      const starLabel = starItem.createSpan({
+        cls: "ch-dict-burger-label",
+        text: isStarred ? "В словарике" : "В словарик",
+      });
+
+      starItem.addEventListener("click", async (e) => {
         e.stopPropagation();
         if (this.plugin?.vocabulary) {
-          starBtn.addClass("ch-star-bouncing");
-          window.setTimeout(() => starBtn.removeClass("ch-star-bouncing"), 450);
+          starIcon.addClass("ch-star-bouncing");
+          window.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
           const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
-          starBtn.setText(nowStarred ? "⭐" : "☆");
-          starBtn.toggleClass("ch-dict-btn-starred", nowStarred);
-          starBtn.toggleClass("ch-dict-btn-unstarred", !nowStarred);
+          starIcon.setText(nowStarred ? "⭐" : "☆");
+          starLabel.setText(nowStarred ? "В словарике" : "В словарик");
+          starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
           this.plugin.refreshVocabularyViews();
 
           if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
@@ -573,31 +539,65 @@ export class DictTooltip {
         }
       });
 
-      // Pin / Sticky Mode Toggle Button
-      const pinBtn = actions.createEl("button", {
-        cls: `ch-dict-glass-btn ch-dict-pin-btn ${this.isPinned ? "ch-dict-btn-pinned" : ""}`,
-        text: "📌",
-        attr: {
-          "aria-label": this.isPinned ? "Unpin popover" : "Pin popover",
-          title: this.isPinned ? "Открепить карточку (Unpin)" : "Закрепить карточку на экране (Pin / Sticky)",
-        },
+      // --- Item: Pin / Sticky Mode ---
+      const pinItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-pin",
+        attr: { title: this.isPinned ? "Открепить карточку" : "Закрепить карточку на экране" },
       });
-      pinBtn.addEventListener("click", (e) => {
+      const pinIcon = pinItem.createSpan({ cls: "ch-dict-burger-icon", text: "📌" });
+      const pinLabel = pinItem.createSpan({
+        cls: "ch-dict-burger-label",
+        text: this.isPinned ? "Открепить" : "Закрепить",
+      });
+      pinItem.addEventListener("click", (e) => {
         e.stopPropagation();
         const pinned = this.togglePin();
-        pinBtn.toggleClass("ch-dict-btn-pinned", pinned);
+        pinLabel.setText(pinned ? "Открепить" : "Закрепить");
+        pinItem.setAttribute("title", pinned ? "Открепить карточку" : "Закрепить карточку на экране");
       });
 
-      // Close Button
-      const closeBtn = actions.createEl("button", {
-        cls: "ch-dict-glass-btn ch-dict-close-btn",
-        text: "✕",
-        attr: {
-          "aria-label": "Close popover",
-          title: "Закрыть карточку (Esc)",
-        },
+      // --- Item: Word Note (Zettelkasten) ---
+      const noteItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-note",
+        attr: { title: "Создать атомную заметку слова (Zettelkasten Note)" },
       });
-      closeBtn.addEventListener("click", (e) => {
+      noteItem.createSpan({ cls: "ch-dict-burger-icon", text: "📝" });
+      noteItem.createSpan({ cls: "ch-dict-burger-label", text: "Заметка слова" });
+      noteItem.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (this.plugin) {
+          await createWordNote(this.plugin.app, match, contextSentence, {
+            folderPath: settings.wordNotesFolder || "Chinese/Words",
+            openAfterCreation: true,
+          });
+        }
+      });
+
+      // --- Item: Stroke Order Animation ---
+      const strokeItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-stroke",
+        attr: { title: "Порядок черт (Анимация написания)" },
+      });
+      strokeItem.createSpan({ cls: "ch-dict-burger-icon", text: "🖌️" });
+      strokeItem.createSpan({ cls: "ch-dict-burger-label", text: "Порядок черт" });
+      strokeItem.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (this.plugin) {
+          new StrokeOrderModal(this.plugin.app, match.word).open();
+        }
+      });
+
+      // Separator
+      burgerMenu.createDiv({ cls: "ch-dict-burger-separator" });
+
+      // --- Item: Close ---
+      const closeItem = burgerMenu.createEl("button", {
+        cls: "ch-dict-burger-item ch-dict-burger-close",
+        attr: { title: "Закрыть карточку (Esc)" },
+      });
+      closeItem.createSpan({ cls: "ch-dict-burger-icon", text: "✕" });
+      closeItem.createSpan({ cls: "ch-dict-burger-label", text: "Закрыть (Esc)" });
+      closeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.hide(true);
       });
@@ -677,6 +677,33 @@ export class DictTooltip {
       text: translationText,
       attr: { title: translationText },
     });
+
+    // Metadata Row under translation: HSK Level & Parts of Speech (subtle, clean, neutral)
+    const hsk = getHskBadgeInfo(match.word);
+    const allDefs = match.entries.flatMap((e) => e.definitions);
+    const posList = inferPartsOfSpeech(match.word, allDefs);
+
+    if (hsk || posList.length > 0) {
+      const metaRow = this.el.createDiv({ cls: "ch-dict-meta-row" });
+
+      if (hsk) {
+        metaRow.createSpan({
+          cls: "ch-dict-meta-item ch-dict-meta-hsk",
+          text: hsk.label,
+          attr: { title: `Официальный уровень: ${hsk.label}` },
+        });
+      }
+
+      if (posList.length > 0) {
+        const isRu = settings.translationLanguage !== "en";
+        const posText = formatPosBadge(posList, isRu ? "ru" : "en");
+        metaRow.createSpan({
+          cls: "ch-dict-meta-item ch-dict-meta-pos",
+          text: posText,
+          attr: { title: `Часть речи: ${posList.join(", ")}` },
+        });
+      }
+    }
 
     // 4. Character Breakdown (for compound words >= 2 chars)
     if (settings.showCharacterBreakdown) {

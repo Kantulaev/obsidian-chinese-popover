@@ -1,3 +1,9 @@
+/* Ensure Obsidian's native context menus and dropdowns appear ABOVE popovers */
+.menu,
+div.menu {
+  z-index: 99999 !important;
+}
+
 /* Apple Liquid Glass Chinese Popover (Pinyin / Jyutping + Cantonese Voice) */
 
 .ch-dict-tooltip {
@@ -12,8 +18,7 @@
   padding: 13px 16px;
   flex-direction: column;
   justify-content: space-between;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
 
   /* Hidden by default */
   display: none;
@@ -226,6 +231,144 @@
   transform: scale(0.95);
 }
 
+/* ==========================================
+   Burger Action Menu (Hover reveal + Click toggle)
+   ========================================== */
+.ch-dict-burger-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ch-dict-burger-btn {
+  font-size: 13px !important;
+  line-height: 1;
+  font-weight: 600;
+  user-select: none;
+}
+
+.ch-dict-burger-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10050;
+  min-width: 175px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  box-sizing: border-box;
+
+  border-radius: 14px;
+  background: rgba(26, 28, 35, 0.95);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 16px 36px -6px rgba(0, 0, 0, 0.65),
+    0 6px 14px -3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25);
+
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.97);
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-light .ch-dict-burger-menu,
+.ch-dict-theme-glass_light .ch-dict-burger-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 14px 32px -6px rgba(0, 0, 0, 0.18),
+    0 4px 10px -2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Open on hover of burger-wrap OR when class 'is-open' is present */
+.ch-dict-burger-wrap:hover .ch-dict-burger-menu,
+.ch-dict-burger-wrap:focus-within .ch-dict-burger-menu,
+.ch-dict-burger-menu.is-open {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.ch-dict-burger-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: #f1f2f6;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.08s ease, color 0.12s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.theme-light .ch-dict-burger-item,
+.ch-dict-theme-glass_light .ch-dict-burger-item {
+  color: #1c1c1e;
+}
+
+.ch-dict-burger-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(2px);
+}
+
+.theme-light .ch-dict-burger-item:hover,
+.ch-dict-theme-glass_light .ch-dict-burger-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ch-dict-burger-item:active {
+  transform: scale(0.98);
+}
+
+.ch-dict-burger-icon {
+  font-size: 13px;
+  line-height: 1;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ch-dict-burger-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.ch-dict-burger-separator {
+  height: 1px;
+  margin: 3px 4px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-light .ch-dict-burger-separator,
+.ch-dict-theme-glass_light .ch-dict-burger-separator {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.ch-dict-burger-item.ch-dict-btn-success {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+}
+
+.theme-light .ch-dict-burger-item.ch-dict-btn-success,
+.ch-dict-theme-glass_light .ch-dict-burger-item.ch-dict-btn-success {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #059669 !important;
+}
+
 /* Pinyin Hero: Multi-line wrap support with customizable colors and sizes */
 .ch-dict-pinyin-hero {
   font-size: var(--ch-dict-font-pinyin, 22px);
@@ -296,6 +439,55 @@
 .theme-light .ch-dict-translations,
 .ch-dict-theme-glass_light .ch-dict-translations {
   color: #2c2c2e;
+}
+
+/* ==========================================
+   Metadata Row under Translation (HSK & POS)
+   ========================================== */
+.ch-dict-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+  margin-bottom: 2px;
+}
+
+.ch-dict-meta-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.theme-light .ch-dict-meta-item,
+.ch-dict-theme-glass_light .ch-dict-meta-item {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.ch-dict-meta-hsk {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.theme-light .ch-dict-meta-hsk,
+.ch-dict-theme-glass_light .ch-dict-meta-hsk {
+  color: rgba(0, 0, 0, 0.82);
+}
+
+.ch-dict-meta-pos {
+  font-style: italic;
+  opacity: 0.85;
 }
 
 /* Settings spacers */

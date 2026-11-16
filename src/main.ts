@@ -15,6 +15,10 @@ import {
   ChineseVocabularyView,
   VIEW_TYPE_CHINESE_VOCABULARY,
 } from "./vocabulary-view.ts";
+import { applyChineseFontToDOM } from "./font.ts";
+import { StrokeOrderModal } from "./stroke-order.ts";
+import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
+import { formatPinyin } from "./pinyin.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -32,9 +36,17 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
   private hoverTimeout: number | null = null;
   private lastHoverCoords: { x: number; y: number } | null = null;
+  private readerStatusBarItem: HTMLElement | null = null;
 
   override async onload(): Promise<void> {
     await this.loadSettings();
+
+    // Apply Chinese font settings to Obsidian workspace DOM
+    applyChineseFontToDOM(
+      this.settings.chineseFontFamily,
+      this.settings.chineseFontScope,
+      this.settings.customChineseFont
+    );
 
     this.dictionary = new DictionaryManager(this);
     // Non-blocking background load: Obsidian launches instantly without freeze
@@ -48,6 +60,20 @@ export default class ChineseHoverDictPlugin extends Plugin {
     });
 
     this.tooltip = new DictTooltip(this);
+
+    // Register Status Bar item for Reader Mode
+    this.readerStatusBarItem = this.addStatusBarItem();
+    this.updateReaderStatusBar();
+    this.readerStatusBarItem.addEventListener("click", async () => {
+      this.settings.readerMode = !this.settings.readerMode;
+      await this.saveSettings();
+      this.updateReaderStatusBar();
+      new Notice(
+        `Режим быстрого чтения: ${
+          this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
+        }`
+      );
+    });
 
     // Register Right Sidebar View for Vocabulary
     this.registerView(
@@ -216,6 +242,139 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (checking) return true;
         this.toggleStarActiveWord();
         return true;
+      },
+    });
+
+    // 10. Toggle Reader Mode
+    this.addCommand({
+      id: "toggle-reader-mode",
+      name: "Переключить режим быстрого чтения / Toggle Reader Mode",
+      callback: async () => {
+        this.settings.readerMode = !this.settings.readerMode;
+        await this.saveSettings();
+        this.updateReaderStatusBar();
+        new Notice(
+          `Режим быстрого чтения: ${
+            this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
+          }`
+        );
+      },
+    });
+
+    // 11. Stroke Order Animation Modal
+    this.addCommand({
+      id: "show-stroke-order",
+      name: "Показать порядок черт иероглифа / Show Stroke Order Animation",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView && !this.tooltip.getIsOpen()) return false;
+        if (checking) return true;
+
+        let word = "";
+        if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
+          word = this.tooltip.getCurrentWord()!;
+        } else if (activeView?.editor) {
+          word = activeView.editor.getSelection().trim();
+          if (!word) {
+            const cursor = activeView.editor.getCursor();
+            const line = activeView.editor.getLine(cursor.line);
+            const match = this.dictionary.findWordAtOffset(
+              line,
+              cursor.ch,
+              this.settings.maxWordLength
+            );
+            if (match) word = match.word;
+          }
+        }
+
+        if (word) {
+          new StrokeOrderModal(this.app, word).open();
+        } else {
+          new Notice("Не найден китайский иероглиф под курсором или в выделении.");
+        }
+        return true;
+      },
+    });
+
+    // 12. Add Ruby Pinyin / Furigana to selection
+    this.addCommand({
+      id: "add-ruby-pinyin",
+      name: "Добавить пиньинь (Ruby/Furigana) к выделенному тексту / Add Ruby Pinyin",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) return false;
+        const sel = activeView.editor.getSelection().trim();
+        if (!sel) return false;
+        if (checking) return true;
+
+        const ruby = this.convertTextToRuby(sel, "pinyin");
+        activeView.editor.replaceSelection(ruby);
+        new Notice("Пиньинь (Ruby) добавлен над текстом!");
+        return true;
+      },
+    });
+
+    // 13. Add Ruby Jyutping / Furigana to selection
+    this.addCommand({
+      id: "add-ruby-jyutping",
+      name: "Добавить ютпинг (Ruby/Furigana) к выделенному тексту / Add Ruby Jyutping",
+      checkCallback: (checking: boolean) => {
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView || !activeView.editor) return false;
+        const sel = activeView.editor.getSelection().trim();
+        if (!sel) return false;
+        if (checking) return true;
+
+        const ruby = this.convertTextToRuby(sel, "jyutping");
+        activeView.editor.replaceSelection(ruby);
+        new Notice("Ютпинг (Ruby) добавлен над текстом!");
+        return true;
+      },
+    });
+
+    // 14. Export Vocabulary to Anki TSV file
+    this.addCommand({
+      id: "export-vocabulary-anki-tsv",
+      name: "Экспорт словарика в файл Anki (.tsv) / Export Vocabulary to Anki TSV",
+      callback: () => {
+        const items = this.vocabulary.getItems();
+        if (items.length === 0) {
+          new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+          return;
+        }
+        const tsv = generateAnkiTsv(items);
+        const blob = new Blob([tsv], {
+          type: "text/tab-separated-values;charset=utf-8;",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Anki_Chinese_Vocabulary_${new Date()
+          .toISOString()
+          .slice(0, 10)}.tsv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        new Notice(`Экспортировано ${items.length} слов в TSV файл для Anki!`);
+      },
+    });
+
+    // 15. Direct Sync to AnkiConnect
+    this.addCommand({
+      id: "sync-vocabulary-ankiconnect",
+      name: "Синхронизировать словарик с AnkiConnect / Sync to AnkiConnect",
+      callback: async () => {
+        const items = this.vocabulary.getItems();
+        if (items.length === 0) {
+          new Notice("Словарик пуст!");
+          return;
+        }
+        new Notice("Начата синхронизация с AnkiConnect...");
+        let count = 0;
+        for (const item of items) {
+          const ok = await addNoteToAnki(this.settings.anki, item);
+          if (ok) count++;
+        }
+        new Notice(`Синхронизация завершена: ${count} карточек отправлено в Anki.`);
       },
     });
 
@@ -430,9 +589,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
         mousemove: (event: MouseEvent, view: EditorView) => {
           if (!this.settings.enabled) return;
           const mode = this.settings.triggerMode;
-          if (mode !== "hover" && mode !== "hover_modifier") return;
+          const isReader = this.settings.readerMode;
+          if (mode !== "hover" && mode !== "hover_modifier" && !isReader) return;
 
-          if (mode === "hover_modifier") {
+          if (mode === "hover_modifier" && !isReader) {
             if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
               this.cancelHoverLookup();
               return;
@@ -572,7 +732,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
   private handleReadingViewMouseMove(event: MouseEvent): void {
     if (!this.settings.enabled) return;
     const mode = this.settings.triggerMode;
-    if (mode !== "hover" && mode !== "hover_modifier") return;
+    const isReader = this.settings.readerMode;
+    if (mode !== "hover" && mode !== "hover_modifier" && !isReader) return;
 
     const target = event.target as HTMLElement | null;
     if (!target) return;
@@ -588,7 +749,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       return;
     }
 
-    if (mode === "hover_modifier") {
+    if (mode === "hover_modifier" && !isReader) {
       if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
         this.cancelHoverLookup();
         return;
@@ -1144,5 +1305,95 @@ export default class ChineseHoverDictPlugin extends Plugin {
       }
     }
     new Notice("Нет слова для добавления в словарик / No active word to star");
+  }
+
+  /**
+   * Updates text and visual style of status bar reader indicator
+   */
+  public updateReaderStatusBar(): void {
+    if (!this.readerStatusBarItem) return;
+    if (this.settings.readerMode) {
+      this.readerStatusBarItem.setText("🏮 Чтение: ВКЛ");
+      this.readerStatusBarItem.setAttribute(
+        "title",
+        "Режим быстрого чтения ВКЛЮЧЕН (Наведите на китайское слово без зажатия клавиш). Нажмите для выключения."
+      );
+      this.readerStatusBarItem.addClass("ch-dict-status-reader-active");
+    } else {
+      this.readerStatusBarItem.setText("🏮 Чтение: ВЫКЛ");
+      this.readerStatusBarItem.setAttribute(
+        "title",
+        "Режим быстрого чтения ВЫКЛЮЧЕН. Нажмите для включения (быстрый перевод при наведении мыши)."
+      );
+      this.readerStatusBarItem.removeClass("ch-dict-status-reader-active");
+    }
+  }
+
+  /**
+   * Annotates Chinese text with HTML <ruby> tags: <ruby>汉<rt>hàn</rt></ruby>
+   */
+  public convertTextToRuby(
+    text: string,
+    dialect: "pinyin" | "jyutping" = "pinyin"
+  ): string {
+    if (!text) return "";
+    let result = "";
+    let i = 0;
+    const chars = Array.from(text);
+
+    while (i < chars.length) {
+      const char = chars[i];
+      if (/\p{Script=Han}/u.test(char)) {
+        // Try matching words up to 4 characters first for correct multi-character polyphonic readings
+        let matchedLen = 1;
+        let pinyinStr = "";
+        let jyutpingStr = "";
+
+        for (let l = Math.min(4, chars.length - i); l >= 1; l--) {
+          const subWord = chars.slice(i, i + l).join("");
+          const entries = this.dictionary.get(subWord);
+          if (entries && entries.length > 0) {
+            matchedLen = l;
+            pinyinStr = entries[0].pinyin;
+            jyutpingStr = entries[0].jyutping || "";
+            break;
+          }
+        }
+
+        const matchedChars = chars.slice(i, i + matchedLen);
+        if (dialect === "jyutping" && jyutpingStr) {
+          const jpTones = jyutpingStr.split(/\s+/).filter(Boolean);
+          if (jpTones.length === matchedLen) {
+            for (let c = 0; c < matchedLen; c++) {
+              result += `<ruby>${matchedChars[c]}<rt>${jpTones[c]}</rt></ruby>`;
+            }
+          } else {
+            result += `<ruby>${matchedChars.join("")}<rt>${jyutpingStr}</rt></ruby>`;
+          }
+        } else if (pinyinStr) {
+          const pinyinParts = pinyinStr
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((p) => formatPinyin(p, true));
+          if (pinyinParts.length === matchedLen) {
+            for (let c = 0; c < matchedLen; c++) {
+              result += `<ruby>${matchedChars[c]}<rt>${pinyinParts[c]}</rt></ruby>`;
+            }
+          } else {
+            const formatted = formatPinyin(pinyinStr, true);
+            result += `<ruby>${matchedChars.join("")}<rt>${formatted}</rt></ruby>`;
+          }
+        } else {
+          result += char;
+        }
+
+        i += matchedLen;
+      } else {
+        result += char;
+        i++;
+      }
+    }
+
+    return result;
   }
 }

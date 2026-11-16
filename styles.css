@@ -870,3 +870,312 @@
   line-height: 1.45;
   max-width: 240px;
 }
+
+/* ==========================================
+   HSK Badges (Popover & Vocabulary Cards)
+   ========================================== */
+.ch-dict-hsk-badge,
+.ch-vocab-hsk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--hsk-bg, rgba(16, 185, 129, 0.16));
+  color: var(--hsk-color, #10b981);
+  border: 1px solid var(--hsk-color, #10b981);
+  letter-spacing: 0.3px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.ch-dict-hsk-badge {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.ch-vocab-hsk-badge {
+  margin-left: 6px;
+}
+
+/* ==========================================
+   Character Breakdown (Popover Drawer)
+   ========================================== */
+.ch-dict-decomp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  width: 100%;
+}
+
+.theme-light .ch-dict-decomp-row {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ch-dict-decomp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.theme-light .ch-dict-decomp-chip {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ch-dict-decomp-chip:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.theme-light .ch-dict-decomp-chip:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.ch-dict-decomp-char {
+  font-family: var(--ch-dict-font-hanzi-family, "KaiTi", "楷体", serif);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-normal);
+}
+
+.ch-dict-decomp-phon {
+  font-size: 10px;
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.ch-dict-decomp-def {
+  font-size: 10px;
+  color: var(--text-muted);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================
+   Stroke Order Modal (Mizige Grid & Hanzi)
+   ========================================== */
+.ch-dict-stroke-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+}
+
+.ch-dict-stroke-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.ch-dict-stroke-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ch-dict-stroke-tab {
+  font-family: var(--ch-dict-font-hanzi-family, "KaiTi", "楷体", serif);
+  font-size: 22px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ch-dict-stroke-tab:hover {
+  background: var(--background-modifier-hover);
+}
+
+.ch-dict-stroke-tab.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.ch-dict-stroke-canvas {
+  width: 280px;
+  height: 280px;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.ch-dict-stroke-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ch-dict-stroke-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ==========================================
+   SRS (Spaced Repetition) in Vocabulary View
+   ========================================== */
+.ch-vocab-due-filter-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ch-vocab-due-filter-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ch-vocab-due-filter-btn.ch-vocab-due-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.ch-vocab-srs-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--background-secondary);
+  margin-top: 8px;
+}
+
+.ch-vocab-srs-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ch-vocab-srs-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.ch-vocab-srs-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ch-vocab-srs-btn:hover {
+  transform: translateY(-1px);
+}
+
+.ch-vocab-srs-btn.srs-again {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ch-vocab-srs-btn.srs-hard {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.ch-vocab-srs-btn.srs-good {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ch-vocab-srs-btn.srs-easy {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.ch-vocab-srs-due-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.ch-vocab-srs-due-tag.ch-vocab-is-due {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* ==========================================
+   Reader Mode Status Bar Active State
+   ========================================== */
+.ch-dict-status-reader-active {
+  color: var(--text-accent, #38bdf8);
+  font-weight: 700;
+}
+
+/* ==========================================
+   Chinese Fonts (KaiTi, SongTi, HeiTi, etc.)
+   ========================================== */
+.ch-dict-hanzi,
+.ch-vocab-hanzi-main,
+.ch-dict-stroke-tab {
+  font-family: var(--ch-dict-font-hanzi-family, inherit);
+}
+
+.ch-dict-font-entire-editor .cm-content,
+.ch-dict-font-entire-editor .markdown-rendered {
+  font-family: var(--ch-dict-font-hanzi-family, inherit);
+}
+
+/* ==========================================
+   Ruby / Furigana
+   ========================================== */
+ruby {
+  ruby-position: over;
+  ruby-align: center;
+}
+
+rt {
+  font-size: 0.6em;
+  color: var(--text-accent, #0284c7);
+  user-select: none;
+  font-weight: 500;
+}

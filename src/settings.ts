@@ -1,5 +1,12 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
+import { applyChineseFontToDOM, ChineseFontPreset, ChineseFontScope } from "./font.ts";
+import {
+  AnkiConnectSettings,
+  checkAnkiConnect,
+  DEFAULT_ANKI_SETTINGS,
+  generateAnkiTsv,
+} from "./anki.ts";
 
 export type ChineseDialect = "cantonese" | "mandarin";
 export type TriggerMode = "dblclick" | "hover_modifier" | "hover" | "command_only";
@@ -54,6 +61,26 @@ export interface ChineseDictSettings {
   // Word Selection
   selectCantonesePhrases: boolean;
   smartWordSelection?: boolean;
+
+  // Reader Mode (Quick hover reading without modifier key)
+  readerMode: boolean;
+
+  // Chinese Typography & Exam Fonts
+  chineseFontFamily: ChineseFontPreset;
+  customChineseFont: string;
+  chineseFontScope: ChineseFontScope;
+
+  // Learning & Visual Aids
+  showHskBadge: boolean;
+  showCharacterBreakdown: boolean;
+  showStrokeOrder: boolean;
+
+  // Ruby Furigana
+  rubyDialect: "pinyin" | "jyutping";
+
+  // Anki Integration
+  anki: AnkiConnectSettings;
+  ankiSyncOnStar: boolean;
 }
 
 export const DEFAULT_SETTINGS: ChineseDictSettings = {
@@ -92,6 +119,21 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   vocabularySort: "date_desc",
 
   selectCantonesePhrases: true,
+
+  readerMode: false,
+
+  chineseFontFamily: "default",
+  customChineseFont: "",
+  chineseFontScope: "popover_and_sidebar",
+
+  showHskBadge: true,
+  showCharacterBreakdown: true,
+  showStrokeOrder: true,
+
+  rubyDialect: "pinyin",
+
+  anki: DEFAULT_ANKI_SETTINGS,
+  ankiSyncOnStar: false,
 };
 
 interface AppWithSetting extends App {
@@ -193,6 +235,19 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.selectCantonesePhrases = value;
             await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Режим быстрого чтения / Reader Mode")
+      .setDesc("При наведении мыши на иероглифы сразу открывать подсказку без зажатия вспомогательных клавиш. Удобно для непрерывного чтения китайских текстов и статей.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.readerMode)
+          .onChange(async (value) => {
+            this.plugin.settings.readerMode = value;
+            await this.plugin.saveSettings();
+            this.plugin.updateReaderStatusBar();
           })
       );
 
@@ -398,6 +453,122 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             if (this.plugin.tooltip.getIsOpen()) {
               this.plugin.tooltip.refresh(this.plugin.settings);
             }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Бейдж уровня HSK / HSK Level Badge")
+      .setDesc("Отображать цветной значок официального уровня HSK (HSK 1 - 6) во всплывающей подсказке и в карточках словарика.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showHskBadge)
+          .onChange(async (value) => {
+            this.plugin.settings.showHskBadge = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Разбор слова по иероглифам / Character Breakdown")
+      .setDesc("Для составных слов (от 2 иероглифов) показывать дополнительную компактную строку с переводом и транскрипцией каждого символа в отдельности.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showCharacterBreakdown)
+          .onChange(async (value) => {
+            this.plugin.settings.showCharacterBreakdown = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Анимация порядка черт / Stroke Order Animation")
+      .setDesc("Отображать кнопку кисти 🖌️ для просмотра пошаговой каллиграфической анимации написания черт иероглифа в сетке Мицзыгэ (米字格).")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.showStrokeOrder)
+          .onChange(async (value) => {
+            this.plugin.settings.showStrokeOrder = value;
+            await this.plugin.saveSettings();
+            if (this.plugin.tooltip.getIsOpen()) {
+              this.plugin.tooltip.refresh(this.plugin.settings);
+            }
+          })
+      );
+
+    // ==========================================
+    // 4. КИТАЙСКАЯ ТИПОГРАФИКА И ШРИФТЫ
+    // ==========================================
+    new Setting(containerEl)
+      .setName("🖋️ Китайская типографика и шрифты / Chinese Typography")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Китайский шрифт / Chinese Font Family")
+      .setDesc("Выберите стиль китайского шрифта. Рекомендуется официальный шрифт экзамена HSK — КайТи (楷体), а также классический Мин/Сун, рубленый ХэйТи или каллиграфический ВэньКай.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("default", "По умолчанию в Obsidian / Default")
+          .addOption("kaiti", "🎯 Экзаменационный шрифт HSK — КайТи (楷体 / KaiTi)")
+          .addOption("songti", "Классический книжный Мин/Сун (宋体 / SongTi)")
+          .addOption("heiti", "Современный рубленый гротеск (黑体 / HeiTi)")
+          .addOption("fangsong", "Официально-деловой ФанСун (仿宋 / FangSong)")
+          .addOption("wenkai", "Каллиграфический экранный Сяу ВэньКай (霞鹜文楷 / LXGW WenKai)")
+          .addOption("custom", "Пользовательский шрифт / Custom Font...")
+          .setValue(this.plugin.settings.chineseFontFamily)
+          .onChange(async (value) => {
+            this.plugin.settings.chineseFontFamily = value as ChineseFontPreset;
+            await this.plugin.saveSettings();
+            applyChineseFontToDOM(
+              this.plugin.settings.chineseFontFamily,
+              this.plugin.settings.chineseFontScope,
+              this.plugin.settings.customChineseFont
+            );
+            this.display();
+          })
+      );
+
+    if (this.plugin.settings.chineseFontFamily === "custom") {
+      new Setting(containerEl)
+        .setName("Название пользовательского шрифта / Custom Font Name")
+        .setDesc("Введите точное имя шрифта, установленного на вашем компьютере (например: 'Source Han Serif SC', 'Noto Serif CJK SC').")
+        .addText((text) =>
+          text
+            .setPlaceholder("Например: Source Han Serif SC")
+            .setValue(this.plugin.settings.customChineseFont)
+            .onChange(async (val) => {
+              this.plugin.settings.customChineseFont = val.trim();
+              await this.plugin.saveSettings();
+              applyChineseFontToDOM(
+                this.plugin.settings.chineseFontFamily,
+                this.plugin.settings.chineseFontScope,
+                this.plugin.settings.customChineseFont
+              );
+            })
+        );
+    }
+
+    new Setting(containerEl)
+      .setName("Область применения шрифта / Font Scope")
+      .setDesc("Где использовать выбранный китайский шрифт: только во всплывающей подсказке и боковом словарике, либо во всем редакторе заметок Obsidian.")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("popover_and_sidebar", "Только словарь и боковая панель / Popover & Sidebar only")
+          .addOption("entire_editor", "Весь редактор заметок Obsidian / Entire Obsidian Editor")
+          .setValue(this.plugin.settings.chineseFontScope)
+          .onChange(async (value) => {
+            this.plugin.settings.chineseFontScope = value as ChineseFontScope;
+            await this.plugin.saveSettings();
+            applyChineseFontToDOM(
+              this.plugin.settings.chineseFontFamily,
+              this.plugin.settings.chineseFontScope,
+              this.plugin.settings.customChineseFont
+            );
           })
       );
 
@@ -632,6 +803,129 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setCta()
           .onClick(() => {
             this.plugin.activateVocabularyView();
+          })
+      );
+
+    // ==========================================
+    // 7. ИНТЕГРАЦИЯ С ANKI
+    // ==========================================
+    new Setting(containerEl)
+      .setName("🗃️ Интеграция с Anki / Anki Connect & Export")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Синхронизация через AnkiConnect / Enable AnkiConnect")
+      .setDesc("Прямой экспорт карточек в приложение Anki через локальный API (потребуется плагин AnkiConnect в Anki, код аддона: 2055492159).")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.anki.enabled)
+          .onChange(async (value) => {
+            this.plugin.settings.anki.enabled = value;
+            await this.plugin.saveSettings();
+            this.display();
+          })
+      );
+
+    if (this.plugin.settings.anki.enabled) {
+      new Setting(containerEl)
+        .setName("Адрес сервера AnkiConnect / Server URL")
+        .setDesc("По умолчанию: http://127.0.0.1:8765")
+        .addText((text) =>
+          text
+            .setPlaceholder("http://127.0.0.1:8765")
+            .setValue(this.plugin.settings.anki.serverUrl)
+            .onChange(async (val) => {
+              this.plugin.settings.anki.serverUrl = val.trim() || "http://127.0.0.1:8765";
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Имя колоды в Anki / Deck Name")
+        .setDesc("Колода, в которую будут добавляться новые карточки слов.")
+        .addText((text) =>
+          text
+            .setPlaceholder("Chinese")
+            .setValue(this.plugin.settings.anki.deckName)
+            .onChange(async (val) => {
+              this.plugin.settings.anki.deckName = val.trim() || "Chinese";
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Авто-экспорт при сохранении / Sync on Star ⭐")
+        .setDesc("Автоматически создавать карточку в Anki в момент нажатия звёздочки во всплывающем окне.")
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.ankiSyncOnStar)
+            .onChange(async (val) => {
+              this.plugin.settings.ankiSyncOnStar = val;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName("Проверить подключение к Anki / Test Connection")
+        .setDesc("Проверка доступности локального сервера AnkiConnect.")
+        .addButton((btn) =>
+          btn
+            .setButtonText("Проверить связь")
+            .onClick(async () => {
+              btn.setDisabled(true);
+              const ok = await checkAnkiConnect(this.plugin.settings.anki.serverUrl);
+              btn.setDisabled(false);
+              if (ok) {
+                new Notice("✅ Успешно! AnkiConnect активен и готов к синхронизации.", 3500);
+              } else {
+                new Notice("❌ Не удалось связаться с AnkiConnect. Убедитесь, что Anki запущен.", 4000);
+              }
+            })
+        );
+    }
+
+    new Setting(containerEl)
+      .setName("Экспорт словарика в файл Anki (.tsv) / Export Offline TSV")
+      .setDesc("Скачать все слова вашего личного словарика в виде TSV файла для ручного импорта в любое приложение Anki (компьютер или телефон).")
+      .addButton((btn) =>
+        btn
+          .setButtonText("📥 Скачать Anki TSV")
+          .onClick(async () => {
+            const items = this.plugin.vocabulary.getItems();
+            if (items.length === 0) {
+              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+              return;
+            }
+            const tsv = generateAnkiTsv(items);
+            const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            new Notice(`Экспортировано ${items.length} слов в TSV файл!`);
+          })
+      );
+
+    // ==========================================
+    // 8. РУБИ-РАЗМЕТКА (RUBY / FURIGANA)
+    // ==========================================
+    new Setting(containerEl)
+      .setName("🔤 Разметка над текстом (Ruby / Furigana)")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName("Диалект для разметки / Ruby Dialect")
+      .setDesc("Какую транскрипцию подставлять в <ruby><rt>...</rt></ruby> командами добавления фонетики: Путунхуа (Пиньинь) или Кантонский (Ютпинг).")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("pinyin", "Пиньинь / Pinyin (zh-CN)")
+          .addOption("jyutping", "Ютпинг / Jyutping (zh-yue)")
+          .setValue(this.plugin.settings.rubyDialect)
+          .onChange(async (val) => {
+            this.plugin.settings.rubyDialect = val as "pinyin" | "jyutping";
+            await this.plugin.saveSettings();
           })
       );
 

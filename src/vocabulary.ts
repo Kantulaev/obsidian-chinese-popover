@@ -14,6 +14,11 @@ export interface VocabularyItem {
   dateAdded: number; // unix timestamp ms
   dateString: string; // YYYY-MM-DD
   tags?: string[];
+  // Spaced Repetition (SRS)
+  nextReviewDate?: string; // YYYY-MM-DD
+  intervalDays?: number;   // days
+  repetitionCount?: number;
+  easeFactor?: number;     // SM-2 ease factor
 }
 
 export type VocabularySort = "date_desc" | "date_asc" | "alpha";
@@ -148,6 +153,54 @@ export class VocabularyManager {
     }
   }
 
+  /**
+   * Updates the Spaced Repetition (SRS) interval and next review date for a word
+   */
+  async updateSrsRating(word: string, rating: "again" | "hard" | "good" | "easy"): Promise<void> {
+    const item = this.items.find((i) => i.word === word);
+    if (!item) return;
+
+    let reps = item.repetitionCount || 0;
+    let interval = item.intervalDays || 1;
+    let ease = item.easeFactor || 2.5;
+
+    if (rating === "again") {
+      reps = 0;
+      interval = 1;
+    } else if (rating === "hard") {
+      interval = Math.max(1, Math.round(interval * 1.2));
+      ease = Math.max(1.3, ease - 0.15);
+    } else if (rating === "good") {
+      reps++;
+      interval = reps === 1 ? 1 : reps === 2 ? 6 : Math.round(interval * ease);
+    } else if (rating === "easy") {
+      reps++;
+      interval = reps === 1 ? 4 : Math.round(interval * ease * 1.3);
+      ease += 0.15;
+    }
+
+    item.repetitionCount = reps;
+    item.intervalDays = interval;
+    item.easeFactor = ease;
+
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + interval);
+    item.nextReviewDate = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
+
+    await this.persist();
+    await this.syncToMarkdown();
+  }
+
+  getDueItems(): VocabularyItem[] {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    return this.items.filter((item) => !item.nextReviewDate || item.nextReviewDate <= todayStr);
+  }
+
+  getDueItemsCount(): number {
+    return this.getDueItems().length;
+  }
+
   private async persist(): Promise<void> {
     const currentData = (await this.plugin.loadData()) || {};
     currentData.vocabulary = this.items;
@@ -184,12 +237,15 @@ export class VocabularyManager {
       // Column 3: Definitions
       const defCell = this.escapeMd(item.definitions.slice(0, 3).join(" • "));
 
-      // Column 4: Context & Date
+      // Column 4: Context & Date & SRS
       let metaCell = "";
       if (item.contextSentence) {
         metaCell += `*“${this.escapeMd(item.contextSentence)}”*<br>`;
       }
       metaCell += `<small>${item.dateString}</small>`;
+      if (item.nextReviewDate) {
+        metaCell += `<br><small style="color:var(--text-accent);">🔁 ${item.nextReviewDate}</small>`;
+      }
 
       content += `| ${hanziCell} | ${phoneticsCell} | ${defCell} | ${metaCell} |\n`;
     }

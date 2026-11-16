@@ -3,6 +3,10 @@ import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
 import { ChineseDictSettings } from "./settings.ts";
+import { getHskBadgeInfo } from "./hsk.ts";
+import { StrokeOrderModal } from "./stroke-order.ts";
+import { resolveChineseFontFamily } from "./font.ts";
+import { addNoteToAnki } from "./anki.ts";
 
 export interface ContentBounds {
   left: number;
@@ -47,6 +51,7 @@ export class DictTooltip {
     const width = settings.popoverWidth || 330;
     const height = settings.popoverHeight || 165;
     const blur = settings.blurIntensity ?? 34;
+    const fontFamily = resolveChineseFontFamily(settings.chineseFontFamily, settings.customChineseFont);
 
     this.el.setCssProps({
       "--ch-dict-width": `${width}px`,
@@ -55,6 +60,7 @@ export class DictTooltip {
       "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 19}px`,
       "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 22}px`,
       "--ch-dict-font-translation": `${settings.fontSizeTranslation || 15}px`,
+      "--ch-dict-font-hanzi-family": fontFamily,
     });
 
     // Reset theme classes
@@ -298,6 +304,20 @@ export class DictTooltip {
       }
     }
 
+    // HSK Level Badge
+    if (settings.showHskBadge) {
+      const hsk = getHskBadgeInfo(match.word);
+      if (hsk) {
+        const badge = pill.createSpan({
+          cls: "ch-dict-hsk-badge",
+          text: hsk.label,
+          attr: { title: `Официальный уровень HSK: ${hsk.level}` },
+        });
+        badge.style.setProperty("--hsk-color", hsk.color);
+        badge.style.setProperty("--hsk-bg", hsk.bg);
+      }
+    }
+
     // Clicking the word triggers high quality pronunciation
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -335,6 +355,24 @@ export class DictTooltip {
         this.copyCurrentEntry(settings);
       });
 
+      // Stroke Order Animation Button
+      if (settings.showStrokeOrder) {
+        const strokeBtn = actions.createEl("button", {
+          cls: "ch-dict-glass-btn",
+          text: "🖌️",
+          attr: {
+            "aria-label": "Stroke Order Animation",
+            title: "Порядок черт (Анимация написания)",
+          },
+        });
+        strokeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (this.plugin) {
+            new StrokeOrderModal(this.plugin.app, match.word).open();
+          }
+        });
+      }
+
       // Star / Personal Vocabulary Button
       const isStarred = this.plugin?.vocabulary?.hasWord(match.word) ?? false;
       const starBtn = actions.createEl("button", {
@@ -353,6 +391,16 @@ export class DictTooltip {
           starBtn.toggleClass("ch-dict-btn-starred", nowStarred);
           starBtn.toggleClass("ch-dict-btn-unstarred", !nowStarred);
           this.plugin.refreshVocabularyViews();
+
+          if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
+            const item = this.plugin.vocabulary.getItem(match.word);
+            if (item) {
+              const ok = await addNoteToAnki(this.plugin.settings.anki, item);
+              if (ok) {
+                new Notice(`Слово "${match.word}" добавлено в Anki!`);
+              }
+            }
+          }
         }
       });
     }
@@ -423,6 +471,38 @@ export class DictTooltip {
       text: translationText,
       attr: { title: translationText },
     });
+
+    // 4. Character Breakdown (for compound words >= 2 chars)
+    if (settings.showCharacterBreakdown) {
+      const chars = Array.from(match.word).filter((c) => /\p{Script=Han}/u.test(c));
+      if (chars.length >= 2) {
+        const decompRow = this.el.createDiv({ cls: "ch-dict-decomp-row" });
+        for (const char of chars) {
+          const charEntries = this.plugin?.dictionary?.get(char);
+          if (charEntries && charEntries.length > 0) {
+            const py = formatPinyin(charEntries[0].pinyin, true);
+            const jp = charEntries[0].jyutping;
+            const phon = isCantonese && jp ? jp : py;
+            const def = this.formatConciseDefinitions(charEntries, 1);
+
+            const chip = decompRow.createDiv({
+              cls: "ch-dict-decomp-chip",
+              attr: {
+                title: `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}\nНажмите для озвучки иероглифа`,
+              },
+            });
+            chip.createSpan({ cls: "ch-dict-decomp-char", text: char });
+            chip.createSpan({ cls: "ch-dict-decomp-phon", text: phon });
+            chip.createSpan({ cls: "ch-dict-decomp-def", text: def });
+
+            chip.addEventListener("click", (e) => {
+              e.stopPropagation();
+              this.playSpeech(char, settings);
+            });
+          }
+        }
+      }
+    }
   }
 
   /**

@@ -1,6 +1,9 @@
 import { ItemView, Notice, WorkspaceLeaf } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { VocabularyItem, VocabularySort } from "./vocabulary.ts";
+import { getHskBadgeInfo } from "./hsk.ts";
+import { StrokeOrderModal } from "./stroke-order.ts";
+import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
 
 export const VIEW_TYPE_CHINESE_VOCABULARY = "chinese-vocabulary-view";
 
@@ -9,6 +12,7 @@ export class ChineseVocabularyView extends ItemView {
   private searchQuery: string = "";
   private sortBy: VocabularySort = "date_desc";
   private practiceMode: boolean = false;
+  private filterDueOnly: boolean = false;
   private revealedCardIds: Set<string> = new Set();
 
   constructor(leaf: WorkspaceLeaf, plugin: ChineseHoverDictPlugin) {
@@ -59,6 +63,53 @@ export class ChineseVocabularyView extends ItemView {
     });
 
     const headerActions = titleRow.createDiv({ cls: "ch-vocab-header-actions" });
+
+    // Anki Export Button
+    const ankiBtn = headerActions.createEl("button", {
+      cls: "ch-vocab-glass-icon-btn",
+      attr: { "aria-label": "Экспорт в Anki (TSV)", title: "Экспорт словарика в Anki (.tsv файл)" },
+      text: "📥",
+    });
+    ankiBtn.addEventListener("click", () => {
+      const items = this.plugin.vocabulary.getItems();
+      if (items.length === 0) {
+        new Notice("Словарик пока пуст! Сначала добавьте слова звёздочкой ⭐.");
+        return;
+      }
+      const tsv = generateAnkiTsv(items);
+      const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      new Notice(`Экспортировано ${items.length} карточек в TSV для Anki!`);
+    });
+
+    // AnkiConnect direct sync button if enabled in settings
+    if (this.plugin.settings.anki.enabled) {
+      const ankiSyncBtn = headerActions.createEl("button", {
+        cls: "ch-vocab-glass-icon-btn",
+        attr: { "aria-label": "Синхронизировать с Anki", title: "Отправить все слова в AnkiConnect" },
+        text: "🗃️",
+      });
+      ankiSyncBtn.addEventListener("click", async () => {
+        const items = this.plugin.vocabulary.getItems();
+        if (items.length === 0) {
+          new Notice("Словарик пуст!");
+          return;
+        }
+        ankiSyncBtn.setText("⏳");
+        let addedCount = 0;
+        for (const item of items) {
+          const ok = await addNoteToAnki(this.plugin.settings.anki, item);
+          if (ok) addedCount++;
+        }
+        ankiSyncBtn.setText("🗃️");
+        new Notice(`Синхронизация завершена: ${addedCount} карточек добавлено в Anki.`);
+      });
+    }
 
     // Open Markdown File button
     const openFileBtn = headerActions.createEl("button", {
@@ -170,6 +221,19 @@ export class ChineseVocabularyView extends ItemView {
       this.renderList(listContainer);
     });
 
+    // Due Today SRS filter button
+    const dueCount = this.plugin.vocabulary.getDueItemsCount();
+    const dueBtn = toolbar.createEl("button", {
+      cls: `ch-vocab-due-filter-btn ${this.filterDueOnly ? "ch-vocab-due-active" : ""}`,
+      text: `🔁 К повторению (${dueCount})`,
+      attr: { title: "Показать только слова, требующие повторения (интервальное повторение SRS)" },
+    });
+    dueBtn.addEventListener("click", () => {
+      this.filterDueOnly = !this.filterDueOnly;
+      dueBtn.toggleClass("ch-vocab-due-active", this.filterDueOnly);
+      this.renderList(listContainer);
+    });
+
     // 4. Cards List Container
     const listContainer = container.createDiv({ cls: "ch-vocab-cards-list" });
     this.renderList(listContainer);
@@ -189,6 +253,11 @@ export class ChineseVocabularyView extends ItemView {
           (item.contextSentence && item.contextSentence.toLowerCase().includes(this.searchQuery))
         );
       });
+    }
+
+    if (this.filterDueOnly) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      items = items.filter((item) => !item.nextReviewDate || item.nextReviewDate <= todayStr);
     }
 
     if (this.sortBy === "date_desc") {
@@ -211,13 +280,13 @@ export class ChineseVocabularyView extends ItemView {
       emptyWrap.createDiv({ cls: "ch-vocab-empty-icon", text: "🏮" });
       emptyWrap.createEl("div", {
         cls: "ch-vocab-empty-title",
-        text: this.searchQuery ? "Ничего не найдено" : "Словарик пока пуст",
+        text: this.searchQuery ? "Ничего не найдено" : (this.filterDueOnly ? "На сегодня всё повторено! 🎉" : "Словарик пока пуст"),
       });
       emptyWrap.createEl("div", {
         cls: "ch-vocab-empty-desc",
         text: this.searchQuery
           ? "Попробуйте изменить поисковый запрос"
-          : "Нажимайте звёздочку ⭐ во всплывающем окне подсказки, чтобы сохранять слова в этот список.",
+          : (this.filterDueOnly ? "Слов для повторения на сегодня нет. Отличная работа!" : "Нажимайте звёздочку ⭐ во всплывающем окне подсказки, чтобы сохранять слова в этот список."),
       });
       return;
     }
@@ -245,8 +314,35 @@ export class ChineseVocabularyView extends ItemView {
       });
     }
 
-    // Header Actions: Audio + Copy + Delete
+    // HSK Badge
+    if (this.plugin.settings.showHskBadge) {
+      const hsk = getHskBadgeInfo(item.word);
+      if (hsk) {
+        const hskBadge = hanziBox.createSpan({
+          cls: "ch-vocab-hsk-badge",
+          text: hsk.label,
+          attr: { title: `Официальный уровень HSK: ${hsk.level}` },
+        });
+        hskBadge.style.setProperty("--hsk-color", hsk.color);
+        hskBadge.style.setProperty("--hsk-bg", hsk.bg);
+      }
+    }
+
+    // Header Actions: Stroke Order + Audio + Copy + Delete
     const actionsBox = topRow.createDiv({ cls: "ch-vocab-actions-box" });
+
+    // Stroke Order Button
+    if (this.plugin.settings.showStrokeOrder) {
+      const strokeBtn = actionsBox.createEl("button", {
+        cls: "ch-vocab-action-icon-btn",
+        text: "🖌️",
+        attr: { title: "Порядок черт (Анимация написания)" },
+      });
+      strokeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        new StrokeOrderModal(this.plugin.app, item.word).open();
+      });
+    }
 
     // Audio Button
     const isCantonese = this.plugin.settings.dialect === "cantonese";
@@ -318,6 +414,7 @@ export class ChineseVocabularyView extends ItemView {
         this.revealedCardIds.add(item.id);
         defsContainer.removeClass("ch-vocab-is-masked");
         maskOverlay.remove();
+        this.renderCardSrsControls(card, item, container);
       });
     }
 
@@ -328,15 +425,81 @@ export class ChineseVocabularyView extends ItemView {
       defRow.createSpan({ cls: "ch-vocab-def-text", text: item.definitions[i] });
     }
 
-    // 4. Context Quote (if exists)
+    // Context Quote (if exists)
     if (item.contextSentence) {
       const quoteBox = card.createDiv({ cls: "ch-vocab-quote-box" });
       quoteBox.createSpan({ cls: "ch-vocab-quote-icon", text: "💬" });
       quoteBox.createSpan({ cls: "ch-vocab-quote-content", text: `“${item.contextSentence}”` });
     }
 
-    // 5. Card Footer: Date
+    // SRS review controls if in practice mode and revealed
+    if (this.practiceMode && isRevealed) {
+      this.renderCardSrsControls(card, item, container);
+    }
+
+    // 5. Card Footer: Date & SRS review status
     const footer = card.createDiv({ cls: "ch-vocab-card-footer" });
     footer.createSpan({ cls: "ch-vocab-date-tag", text: `📅 ${item.dateString}` });
+
+    if (item.nextReviewDate) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const isDue = item.nextReviewDate <= todayStr;
+      footer.createSpan({
+        cls: `ch-vocab-srs-due-tag ${isDue ? "ch-vocab-is-due" : ""}`,
+        text: isDue ? "🔁 Повторить сегодня!" : `🔁 След: ${item.nextReviewDate}`,
+      });
+    }
+  }
+
+  private renderCardSrsControls(card: HTMLElement, item: VocabularyItem, listContainer: HTMLElement): void {
+    if (card.querySelector(".ch-vocab-srs-bar")) return;
+
+    const srsBar = card.createDiv({ cls: "ch-vocab-srs-bar" });
+    srsBar.createSpan({ cls: "ch-vocab-srs-label", text: "Оценка памяти (SRS):" });
+    const srsBtns = srsBar.createDiv({ cls: "ch-vocab-srs-btns" });
+
+    const btnAgain = srsBtns.createEl("button", {
+      cls: "ch-vocab-srs-btn srs-again",
+      text: "🔴 Снова (1д)",
+    });
+    btnAgain.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await this.plugin.vocabulary.updateSrsRating(item.word, "again");
+      new Notice(`Запланировано на завтра (1 день): ${item.word}`);
+      this.renderList(listContainer);
+    });
+
+    const btnHard = srsBtns.createEl("button", {
+      cls: "ch-vocab-srs-btn srs-hard",
+      text: "🟡 Трудно",
+    });
+    btnHard.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await this.plugin.vocabulary.updateSrsRating(item.word, "hard");
+      new Notice(`Интервал обновлен (Трудно): ${item.word}`);
+      this.renderList(listContainer);
+    });
+
+    const btnGood = srsBtns.createEl("button", {
+      cls: "ch-vocab-srs-btn srs-good",
+      text: "🟢 Хорошо",
+    });
+    btnGood.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await this.plugin.vocabulary.updateSrsRating(item.word, "good");
+      new Notice(`Отлично! Следующее повторение: ${item.nextReviewDate}`);
+      this.renderList(listContainer);
+    });
+
+    const btnEasy = srsBtns.createEl("button", {
+      cls: "ch-vocab-srs-btn srs-easy",
+      text: "🔵 Легко",
+    });
+    btnEasy.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await this.plugin.vocabulary.updateSrsRating(item.word, "easy");
+      new Notice(`Запомнено! Следующее повторение: ${item.nextReviewDate}`);
+      this.renderList(listContainer);
+    });
   }
 }

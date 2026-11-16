@@ -6,11 +6,11 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.3.2-blue.svg" alt="Version 1.3.2" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.4.0-blue.svg" alt="Version 1.4.0" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/HSK%20Levels-1%20to%206-emerald.svg" alt="HSK 1-6" />
   <img src="https://img.shields.io/badge/Vocabulary-118%2C000%2B%20words-orange.svg" alt="118k entries" />
-  <img src="https://img.shields.io/badge/Word%20Splitting-Intl.Segmenter-0284c7.svg" alt="Word Splitting" />
-  <img src="https://img.shields.io/badge/Notebook-Permanent%20Markdown-059669.svg" alt="Markdown Notebook" />
+  <img src="https://img.shields.io/badge/Anki-AnkiConnect%20%2B%20TSV-8b5cf6.svg" alt="Anki Integration" />
   <img src="https://img.shields.io/badge/Style-Apple%20Liquid%20Glass-7C3AED.svg" alt="Apple Liquid Glass" />
 </p>
 
@@ -27,6 +27,14 @@ Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **
 
 * 💎 **Apple Liquid Glass Design** — Translucent frosted glass squircle with fluid blur effects, crisp typography, and adaptive light/dark theming.
 * ✂️ **Smart Chinese Word Selection (Word Splitting)** — Solves Obsidian's lack of Chinese word boundaries. Double-clicking any Chinese character cleanly selects the exact word (`学习` or `香港`) instead of a single character or the entire paragraph, powered by CEDICT and native `Intl.Segmenter`.
+* 🎯 **HSK 1–6 Exam Level Badges** — Instant visual badges for official HSK levels on cards and popovers, plus due review filters.
+* 🖋️ **Official HSK Exam Typography** — Select the standard official HSK exam font **KaiTi (楷体)**, SongTi, HeiTi, FangSong, or LXGW WenKai for your dictionary and editor.
+* 🖌️ **Animated Stroke Order (米字格)** — Step-by-step vector calligraphy animation modal with character tabs and playback controls.
+* 🗃️ **1-Click Anki Integration** — Push cards directly into Anki via AnkiConnect or export offline `.tsv` decks.
+* 🔁 **Spaced Repetition (SRS) Flashcards** — Built-in SM-2 intervals (Again 1d, Hard, Good, Easy) stored permanently in your vault.
+* 🔬 **Decomposition by Character** — Multi-character compound words broken down into individual Hanzi with readings and definitions.
+* 🏮 **Reader Mode** — Instant hover lookup without modifier keys for effortless reading, toggled via status bar or hotkey.
+* 🔤 **Ruby / Furigana Generator** — Generate `<ruby>汉<rt>hàn</rt></ruby>` or Jyutping markup over selected text in 1 click.
 * 📖 **Permanent Personal Vocabulary Notebook** — Star difficult words with `⭐` in 1 click; they are saved permanently into a clean Markdown note in your vault (`Chinese Vocabulary.md`).
 * 🃏 **Interactive Sidebar & Flashcards** — Review saved words in a sleek right sidebar tab with search, filters, audio buttons, and tap-to-reveal quiz mode.
 * 🀄 **Dual Phonetics (Pinyin + Jyutping)** — Perfect for learners of both Mandarin (`Putonghua`) and Cantonese (`Guangdonghua`).
@@ -41,12 +49,13 @@ Reading and studying Chinese in Obsidian shouldn't pull you out of your flow. **
 
 ```text
 ┌────────────────────────────────────────────────────────────────┐
-│  你好  |  你好  [SIMP]   🔊 廣東話 0.8x   📋 Copy   ⭐ Star   ✕  │
+│  你好  [HSK 1]  |  你好   🔊 廣東話 0.8x  🖌️ 📋 ⭐ Star  ✕   │
 ├────────────────────────────────────────────────────────────────┤
 │  nǐ hǎo         粵 nei5 hou2                                   │
 ├────────────────────────────────────────────────────────────────┤
 │  • hello  • hi  • how are you                                  │
-│  • common friendly greeting for any occasion                   │
+├────────────────────────────────────────────────────────────────┤
+│  [ 你 nǐ · you ]  [ 好 hǎo · good, well ]                      │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,25 +86,47 @@ Display tone-marked Pinyin alongside Cantonese Jyutping simultaneously, or switc
 * Clamps popovers inside the active note container to avoid hanging awkwardly into empty grey side margins.
 * Auto-flips vertically if a word is near the top edge of your screen.
 
-### 5. 📖 Personal Vocabulary Notebook & Flashcards
+### 5. 📖 Personal Vocabulary Notebook & Spaced Repetition (SRS)
 * **Permanent Vault Storage**: Star difficult words with `⭐` in the popover or via hotkey. All saved words are stored permanently in a clean Markdown note in your vault (`Chinese Vocabulary.md`).
 * **Right Sidebar Tab**: Access your vocabulary anytime with the ribbon icon (`book-marked`) or command palette.
 * **Interactive Liquid Glass Cards**: Each card shows Simplified/Traditional Hanzi, tone-marked Pinyin, green Jyutping badge, definitions, context sentence, and an instant audio playback button.
-* **🃏 Flashcards / Practice Mode**: Click to mask definitions and test your memory before sleep or study sessions. Tap any card to reveal.
-* **Context Retention**: Automatically remembers the sentence where you found the word!
-* **Full-text Search & Sort**: Filter words instantly by Hanzi, Pinyin, Jyutping, or English meanings. Sort by date or alphabetical order.
+* **🔁 Spaced Repetition (SRS Flashcards)**: Grade your recall with **Again (1d)**, **Hard**, **Good**, or **Easy**. Interval reviews are saved to both plugin data and your Markdown note.
+* **Filter Due Reviews**: Click the `🔁 К повторению` button in the sidebar to review only words scheduled for today.
 
-### 6. ✂️ Native Word Selection & Cantonese Phrase Intelligence
+### 6. 🎯 Official HSK Exam Level Badges (HSK 1 to 6)
+* Color-coded badges indicating official Hànyǔ Shuǐpíng Kǎoshì proficiency levels (HSK 1 through HSK 6).
+* Visible on popovers, sidebar vocabulary cards, and review modes.
+
+### 7. 🖋️ Official HSK Exam Font & Typography
+* **HSK Exam Font (KaiTi / 楷体)**: Standard official font used on Chinese HSK exam papers and textbooks.
+* **Additional Font Presets**:
+  * SongTi (宋体 / SimSun) — Classic print serif
+  * HeiTi (黑体 / PingFang / YaHei) — Modern clean sans-serif
+  * FangSong (仿宋) — Official and academic document style
+  * LXGW WenKai (霞鹜文楷) — Elegant open-source screen calligraphy font
+  * Custom font — Enter any system font name
+* **Scope**: Apply to Popover & Sidebar only, or to the entire Obsidian editor!
+
+### 8. 🖌️ Stroke Order Animation (米字格 Mizige)
+* Click the brush icon `🖌️` or use the command palette to open the stroke order modal.
+* Features pure vector animations, Mizige calligraphic guidelines, step-by-step navigation, and multi-character tabs.
+
+### 9. 🗃️ Anki Integration (AnkiConnect & TSV Export)
+* **1-Click Sync to Anki**: Directly export cards to your desktop Anki via AnkiConnect API (port 8765).
+* **Auto-Sync on Star**: Automatically create an Anki note whenever you star a word!
+* **Offline TSV Export**: Download your entire vocabulary as a `.tsv` file ready for manual import on any device.
+
+### 10. 🔬 Character Breakdown (Разбор по иероглифам)
+* Compound words ($\ge 2$ characters) feature a breakdown row in the popover.
+* Click any character chip to listen to its pronunciation individually.
+
+### 11. 🏮 Reader Mode & 🔤 Ruby Furigana
+* **Reader Mode**: Hover over Chinese words to inspect them instantly without holding down modifier keys. Toggle on/off via the status bar pill (`🏮 Чтение: ВКЛ/ВЫКЛ`) or command palette.
+* **Ruby / Furigana Generator**: Select Chinese text in the editor and run `Добавить пиньинь (Ruby)` to convert it to `<ruby>中<rt>zhōng</rt>文<rt>wén</rt></ruby>`.
+
+### 12. ✂️ Native Word Selection & Cantonese Phrase Intelligence
 * **Obsidian-Native Word Selection**: Standard Chinese words, 4-character idioms (成语 chengyu like `一心一意`), and compounds are selected directly via Obsidian's built-in editor selector without unwanted shrinking or overriding.
-* **🇭🇰 Dedicated Cantonese Phrase Selection (Toggleable)**:
-  * Standard Mandarin segmenters often fragment Cantonese colloquial expressions into single characters.
-  * When enabled (default: on), double-clicking accurately detects and highlights full Cantonese phrases:
-    * Colloquial vocabulary & particles: `唔該晒`, `點解`, `咁樣`, `做咩事`, `乜嘢`, `㗎啦`
-    * A-not-A questions: `去唔去`, `識唔識`, `知唔知`, `食唔食`, `睇唔睇`, `鍾意唔鍾意`
-    * Potential complements: `睇唔明`, `搞得掂`, `食得落`
-    * Aspect markers: `食緊`, `買咗`, `食晒`, `睇吓`
-    * HKSCS characters: `𨋢` (lift), `𠵱家` (now), `𨳊`
-* **Direct Alignment with Active Selection**: When double-clicking, the popover acts immediately on the text selected by the internal selector, displaying the full definition and phonetics seamlessly.
+* **🇭🇰 Dedicated Cantonese Phrase Selection (Toggleable)**: Accurately detects and highlights full Cantonese phrases (`唔該晒`, `點解`, `睇唔明`, `去唔去`, `食緊`, `𠵱家`, etc.).
 
 ---
 

@@ -1,4 +1,8 @@
 import { Notice, Plugin, requestUrl } from "obsidian";
+import {
+  sortAllDictionaryEntriesInPlace,
+  sortEntriesByPinyinFrequency,
+} from "./pinyin-frequency.ts";
 
 export interface DictEntry {
   simplified?: string;
@@ -584,6 +588,7 @@ export class DictionaryManager {
   constructor(plugin: Plugin) {
     this.plugin = plugin;
     this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
+    sortAllDictionaryEntriesInPlace(this.data);
     this.isLoaded = false;
   }
 
@@ -602,12 +607,14 @@ export class DictionaryManager {
       if (await adapter.exists(dictPath)) {
         const rawContent = await adapter.read(dictPath);
         this.data = Object.assign({}, JSON.parse(rawContent) as DictionaryData, CANTONESE_CORE_DICT);
+        sortAllDictionaryEntriesInPlace(this.data);
         this.isLoaded = true;
         return;
       }
 
       // If local file is not present, use built-in core vocabulary first
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
+      sortAllDictionaryEntriesInPlace(this.data);
       this.isLoaded = true;
 
       // Trigger automatic background download on first run
@@ -617,6 +624,7 @@ export class DictionaryManager {
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
+      sortAllDictionaryEntriesInPlace(this.data);
       this.isLoaded = true;
     }
   }
@@ -644,6 +652,7 @@ export class DictionaryManager {
       const text = res.text;
       await adapter.write(dictPath, text);
       this.data = Object.assign({}, JSON.parse(text) as DictionaryData, CANTONESE_CORE_DICT);
+      sortAllDictionaryEntriesInPlace(this.data);
       this.isLoaded = true;
       const count = Object.keys(this.data).length;
       new Notice(`Chinese Popover: Словарь успешно загружен (${count} слов)!`, 5000);
@@ -1163,17 +1172,24 @@ export class DictionaryManager {
   }
 
   /**
-   * Direct lookup for an exact word
+   * Direct lookup for an exact word.
+   * If `preferredPinyin` is passed, the matching entry is prioritized first.
    */
-  get(word: string): DictEntry[] | undefined {
-    return this.data[word];
+  get(word: string, preferredPinyin?: string): DictEntry[] | undefined {
+    const entries = this.data[word];
+    if (!entries || entries.length === 0) return undefined;
+    if (preferredPinyin) {
+      return sortEntriesByPinyinFrequency(word, entries, preferredPinyin);
+    }
+    return entries;
   }
 
   /**
-   * Returns a complete MatchResult for an exact word if it exists in dictionary
+   * Returns a complete MatchResult for an exact word if it exists in dictionary.
+   * If `preferredPinyin` is passed, the matching entry is prioritized first.
    */
-  getExact(word: string): MatchResult | null {
-    const entries = this.get(word);
+  getExact(word: string, preferredPinyin?: string): MatchResult | null {
+    const entries = this.get(word, preferredPinyin);
     if (entries && entries.length > 0) {
       return {
         word,

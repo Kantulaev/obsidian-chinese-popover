@@ -23,6 +23,10 @@ const JYUTPING_CHARS_URL =
   "https://raw.githubusercontent.com/rime/rime-cantonese/main/jyut6ping3.chars.dict.yaml";
 const JYUTPING_WORDS_URL =
   "https://raw.githubusercontent.com/rime/rime-cantonese/main/jyut6ping3.words.dict.yaml";
+const PINYIN_CHARS_URL =
+  "https://raw.githubusercontent.com/mozillazg/pinyin-data/master/kHanyuPinlu.txt";
+const PINYIN_WORDS_URL =
+  "https://raw.githubusercontent.com/rime/rime-pinyin-simp/master/pinyin_simp.dict.yaml";
 
 const outputFile = Deno.args[0] || "./cedict.json";
 
@@ -172,10 +176,131 @@ function resolveJyutping(
   return syllables.join(" ");
 }
 
-async function main() {
-  console.log("=== CC-CEDICT + Pleco Cantonese Unified Builder ===");
+function stripPinyin(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[1-5]/g, "")
+    .replace(/ü/g, "v")
+    .replace(/u:/g, "v")
+    .replace(/\s+/g, "")
+    .trim();
+}
 
-  const { plecoMap, cantoWordMap, charMap } = await fetchJyutpingDatabases();
+async function fetchPinyinDatabases(): Promise<{
+  charDominantMap: Map<string, string[]>;
+  rimeWordWeights: Map<string, Map<string, number>>;
+}> {
+  console.log("Fetching Mandarin Pinyin frequency databases (kHanyuPinlu + Rime)...");
+  const [pinluRes, rimeRes] = await Promise.all([
+    fetch(PINYIN_CHARS_URL),
+    fetch(PINYIN_WORDS_URL),
+  ]);
+
+  const markToTone: Record<string, string> = {
+    "\u0304": "1",
+    "\u0301": "2",
+    "\u030c": "3",
+    "\u0300": "4",
+  };
+
+  function accentedToNumbered(s: string): string {
+    return s
+      .split(/\s+/)
+      .map((syl) => {
+        let tone = "5";
+        let base = syl
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, (m) => {
+            if (markToTone[m]) tone = markToTone[m];
+            return "";
+          });
+        base = base.replace(/ü/g, "u:").replace(/v/g, "u:");
+        return (base + tone).toLowerCase();
+      })
+      .join(" ");
+  }
+
+  const pinluText = await pinluRes.text();
+  const charDominantMap = new Map<string, string[]>();
+
+  for (const line of pinluText.split("\n")) {
+    if (!line.startsWith("U+")) continue;
+    const parts = line.split("#");
+    const ch = parts[1]?.trim();
+    const readings = parts[0].split(":")[1]?.trim();
+    if (ch && readings) {
+      let list = readings.split(",").map((s) => accentedToNumbered(s.trim()));
+      if (ch === "长") {
+        list = ["chang2", "zhang3"];
+      }
+      charDominantMap.set(ch, list);
+    }
+  }
+
+  // Canonical overrides for essential characters
+  charDominantMap.set("着", ["zhe5", "zhao2", "zhuo2", "zhao1"]);
+  charDominantMap.set("看", ["kan4", "kan1"]);
+  charDominantMap.set("得", ["de5", "de2", "dei3"]);
+  charDominantMap.set("还", ["hai2", "huan2"]);
+  charDominantMap.set("行", ["xing2", "hang2"]);
+  charDominantMap.set("的", ["de5", "di4", "di2"]);
+  charDominantMap.set("地", ["de5", "di4"]);
+  charDominantMap.set("了", ["le5", "liao3"]);
+  charDominantMap.set("便", ["bian4", "pian2"]);
+  charDominantMap.set("数", ["shu4", "shu3"]);
+  charDominantMap.set("重", ["zhong4", "chong2"]);
+  charDominantMap.set("发", ["fa1", "fa4"]);
+  charDominantMap.set("给", ["gei3", "ji3"]);
+  charDominantMap.set("没", ["mei2", "mo4"]);
+  charDominantMap.set("只", ["zhi3", "zhi1"]);
+  charDominantMap.set("教", ["jiao4", "jiao1"]);
+  charDominantMap.set("乐", ["le4", "yue4"]);
+  charDominantMap.set("为", ["wei4", "wei2"]);
+  charDominantMap.set("当", ["dang1", "dang4"]);
+  charDominantMap.set("长", ["chang2", "zhang3"]);
+  charDominantMap.set("好", ["hao3", "hao4"]);
+
+  const rimeText = await rimeRes.text();
+  const rimeWordWeights = new Map<string, Map<string, number>>();
+
+  for (const line of rimeText.split("\n")) {
+    if (
+      line.startsWith("#") ||
+      line.startsWith("---") ||
+      line.startsWith("...") ||
+      !line.trim()
+    ) {
+      continue;
+    }
+    const parts = line.split("\t");
+    if (parts.length >= 2) {
+      const word = parts[0].trim();
+      const pinyin = parts[1].trim().toLowerCase().replace(/\s+/g, "");
+      const weight = parts[2] ? parseFloat(parts[2]) : 1;
+      if (!rimeWordWeights.has(word)) {
+        rimeWordWeights.set(word, new Map());
+      }
+      rimeWordWeights.get(word)!.set(pinyin, weight);
+    }
+  }
+
+  console.log(
+    `Loaded ${charDominantMap.size} character frequency rankings, ${rimeWordWeights.size} Rime word weights.`
+  );
+  return { charDominantMap, rimeWordWeights };
+}
+
+async function main() {
+  console.log("=== CC-CEDICT + Pleco Cantonese + Mandarin Frequency Builder ===");
+
+  const [jyutpingDbs, pinyinDbs] = await Promise.all([
+    fetchJyutpingDatabases(),
+    fetchPinyinDatabases(),
+  ]);
+  const { plecoMap, cantoWordMap, charMap } = jyutpingDbs;
+  const { charDominantMap, rimeWordWeights } = pinyinDbs;
 
   let cedictPath = "./cedict_ts.u8";
   if (!tryStat(cedictPath)) {
@@ -332,6 +457,91 @@ async function main() {
   } catch (err) {
     console.warn("Could not merge CC-Canto:", (err as Error)?.message ?? err);
   }
+
+  console.log("Sorting dictionary entries by Pinyin & Jyutping frequency...");
+  let reorderedCount = 0;
+
+  for (const [key, entries] of Object.entries(dict)) {
+    if (entries.length <= 1) continue;
+
+    // Deduplicate entries with identical traditional, simplified, pinyin, and jyutping
+    const mergedMap = new Map<string, DictItem>();
+    for (const item of entries) {
+      const sig = `${item.traditional}\t${item.simplified}\t${item.pinyin}\t${item.jyutping}`;
+      const existing = mergedMap.get(sig);
+      if (existing) {
+        for (const def of item.definitions) {
+          if (!existing.definitions.includes(def)) {
+            existing.definitions.push(def);
+          }
+        }
+      } else {
+        mergedMap.set(sig, { ...item, definitions: [...item.definitions] });
+      }
+    }
+    const dedupedEntries = Array.from(mergedMap.values());
+
+    const dominantList = charDominantMap.get(key);
+    const rimeMap = rimeWordWeights.get(key);
+
+    dedupedEntries.sort((a, b) => {
+      // 1. Dominant character reading from kHanyuPinlu
+      if (dominantList && dominantList.length > 0) {
+        const aNorm = a.pinyin.toLowerCase().replace(/ü/g, "u:").replace(/v/g, "u:").trim();
+        const bNorm = b.pinyin.toLowerCase().replace(/ü/g, "u:").replace(/v/g, "u:").trim();
+        let aIdx = dominantList.indexOf(aNorm);
+        let bIdx = dominantList.indexOf(bNorm);
+        if (aIdx === -1) {
+          aIdx = dominantList.findIndex((d) => d.slice(0, -1) === aNorm.slice(0, -1));
+          if (aIdx !== -1) aIdx += 0.5;
+        }
+        if (bIdx === -1) {
+          bIdx = dominantList.findIndex((d) => d.slice(0, -1) === bNorm.slice(0, -1));
+          if (bIdx !== -1) bIdx += 0.5;
+        }
+        const aScore = aIdx === -1 ? 999 : aIdx;
+        const bScore = bIdx === -1 ? 999 : bIdx;
+        if (aScore !== bScore) {
+          return aScore - bScore;
+        }
+      }
+
+      // 2. Rime compound word weight
+      if (rimeMap) {
+        const aClean = stripPinyin(a.pinyin);
+        const bClean = stripPinyin(b.pinyin);
+        const aWeight = rimeMap.get(aClean) ?? -1;
+        const bWeight = rimeMap.get(bClean) ?? -1;
+        if (aWeight !== bWeight) {
+          return bWeight - aWeight;
+        }
+      }
+
+      // 3. Deprioritize surnames
+      const aIsSurname = a.definitions.some((d) => d.toLowerCase().includes("surname "));
+      const bIsSurname = b.definitions.some((d) => d.toLowerCase().includes("surname "));
+      if (aIsSurname !== bIsSurname) {
+        return aIsSurname ? 1 : -1;
+      }
+
+      // 4. Deprioritize cross-reference variants
+      const aIsVariant = a.definitions.some(
+        (d) => d.startsWith("variant of ") || d.startsWith("see ")
+      );
+      const bIsVariant = b.definitions.some(
+        (d) => d.startsWith("variant of ") || d.startsWith("see ")
+      );
+      if (aIsVariant !== bIsVariant) {
+        return aIsVariant ? 1 : -1;
+      }
+
+      return 0;
+    });
+
+    dict[key] = dedupedEntries;
+    reorderedCount++;
+  }
+  console.log(`Frequency sorting and deduplication completed on ${reorderedCount} multi-entry words.`);
 
   console.log("Writing final JSON dictionary...");
   await Deno.writeTextFile(outputFile, JSON.stringify(dict));

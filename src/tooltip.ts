@@ -2,6 +2,7 @@ import { Menu, Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
+import { getCharPinyinFromWordPinyin } from "./pinyin-frequency.ts";
 import { ChineseDictSettings, CopyFormat } from "./settings.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
@@ -788,7 +789,10 @@ export class DictTooltip {
             }
           });
 
-          const charEntries = this.plugin?.dictionary?.get(targetChar);
+          const contextPy = match.entries[0]?.pinyin
+            ? getCharPinyinFromWordPinyin(match.word, match.entries[0].pinyin, targetChar)
+            : undefined;
+          const charEntries = this.plugin?.dictionary?.get(targetChar, contextPy);
           const py = charEntries && charEntries[0] ? formatPinyin(charEntries[0].pinyin, true) : "";
           const jp = charEntries && charEntries[0]?.jyutping;
           const phon = isCantonese && jp ? jp : py;

@@ -1136,7 +1136,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       .addButton((btn) =>
         btn
           .setButtonText("📥 Скачать Anki TSV")
-          .onClick(async () => {
+          .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
             if (items.length === 0) {
               new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");

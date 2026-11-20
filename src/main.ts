@@ -748,15 +748,15 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // 4. Default fallback: window margins
     return {
       left: 10,
-      right: window.innerWidth - 10,
+      right: globalThis.innerWidth - 10,
       top: 10,
-      bottom: window.innerHeight - 10,
+      bottom: globalThis.innerHeight - 10,
     };
   }
 
   private getSizerInnerBounds(sizer: HTMLElement): ContentBounds {
     const rect = sizer.getBoundingClientRect();
-    const style = window.getComputedStyle(sizer);
+    const style = globalThis.getComputedStyle(sizer);
     const padLeft = parseFloat(style.paddingLeft) || 0;
     const padRight = parseFloat(style.paddingRight) || 0;
     return {
@@ -1042,7 +1042,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const resolvedBounds = bounds || this.getContentBounds(container, undefined);
 
     // 1. Act on Obsidian / browser internal selection if present
-    const selection = window.getSelection();
+    const selection = globalThis.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (selectedText && this.dictionary.isChinese(selectedText)) {
       const directEntries = this.dictionary.get(selectedText);
@@ -1116,7 +1116,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       );
       if (cantoMatch && cantoMatch.start !== undefined && cantoMatch.end !== undefined) {
         try {
-          const sel = window.getSelection();
+          const sel = globalThis.getSelection();
           if (sel) {
             const wordRange = document.createRange();
             wordRange.setStart(textNode, cantoMatch.start);
@@ -1173,7 +1173,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.lastHoverCoords = { x, y };
     this.cancelHoverLookup();
 
-    this.hoverTimeout = window.setTimeout(() => {
+    this.hoverTimeout = globalThis.setTimeout(() => {
       this.hoverTimeout = null;
       if (!this.lastHoverCoords) return;
       if (!this.settings.enabled || !this.dictionary.isReady()) return;
@@ -1201,7 +1201,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
   private cancelHoverLookup(): void {
     if (this.hoverTimeout !== null) {
-      window.clearTimeout(this.hoverTimeout);
+      globalThis.clearTimeout(this.hoverTimeout);
       this.hoverTimeout = null;
     }
   }
@@ -1224,8 +1224,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     const selection = editor.getSelection().trim();
-    let clientX = window.innerWidth / 2;
-    let clientY = window.innerHeight / 2;
+    let clientX = globalThis.innerWidth / 2;
+    let clientY = globalThis.innerHeight / 2;
 
     const cmEditor = editor as CodeMirrorEditor;
     const cm = cmEditor.cm;
@@ -1304,7 +1304,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * Look up selected text in Reading View
    */
   public lookupAtReadingView(): void {
-    const selection = window.getSelection();
+    const selection = globalThis.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (!selectedText || !this.dictionary.isChinese(selectedText)) {
       new Notice("Выделите китайское слово для поиска / Select Chinese word to look up", 2000);
@@ -1313,8 +1313,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const directEntries = this.dictionary.get(selectedText);
     if (directEntries && directEntries.length > 0) {
-      let clientX = window.innerWidth / 2;
-      let clientY = window.innerHeight / 2;
+      let clientX = globalThis.innerWidth / 2;
+      let clientY = globalThis.innerHeight / 2;
 
       if (selection && selection.rangeCount > 0) {
         const rect = selection.getRangeAt(0).getBoundingClientRect();

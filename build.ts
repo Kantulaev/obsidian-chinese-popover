@@ -1,5 +1,5 @@
-// @ts-nocheck
-import * as esbuild from "https://deno.land/x/esbuild@v0.25.0/mod.js";
+// @ts-nocheck: build script uses dynamic Deno APIs not in typedefs
+import * as esbuild from "esbuild";
 
 declare const Deno: {
   args: string[];

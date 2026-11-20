@@ -11,7 +11,7 @@
  *   cedict.json with Pinyin, highly accurate Jyutping, and English translations.
  */
 
-import { TextLineStream } from "jsr:@std/streams/text-line-stream";
+import { TextLineStream } from "@std/streams/text-line-stream";
 
 const CEDICT_ZIP_URL =
   "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.zip";
@@ -302,7 +302,7 @@ async function main() {
   const { plecoMap, cantoWordMap, charMap } = jyutpingDbs;
   const { charDominantMap, rimeWordWeights } = pinyinDbs;
 
-  let cedictPath = "./cedict_ts.u8";
+  const cedictPath = "./cedict_ts.u8";
   if (!tryStat(cedictPath)) {
     console.log("Downloading CC-CEDICT zip archive...");
     const zipRes = await fetch(CEDICT_ZIP_URL);

@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/streams@*": "1.2.0",
+    "jsr:@std/streams@1": "1.2.0",
     "npm:@codemirror/state@6": "6.7.6",
     "npm:@codemirror/state@^6.4.0": "6.7.6",
     "npm:@codemirror/view@6": "6.43.13",
@@ -120,6 +121,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/streams@1",
       "npm:@codemirror/state@6",
       "npm:@codemirror/view@6",
       "npm:obsidian@^1.7.0"

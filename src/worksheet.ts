@@ -133,7 +133,7 @@ export class WorksheetModal extends Modal {
     iframe.contentWindow?.focus();
     iframe.contentWindow?.print();
 
-    window.setTimeout(() => {
+    globalThis.setTimeout(() => {
       iframe.remove();
     }, 1000);
   }

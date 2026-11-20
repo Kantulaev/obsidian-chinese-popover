@@ -263,7 +263,7 @@ export class StrokeOrderModal extends Modal {
       if (this.currentStrokeStep < total) {
         this.currentStrokeStep++;
         this.renderSvg();
-        this.animationTimer = window.setTimeout(step, 450);
+        this.animationTimer = globalThis.setTimeout(step, 450);
       } else {
         this.stopAnimation();
         btn.setText("▶ Анимация");
@@ -275,7 +275,7 @@ export class StrokeOrderModal extends Modal {
   private stopAnimation(): void {
     this.isAnimating = false;
     if (this.animationTimer !== null) {
-      window.clearTimeout(this.animationTimer);
+      globalThis.clearTimeout(this.animationTimer);
       this.animationTimer = null;
     }
   }

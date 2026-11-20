@@ -8,7 +8,9 @@
   "imports": {
     "obsidian": "npm:obsidian@^1.7.0",
     "@codemirror/view": "npm:@codemirror/view@^6.0.0",
-    "@codemirror/state": "npm:@codemirror/state@^6.0.0"
+    "@codemirror/state": "npm:@codemirror/state@^6.0.0",
+    "esbuild": "https://deno.land/x/esbuild@v0.25.0/mod.js",
+    "@std/streams": "jsr:@std/streams@^1.0.0"
   },
   "tasks": {
     "build": "deno run -A build.ts production",

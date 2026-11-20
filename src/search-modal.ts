@@ -250,8 +250,8 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
     };
 
     // Open popover centered on screen
-    const clientX = window.innerWidth / 2;
-    const clientY = window.innerHeight / 2 - 80;
+    const clientX = globalThis.innerWidth / 2;
+    const clientY = globalThis.innerHeight / 2 - 80;
 
     this.plugin.tooltip.show(match, clientX, clientY, this.plugin.settings);
     // Pin it so it stays visible after modal closes!

@@ -783,15 +783,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
    */
   private buildCodeMirrorExtension(): Extension {
     return [
-      // Mouse selection style facet: overrides double-click word selection ONLY for Cantonese phrases
-      // Standard words and 4-character chengyu pass through to Obsidian's built-in word selector
+      // Mouse selection style facet: intelligently highlights the exact Chinese word / phrase
+      // (2-, 3-, or 4-character chengyu / compound word) so the editor selection and dictionary match 100%!
       EditorView.mouseSelectionStyle.of((view: EditorView, event: MouseEvent) => {
-        if (
-          !this.settings.enabled ||
-          !this.settings.selectCantonesePhrases ||
-          event.button !== 0 ||
-          event.detail !== 2
-        ) {
+        if (!this.settings.enabled || event.button !== 0 || event.detail !== 2) {
           return null;
         }
 
@@ -800,12 +795,28 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
         const line = view.state.doc.lineAt(pos);
         const lineOffset = pos - line.from;
-        // Check ONLY for Cantonese colloquial phrases; for all other words, return null so Obsidian's built-in selector acts!
-        const match = this.dictionary.findCantonesePhraseAtOffset(
-          line.text,
-          lineOffset,
-          this.settings.maxWordLength
-        );
+        const charAtOffset = line.text[lineOffset];
+        if (!charAtOffset || !this.dictionary.isChinese(charAtOffset)) {
+          return null;
+        }
+
+        // 1. Check Cantonese phrases if enabled
+        let match = this.settings.selectCantonesePhrases
+          ? this.dictionary.findCantonesePhraseAtOffset(
+              line.text,
+              lineOffset,
+              this.settings.maxWordLength
+            )
+          : null;
+
+        // 2. Look up dictionary word at offset (2-, 3-, or 4-character word)
+        if (!match) {
+          match = this.dictionary.findWordAtOffset(
+            line.text,
+            lineOffset,
+            this.settings.maxWordLength
+          );
+        }
 
         if (!match || match.start === undefined || match.end === undefined) {
           return null;
@@ -901,24 +912,37 @@ export default class ChineseHoverDictPlugin extends Plugin {
       : undefined;
 
     // 1. Act on Obsidian's internal selection:
-    // If Obsidian's built-in selector already selected text covering pos (e.g. 4-character chengyu),
-    // look it up directly without shrinking or overriding Obsidian's selection!
-    const selection = view.state.selection.main;
+    // If double-click or drag-selection highlighted text (e.g. 2-character word or 4-character chengyu),
+    // look it up directly with full compound synthesis so selection and popup match 100%!
     let selectedText = "";
-    if (!selection.empty && pos >= selection.from && pos <= selection.to) {
+    let selStart: number | undefined = undefined;
+    let selEnd: number | undefined = undefined;
+
+    const selection = view.state.selection.main;
+    if (!selection.empty && pos >= selection.from - 1 && pos <= selection.to + 1) {
       selectedText = view.state.sliceDoc(selection.from, selection.to).trim();
+      selStart = selection.from;
+      selEnd = selection.to;
+    }
+
+    if (!selectedText) {
+      const domSel = globalThis.getSelection();
+      const domText = domSel ? domSel.toString().trim() : "";
+      if (domText && this.dictionary.isChinese(domText)) {
+        selectedText = domText;
+      }
     }
 
     if (selectedText && this.dictionary.isChinese(selectedText)) {
-      const directEntries = this.dictionary.get(selectedText);
+      const directEntries = this.dictionary.getOrSynthesize(selectedText);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
           {
             word: selectedText,
             entries: directEntries,
             length: Array.from(selectedText).length,
-            start: selection.from,
-            end: selection.to,
+            start: selStart,
+            end: selEnd,
           },
           clientX,
           clientY,
@@ -939,8 +963,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
             word: match.word,
             entries: match.entries,
             length: match.length,
-            start: selection.from,
-            end: selection.to,
+            start: selStart,
+            end: selEnd,
           },
           clientX,
           clientY,
@@ -962,6 +986,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (match) {
       const absStart = match.start !== undefined ? line.from + match.start : undefined;
       const absEnd = match.end !== undefined ? line.from + match.end : undefined;
+      if (absStart !== undefined && absEnd !== undefined) {
+        // Synchronize editor selection to match the dictionary word exactly on double-click
+        view.dispatch({
+          selection: { anchor: absStart, head: absEnd },
+        });
+      }
       this.tooltip.show(
         { ...match, start: absStart, end: absEnd },
         clientX,
@@ -1056,7 +1086,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const selection = globalThis.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (selectedText && this.dictionary.isChinese(selectedText)) {
-      const directEntries = this.dictionary.get(selectedText);
+      const directEntries = this.dictionary.getOrSynthesize(selectedText);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
           {

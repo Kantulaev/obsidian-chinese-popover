@@ -7,6 +7,12 @@ import {
   loadDictPackData,
   MULTILANG_CORE_VOCAB,
 } from "./dict-packs.ts";
+import {
+  loadChengyuPack,
+  isChengyuPackInstalled,
+  downloadChengyuPack,
+  deleteChengyuPack,
+} from "./chengyu.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
 import {
   sortAllDictionaryEntriesInPlace,
@@ -636,6 +642,9 @@ export class DictionaryManager {
       if (activePack && activePack !== "en") {
         await this.loadPack(activePack);
       }
+
+      // Preload chengyu stories pack if installed on disk
+      await loadChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
@@ -738,6 +747,18 @@ export class DictionaryManager {
       return true;
     }
     return false;
+  }
+
+  async isChengyuInstalled(): Promise<boolean> {
+    return await isChengyuPackInstalled(this.plugin.app.vault.adapter, this.getPluginDir());
+  }
+
+  async downloadChengyu(): Promise<boolean> {
+    return await downloadChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
+  }
+
+  async deleteChengyu(): Promise<boolean> {
+    return await deleteChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
   }
 
   /**
@@ -1303,5 +1324,62 @@ export class DictionaryManager {
       };
     }
     return null;
+  }
+
+  /**
+   * Retrieves dictionary entries for a word or synthesizes compound definitions
+   * for multi-character selections (e.g. 2-character words, verb-complements, number-measure words).
+   * Ensures double-click selections never truncate to only the first character!
+   */
+  getOrSynthesize(word: string): DictEntry[] | undefined {
+    if (!word) return undefined;
+    const exact = this.get(word);
+    if (exact && exact.length > 0) {
+      return exact;
+    }
+
+    const chars = Array.from(word);
+    if (chars.length < 2 || chars.length > 6) {
+      return undefined;
+    }
+
+    if (!chars.every((c) => this.isChinese(c))) {
+      return undefined;
+    }
+
+    // Try finding sub-word components (e.g. for a 2-character word: char 0 and char 1)
+    const charEntries = chars.map((c) => this.get(c)?.[0]);
+    if (charEntries.some((e) => !e)) {
+      const longest = this.findLongestMatch(word, 6);
+      return longest ? longest.entries : undefined;
+    }
+
+    const pinyins: string[] = [];
+    const jyutpings: string[] = [];
+    const trads: string[] = [];
+    const defParts: string[] = [];
+
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
+      const entry = charEntries[i]!;
+      trads.push(entry.traditional || ch);
+      if (entry.pinyin) pinyins.push(entry.pinyin);
+      if (entry.jyutping) jyutpings.push(entry.jyutping);
+      const topDefs = (entry.definitions || [])
+        .slice(0, 2)
+        .map((d) => d.replace(/\(CL:[^)]+\)/g, "").trim())
+        .filter(Boolean);
+      defParts.push(`${ch}: ${topDefs.join(", ") || "—"}`);
+    }
+
+    const synthesized: DictEntry = {
+      simplified: word,
+      traditional: trads.join(""),
+      pinyin: pinyins.join(" "),
+      jyutping: jyutpings.length === chars.length ? jyutpings.join(" ") : undefined,
+      definitions: [defParts.join("; ")],
+    };
+
+    return [synthesized];
   }
 }

@@ -3,7 +3,7 @@
  * Features curated classic idiom fables + dynamic online fetching capability.
  */
 
-import { requestUrl } from "obsidian";
+import { DataAdapter, Notice, requestUrl } from "obsidian";
 
 export interface ChengyuStory {
   idiom: string;
@@ -14,7 +14,7 @@ export interface ChengyuStory {
   dynasty?: string;
 }
 
-export const CHENGYU_DATABASE: Record<string, ChengyuStory> = {
+export const BUILTIN_CHENGYU_STORIES: Record<string, ChengyuStory> = {
   "画蛇添足": {
     idiom: "画蛇添足",
     literal: "Пририсовать змее ноги",
@@ -176,6 +176,124 @@ export const CHENGYU_DATABASE: Record<string, ChengyuStory> = {
     dynasty: "Люйши Чуньцю (吕氏春秋)",
   },
 };
+
+export const CHENGYU_DATABASE: Record<string, ChengyuStory> = Object.assign({}, BUILTIN_CHENGYU_STORIES);
+
+export interface ChengyuPackInfo {
+  id: string;
+  name: string;
+  nativeName: string;
+  icon: string;
+  source: string;
+  entries: string;
+  approxSize: string;
+  fileName: string;
+  downloadUrl: string;
+}
+
+export const CHENGYU_PACK_INFO: ChengyuPackInfo = {
+  id: "chengyu-stories",
+  name: "Chengyu Stories Pack",
+  nativeName: "成语故事 (Истории и притчи чэнъюй)",
+  icon: "📜",
+  source: "Классические китайские хроники (Ши цзи, Чжуан-цзы, Хань Фэй-цзы)",
+  entries: "1 500+ историй",
+  approxSize: "~650 КБ",
+  fileName: "chengyu-stories.json",
+  downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/chengyu-stories.json",
+};
+
+export async function isChengyuPackInstalled(
+  adapter: DataAdapter,
+  pluginDir: string
+): Promise<boolean> {
+  const filePath = `${pluginDir}/dicts/${CHENGYU_PACK_INFO.fileName}`;
+  const rootPath = `${pluginDir}/${CHENGYU_PACK_INFO.fileName}`;
+  return (await adapter.exists(filePath)) || (await adapter.exists(rootPath));
+}
+
+export async function downloadChengyuPack(
+  adapter: DataAdapter,
+  pluginDir: string
+): Promise<boolean> {
+  const dictsDir = `${pluginDir}/dicts`;
+  const targetPath = `${dictsDir}/${CHENGYU_PACK_INFO.fileName}`;
+  new Notice("Chinese Popover: Загрузка словаря историй чэнъюй...", 4000);
+
+  try {
+    if (!(await adapter.exists(dictsDir))) {
+      await adapter.mkdir(dictsDir);
+    }
+    const res = await requestUrl({ url: CHENGYU_PACK_INFO.downloadUrl });
+    await adapter.write(targetPath, res.text);
+    await loadChengyuPack(adapter, pluginDir);
+    const count = Object.keys(CHENGYU_DATABASE).length;
+    new Notice(`Chinese Popover: Словарь чэнъюй успешно загружен (${count} историй)!`, 5000);
+    return true;
+  } catch (err) {
+    console.warn("[Chinese Dict] Failed to download chengyu pack:", err);
+    new Notice("Chinese Popover: Не удалось загрузить словарь чэнъюй. Проверьте интернет.", 5000);
+    return false;
+  }
+}
+
+export async function deleteChengyuPack(
+  adapter: DataAdapter,
+  pluginDir: string
+): Promise<boolean> {
+  const filePath = `${pluginDir}/dicts/${CHENGYU_PACK_INFO.fileName}`;
+  const rootPath = `${pluginDir}/${CHENGYU_PACK_INFO.fileName}`;
+  try {
+    let deleted = false;
+    if (await adapter.exists(filePath)) {
+      await adapter.remove(filePath);
+      deleted = true;
+    }
+    if (await adapter.exists(rootPath)) {
+      await adapter.remove(rootPath);
+      deleted = true;
+    }
+    if (deleted) {
+      for (const k of Object.keys(CHENGYU_DATABASE)) {
+        if (!(k in BUILTIN_CHENGYU_STORIES)) {
+          delete CHENGYU_DATABASE[k];
+        }
+      }
+      new Notice("Chinese Popover: Словарь чэнъюй удален с диска.", 4000);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("[Chinese Dict] Failed to delete chengyu pack:", err);
+    return false;
+  }
+}
+
+export async function loadChengyuPack(
+  adapter: DataAdapter,
+  pluginDir: string
+): Promise<boolean> {
+  const filePath = `${pluginDir}/dicts/${CHENGYU_PACK_INFO.fileName}`;
+  const rootPath = `${pluginDir}/${CHENGYU_PACK_INFO.fileName}`;
+  let targetPath: string | null = null;
+  if (await adapter.exists(filePath)) {
+    targetPath = filePath;
+  } else if (await adapter.exists(rootPath)) {
+    targetPath = rootPath;
+  }
+
+  if (!targetPath) return false;
+
+  try {
+    const content = await adapter.read(targetPath);
+    const parsed = JSON.parse(content) as Record<string, ChengyuStory>;
+    Object.assign(CHENGYU_DATABASE, parsed);
+    return true;
+  } catch (err) {
+    console.warn("[Chinese Dict] Failed to load chengyu pack from disk:", err);
+  }
+  return false;
+}
 
 const DYNAMIC_CHENGYU_CACHE = new Map<string, ChengyuStory>();
 

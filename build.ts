@@ -61,6 +61,13 @@ async function copyToDist() {
     }
   }
 
+  try {
+    await Deno.mkdir(`${distDir}/dicts`, { recursive: true });
+    await Deno.copyFile("dicts/chengyu-stories.json", `${distDir}/dicts/chengyu-stories.json`);
+  } catch (_e) {
+    // optional
+  }
+
   console.log("=================================================");
   console.log("SUCCESS! Distribution package ready in:");
   console.log("   ./dist/chinese-popover-dict/");

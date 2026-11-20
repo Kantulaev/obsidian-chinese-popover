@@ -642,9 +642,9 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
+    const chengyuSetting = new Setting(containerEl)
       .setName("Истории и притчи чэнъюй / Chengyu Origin Stories")
-      .setDesc("Для 4-значных идиом показывать историческую притчу и аллегорический смысл выражения.")
+      .setDesc("Для 4-значных идиом показывать историческую притчу и аллегорический смысл выражения из словаря чэнъюй.")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showChengyuStories)
@@ -656,6 +656,25 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             }
           })
       );
+
+    void (async () => {
+      const isInstalled = await this.plugin.dictionary.isChengyuInstalled();
+      chengyuSetting.addButton((btn) => {
+        if (isInstalled) {
+          btn.setButtonText("✓ Словарь чэнъюй установлен").setDisabled(true);
+        } else {
+          btn.setButtonText("📥 Скачать словарь чэнъюй").setCta().onClick(async () => {
+            btn.setButtonText("⏳ Загрузка...").setDisabled(true);
+            const ok = await this.plugin.dictionary.downloadChengyu();
+            if (ok) {
+              btn.setButtonText("✓ Установлен");
+            } else {
+              btn.setButtonText("📥 Скачать словарь чэнъюй").setDisabled(false);
+            }
+          });
+        }
+      });
+    })();
 
     new Setting(containerEl)
       .setName("Примеры предложений / Example Sentences (例句)")
@@ -1419,6 +1438,55 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           }
         });
       }
+    }
+
+    // Chengyu Idiom Stories Pack Card
+    const isChengyuInstalled = await this.plugin.dictionary.isChengyuInstalled();
+    const cCard = containerEl.createDiv({ cls: "ch-dict-pack-card" });
+    if (isChengyuInstalled) cCard.addClass("is-installed");
+
+    const cLeft = cCard.createDiv({ cls: "ch-dict-pack-left" });
+    cLeft.createSpan({ cls: "ch-dict-pack-flag", text: "📜" });
+
+    const cInfo = cLeft.createDiv({ cls: "ch-dict-pack-info" });
+    const cTitleRow = cInfo.createDiv({ cls: "ch-dict-pack-title-row" });
+    cTitleRow.createSpan({ cls: "ch-dict-pack-name", text: "成语故事 (Истории и притчи чэнъюй)" });
+
+    if (isChengyuInstalled) {
+      cTitleRow.createSpan({ cls: "ch-dict-pack-badge ch-dict-pack-badge-installed", text: t("settings.dict_installed") });
+    }
+
+    const cMeta = cInfo.createDiv({ cls: "ch-dict-pack-meta" });
+    cMeta.createSpan({ text: "1 500+ историй • ~650 КБ • Классические китайские хроники и литературные памятники" });
+
+    const cActions = cCard.createDiv({ cls: "ch-dict-pack-actions" });
+    if (isChengyuInstalled) {
+      const deleteBtn = cActions.createEl("button", {
+        cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
+        text: t("settings.dict_delete"),
+      });
+      deleteBtn.addEventListener("click", async () => {
+        const ok = await this.plugin.dictionary.deleteChengyu();
+        if (ok) {
+          await this.renderDictPacksCards(containerEl);
+        }
+      });
+    } else {
+      const downloadBtn = cActions.createEl("button", {
+        cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
+        text: `📥 ${t("settings.dict_download")}`,
+      });
+      downloadBtn.addEventListener("click", async () => {
+        downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
+        downloadBtn.setAttribute("disabled", "true");
+        const ok = await this.plugin.dictionary.downloadChengyu();
+        if (ok) {
+          await this.renderDictPacksCards(containerEl);
+        } else {
+          downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
+          downloadBtn.removeAttribute("disabled");
+        }
+      });
     }
   }
 }

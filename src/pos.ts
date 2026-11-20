@@ -265,3 +265,169 @@ export function formatPosBadge(posList: PartOfSpeech[], lang: "ru" | "en" = "ru"
   const labels = posList.map((pos) => POS_METADATA[pos]?.[lang] || pos);
   return `[${labels.join(" / ")}]`;
 }
+
+export interface PosDefinitionGroup {
+  pos: PartOfSpeech | "other";
+  posLabel: string;
+  posClass: string;
+  items: string[];
+}
+
+export const POS_CSS_CLASSES: Record<PartOfSpeech | "other", string> = {
+  verb: "ch-pos-tag-verb",
+  noun: "ch-pos-tag-noun",
+  adjective: "ch-pos-tag-adj",
+  adverb: "ch-pos-tag-adv",
+  pronoun: "ch-pos-tag-pron",
+  classifier: "ch-pos-tag-cl",
+  preposition: "ch-pos-tag-prep",
+  conjunction: "ch-pos-tag-conj",
+  particle: "ch-pos-tag-part",
+  numeral: "ch-pos-tag-num",
+  interjection: "ch-pos-tag-int",
+  idiom: "ch-pos-tag-idiom",
+  other: "ch-pos-tag-other",
+};
+
+/**
+ * Classifies an individual definition fragment to a likely Part of Speech
+ */
+export function classifyDefinitionItem(def: string, isRu: boolean): PartOfSpeech {
+  const clean = def.trim().toLowerCase();
+  if (isRu) {
+    if (/(?:ть|ться|ти|тись|чь)$/.test(clean) || /^(?:быть|стать|делать|идти|ехать)\b/.test(clean)) return "verb";
+    if (/(?:ый|ий|ой|ая|яя|ое|ее|ые|ие)$/.test(clean)) return "adjective";
+    if (/(?:о|е)$/.test(clean) && /(?:очень|быстро|часто|всегда|снова|уже|только|вдруг|вместе|сейчас|вчера|завтра|сегодня)/.test(clean)) return "adverb";
+    if (/сч(?:ётное|\.)?\s*сл(?:ово|\.)?/i.test(clean) || /^штука|^экземпляр/i.test(clean)) return "classifier";
+    if (/^(?:он|она|оно|они|мы|вы|я|ты|это|то|кто|что|весь|все|каждый)/i.test(clean)) return "pronoun";
+    if (/^(?:потому что|хотя|однако|и|но|если)/i.test(clean)) return "conjunction";
+    if (/^(?:в|на|с|из|к|по|у|о|от|до|за)\b/.test(clean)) return "preposition";
+    return "noun";
+  } else {
+    if (/^to\s+[a-z]/i.test(clean)) return "verb";
+    if (/^classifier\b/i.test(clean) || /\(cl:[^)]+\)/i.test(clean)) return "classifier";
+    if (clean.endsWith("ly") || /^(very|quite|always|often|already|never|soon)\b/i.test(clean)) return "adverb";
+    if (/\b(adj|adjective)\b/i.test(clean) || /^(good|bad|big|small|happy|new|old|fast|slow|bright|dark|high|low)\b/i.test(clean)) return "adjective";
+    if (/^(he|she|it|they|we|you|i|this|that|who|what)\b/i.test(clean)) return "pronoun";
+    if (/^(because|although|however|and|but)\b/i.test(clean)) return "conjunction";
+    if (/^(from|towards|with|at|in|on)\b/i.test(clean)) return "preposition";
+    return "noun";
+  }
+}
+
+/**
+ * Groups definitions by Parts of Speech, returning 5-6 main meanings distributed cleanly across categories.
+ */
+export function groupDefinitionsByPos(
+  rawDefs: string[],
+  word: string,
+  allCedictDefs: string[],
+  language: "en" | "ru" | "both" = "ru",
+  maxCount: number = 6
+): PosDefinitionGroup[] {
+  if (!rawDefs || rawDefs.length === 0) {
+    return [{
+      pos: "other",
+      posLabel: "",
+      posClass: "ch-pos-tag-other",
+      items: ["Нет перевода / No definition"],
+    }];
+  }
+
+  const isRu = language !== "en";
+  const wordPosList = inferPartsOfSpeech(word, allCedictDefs);
+
+  // If word has no multi-POS or only 1 detected POS
+  if (wordPosList.length <= 1) {
+    const singlePos = wordPosList[0];
+    const label = singlePos && POS_METADATA[singlePos] ? (POS_METADATA[singlePos][isRu ? "ru" : "en"] || "") : "";
+    return [{
+      pos: singlePos || "other",
+      posLabel: label,
+      posClass: singlePos ? POS_CSS_CLASSES[singlePos] : "ch-pos-tag-other",
+      items: rawDefs.slice(0, maxCount),
+    }];
+  }
+
+  // Multi-POS word (兼类词) - categorize items into detected POS buckets
+  const buckets = new Map<PartOfSpeech, string[]>();
+  for (const pos of wordPosList) {
+    buckets.set(pos, []);
+  }
+
+  const others: string[] = [];
+
+  for (const item of rawDefs) {
+    const detected = classifyDefinitionItem(item, isRu);
+    if (buckets.has(detected)) {
+      buckets.get(detected)!.push(item);
+    } else {
+      others.push(item);
+    }
+  }
+
+  // Distribute uncategorized items into buckets that are empty or have fewer items
+  if (others.length > 0) {
+    for (const otherItem of others) {
+      let minBucket: PartOfSpeech | null = null;
+      let minCount = Infinity;
+      for (const [pos, list] of buckets.entries()) {
+        if (list.length < minCount) {
+          minCount = list.length;
+          minBucket = pos;
+        }
+      }
+      if (minBucket) {
+        buckets.get(minBucket)!.push(otherItem);
+      }
+    }
+  }
+
+  // Build result groups
+  const groups: PosDefinitionGroup[] = [];
+  let remainingBudget = maxCount;
+
+  // Filter only buckets that actually have items
+  const activeBuckets = Array.from(buckets.entries()).filter(([_, items]) => items.length > 0);
+
+  if (activeBuckets.length <= 1) {
+    const firstBucket = activeBuckets[0];
+    if (firstBucket) {
+      const [pos, items] = firstBucket;
+      const label = POS_METADATA[pos]?.[isRu ? "ru" : "en"] || "";
+      return [{
+        pos,
+        posLabel: label,
+        posClass: POS_CSS_CLASSES[pos] || "ch-pos-tag-other",
+        items: items.slice(0, maxCount),
+      }];
+    }
+    return [{
+      pos: "other",
+      posLabel: "",
+      posClass: "ch-pos-tag-other",
+      items: rawDefs.slice(0, maxCount),
+    }];
+  }
+
+  // Allocate items per bucket fairly
+  const perBucketLimit = Math.max(2, Math.ceil(maxCount / activeBuckets.length));
+
+  for (const [pos, items] of activeBuckets) {
+    if (remainingBudget <= 0) break;
+    const take = Math.min(items.length, perBucketLimit, remainingBudget);
+    const slice = items.slice(0, take);
+    if (slice.length > 0) {
+      const label = POS_METADATA[pos]?.[isRu ? "ru" : "en"] || pos;
+      groups.push({
+        pos,
+        posLabel: label,
+        posClass: POS_CSS_CLASSES[pos] || "ch-pos-tag-other",
+        items: slice,
+      });
+      remainingBudget -= slice.length;
+    }
+  }
+
+  return groups;
+}

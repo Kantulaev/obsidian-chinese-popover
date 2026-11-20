@@ -126,7 +126,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   showAccentedPinyin: true,
   showTraditional: true,
   traditionalSeparator: " - ",
-  maxDefinitions: 3,
+  maxDefinitions: 6,
   showActionButtons: true,
 
   theme: "auto",
@@ -470,11 +470,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Количество слов перевода / Max Definitions")
-      .setDesc("Сколько кратких значений перевода показывать в карточке (от 1 до 5).")
+      .setDesc("Сколько основных значений перевода показывать в карточке (от 1 до 8, по умолчанию 6).")
       .addSlider((slider) =>
         slider
-          .setLimits(1, 5, 1)
-          .setValue(this.plugin.settings.maxDefinitions)
+          .setLimits(1, 8, 1)
+          .setValue(this.plugin.settings.maxDefinitions || 6)
           .onChange(async (value) => {
             this.plugin.settings.maxDefinitions = value;
             await this.plugin.saveSettings();

@@ -72,9 +72,9 @@ export class DictTooltip {
       "--ch-dict-width": `${width}px`,
       "--ch-dict-height": `${height}px`,
       "--ch-dict-blur": `${blur}px`,
-      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 20}px`,
-      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 15}px`,
-      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 14}px`,
+      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 21}px`,
+      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 13}px`,
+      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 16}px`,
       "--ch-dict-font-hanzi-family": fontFamily,
     });
 
@@ -251,6 +251,8 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
+    this.el.removeClass("ch-dict-expanded-horiz-right");
+    this.el.removeClass("ch-dict-expanded-horiz-left");
     this.el.removeClass("ch-dict-expanded-details");
     this.el.removeClass("ch-dict-expanded-examples");
     this.isVisible = false;
@@ -386,15 +388,18 @@ export class DictTooltip {
   private render(match: MatchResult, settings: ChineseDictSettings, contextSentence?: string): void {
     this.el.empty();
 
+    // Main Card Container (standard popover card content)
+    const mainCard = this.el.createDiv({ cls: "ch-dict-main-card" });
+
     // Subtle Apple-style drag grabber pill at the top of the card
-    const grabber = this.el.createDiv({ cls: "ch-dict-drag-grabber" });
+    const grabber = mainCard.createDiv({ cls: "ch-dict-drag-grabber" });
     grabber.setAttribute("title", "Потяните, чтобы переместить карточку / Drag to move");
     this.setupDraggable(grabber, settings);
 
     const isCantonese = settings.dialect === "cantonese";
 
     // 1. Top Bar: Clickable Pill with Hanzi and Action buttons
-    const topBar = this.el.createDiv({ cls: "ch-dict-top-bar" });
+    const topBar = mainCard.createDiv({ cls: "ch-dict-top-bar" });
     this.setupDraggable(topBar, settings);
 
     const pill = topBar.createDiv({
@@ -522,7 +527,7 @@ export class DictTooltip {
     );
     const jyutping = match.entries[0]?.jyutping || "";
 
-    const heroContainer = this.el.createDiv({ cls: "ch-dict-pinyin-hero" });
+    const heroContainer = mainCard.createDiv({ cls: "ch-dict-pinyin-hero" });
 
     // Determine what to display based on phoneticDisplay setting
     const mode = settings.phoneticDisplay || "pinyin";
@@ -616,7 +621,7 @@ export class DictTooltip {
       settings.maxDefinitions || 6
     );
 
-    const defsContainer = this.el.createDiv({ cls: "ch-dict-defs-container" });
+    const defsContainer = mainCard.createDiv({ cls: "ch-dict-defs-container" });
     const fullTranslationPlain = posGroups
       .map((g) => `${g.posLabel ? `[${g.posLabel}] ` : ""}${g.items.join(", ")}`)
       .join("; ");
@@ -666,49 +671,73 @@ export class DictTooltip {
       });
     }
 
-    // Action Row under translation: subtle spacer on left, "⋯" (Details & Examples) button on right
-    const bottomRow = this.el.createDiv({ cls: "ch-dict-bottom-row" });
+    // Action Row under translation: subtle spacer on left, "⋯" (2 Examples Toggle) on right
+    const bottomRow = mainCard.createDiv({ cls: "ch-dict-bottom-row" });
     bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
 
-    // Details button "⋯" (widely expands popover to display all definitions and context examples)
-    let detailsDrawer: HTMLElement | null = null;
-    const moreDetailsBtn = bottomRow.createEl("button", {
+    // Side-by-side horizontal expansion state (expands strictly right or left)
+    let sidePanel: HTMLElement | null = null;
+    let expandedSide: "right" | "left" | null = null;
+
+    const expandBtn = bottomRow.createEl("button", {
       cls: "ch-dict-details-btn",
       text: "⋯",
       attr: {
-        title: t("tooltip.details_hint") || "Подробно: все варианты перевода и примеры предложений",
-        "aria-label": t("tooltip.details") || "Подробно",
+        title: "2 примера предложений (расширить вправо/влево) / 2 context examples",
+        "aria-label": "Примеры",
       },
     });
 
-    moreDetailsBtn.addEventListener("click", (e) => {
+    expandBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (detailsDrawer) {
-        // Collapse drawer
-        detailsDrawer.remove();
-        detailsDrawer = null;
-        moreDetailsBtn.removeClass("is-active");
-        this.el.removeClass("ch-dict-expanded-details");
-        this.adjustPopoverBoundsAfterExpand();
+      if (sidePanel) {
+        // Collapse horizontal side panel
+        if (expandedSide === "left") {
+          const curLeft = parseFloat(this.el.style.left) || this.el.getBoundingClientRect().left;
+          this.el.style.left = `${Math.round(curLeft + 270)}px`;
+        }
+        sidePanel.remove();
+        sidePanel = null;
+        expandedSide = null;
+        expandBtn.removeClass("is-active");
+        this.el.removeClass("ch-dict-expanded-horiz-right", "ch-dict-expanded-horiz-left");
         return;
       }
 
-      // Expand popover adaptively & show details drawer
-      moreDetailsBtn.addClass("is-active");
-      this.el.addClass("ch-dict-expanded-details");
+      // Check space on right vs left to expand strictly horizontally
+      const rect = this.el.getBoundingClientRect();
+      const sideWidth = 270;
+      const winW = globalThis.innerWidth;
+      const spaceRight = winW - rect.right;
+      const expandRight = spaceRight >= sideWidth + 12;
 
-      detailsDrawer = createDiv({ cls: "ch-dict-details-drawer" });
-      bottomRow.after(detailsDrawer);
+      expandBtn.addClass("is-active");
 
-      this.renderFullDetailsIntoDrawer(detailsDrawer, match, settings);
-      this.adjustPopoverBoundsAfterExpand();
+      if (expandRight) {
+        expandedSide = "right";
+        this.el.addClass("ch-dict-expanded-horiz-right");
+        this.el.removeClass("ch-dict-expanded-horiz-left");
+        sidePanel = this.el.createDiv({ cls: "ch-dict-side-panel ch-dict-side-panel-right" });
+      } else {
+        expandedSide = "left";
+        this.el.addClass("ch-dict-expanded-horiz-left");
+        this.el.removeClass("ch-dict-expanded-horiz-right");
+        sidePanel = createDiv({ cls: "ch-dict-side-panel ch-dict-side-panel-left" });
+        mainCard.before(sidePanel);
+
+        const curLeft = parseFloat(this.el.style.left) || rect.left;
+        const nextLeft = Math.max(12, curLeft - sideWidth);
+        this.el.style.left = `${Math.round(nextLeft)}px`;
+      }
+
+      this.renderTwoExamplesIntoSidePanel(sidePanel, match, settings);
     });
 
     // 4. Character Breakdown (for compound words >= 2 chars)
     if (settings.showCharacterBreakdown) {
       const chars = Array.from(match.word).filter((c) => /\p{Script=Han}/u.test(c));
       if (chars.length >= 2) {
-        const decompRow = this.el.createDiv({ cls: "ch-dict-decomp-row" });
+        const decompRow = mainCard.createDiv({ cls: "ch-dict-decomp-row" });
         let activeChar: string | null = null;
         let decompDrawer: HTMLElement | null = null;
         const chipElements = new Map<string, HTMLElement>();
@@ -865,8 +894,8 @@ export class DictTooltip {
     // 5. Chengyu Origin Story Drawer
     if (settings.showChengyuStories && Array.from(match.word).length === 4) {
       const renderChengyuDrawer = (chengyu: ChengyuStory) => {
-        if (!chengyu || this.el.querySelector(".ch-dict-chengyu-drawer")) return;
-        const storyEl = this.el.createDiv({ cls: "ch-dict-chengyu-drawer" });
+        if (!chengyu || mainCard.querySelector(".ch-dict-chengyu-drawer")) return;
+        const storyEl = mainCard.createDiv({ cls: "ch-dict-chengyu-drawer" });
         const header = storyEl.createDiv({ cls: "ch-dict-drawer-header" });
         header.createSpan({ cls: "ch-dict-drawer-tag", text: t("chengyu.title") });
         if (chengyu.dynasty) {
@@ -901,94 +930,34 @@ export class DictTooltip {
   }
 
   /**
-   * Renders full details drawer: all definition variants & context example sentences
+   * Renders exactly 2 small authentic example sentences into the horizontal side panel
    */
-  private renderFullDetailsIntoDrawer(
-    drawer: HTMLElement,
+  private renderTwoExamplesIntoSidePanel(
+    panel: HTMLElement,
     match: MatchResult,
     settings: ChineseDictSettings
   ): void {
-    drawer.empty();
+    panel.empty();
     const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
-    const lang = getActiveLanguage();
 
-    // SECTION 1: All Definitions (все варианты перевода)
-    const defsSection = drawer.createDiv({ cls: "ch-dict-details-section" });
-    const defsHeader = defsSection.createDiv({ cls: "ch-dict-details-section-header" });
-    defsHeader.createSpan({
-      cls: "ch-dict-details-section-title",
-      text: `📖 ${t("tooltip.all_definitions") || (isRu ? "Все значения" : "All Definitions")}`,
+    const header = panel.createDiv({ cls: "ch-dict-side-header" });
+    header.createSpan({
+      cls: "ch-dict-side-title",
+      text: `例句 ${t("tooltip.examples") || (isRu ? "Примеры" : "Examples")}`,
     });
 
-    const defsList = defsSection.createDiv({ cls: "ch-dict-details-defs-list" });
-
-    // Multi-lang or Russian rich definitions if available
-    const transLang = settings.translationLanguage || "auto";
-    let customPackDefs: string[] | null = null;
-    if (transLang !== "en" && transLang !== "both") {
-      customPackDefs = this.plugin?.dictionary?.getMultiLangDefs(match.word, lang) || null;
-    }
-    if (isRu && (!customPackDefs || customPackDefs.length === 0)) {
-      const allCedict = match.entries.flatMap((e) => e.definitions);
-      customPackDefs = getRawDefinitionsList(match.word, allCedict, "ru", 12);
-    }
-
-    if (customPackDefs && customPackDefs.length > 0) {
-      const allCedict = match.entries.flatMap((e) => e.definitions);
-      const groups = groupDefinitionsByPos(customPackDefs, match.word, allCedict, lang, 12);
-      let idx = 1;
-      for (const group of groups) {
-        const itemEl = defsList.createDiv({ cls: "ch-dict-details-entry-item" });
-        if (group.posLabel) {
-          itemEl.createSpan({
-            cls: `ch-dict-pos-tag ${group.posClass}`,
-            text: group.posLabel,
-          });
-        }
-        const textSpan = itemEl.createSpan({ cls: "ch-dict-details-entry-defs" });
-        textSpan.setText(group.items.map((it) => `${idx++}. ${it}`).join("  •  "));
-      }
-    } else {
-      // Display from CEDICT entries with pinyin badges
-      match.entries.forEach((entry) => {
-        const itemEl = defsList.createDiv({ cls: "ch-dict-details-entry-item" });
-        const topRow = itemEl.createDiv({ cls: "ch-dict-details-entry-top" });
-        if (entry.pinyin) {
-          topRow.createSpan({
-            cls: "ch-dict-details-entry-pinyin",
-            text: formatPinyin(entry.pinyin, settings.showAccentedPinyin),
-          });
-        }
-        if (entry.traditional && entry.traditional !== entry.simplified) {
-          topRow.createSpan({
-            cls: "ch-dict-details-entry-trad",
-            text: `(трад. ${entry.traditional})`,
-          });
-        }
-        const textSpan = itemEl.createSpan({ cls: "ch-dict-details-entry-defs" });
-        textSpan.setText(entry.definitions.join("; "));
-      });
-    }
-
-    // SECTION 2: Context Examples (примеры предложений)
-    const exSection = drawer.createDiv({ cls: "ch-dict-details-section" });
-    const exHeader = exSection.createDiv({ cls: "ch-dict-details-section-header" });
-    exHeader.createSpan({
-      cls: "ch-dict-details-section-title",
-      text: `💬 ${t("tooltip.examples") || (isRu ? "Примеры предложений" : "Examples")}`,
-    });
-
-    const exContainer = exSection.createDiv({ cls: "ch-dict-details-ex-container" });
+    const exContainer = panel.createDiv({ cls: "ch-dict-side-ex-list" });
     const localExamples = getExampleSentences(match.word);
 
-    const renderExampleItems = (examples: ExampleSentence[]) => {
+    const renderTwo = (sentences: ExampleSentence[]) => {
       exContainer.empty();
-      examples.forEach((ex) => {
-        const row = exContainer.createDiv({ cls: "ch-dict-example-row" });
-        const zhRow = row.createDiv({ cls: "ch-dict-example-zh-row" });
+      const two = sentences.slice(0, 2);
+      two.forEach((ex) => {
+        const row = exContainer.createDiv({ cls: "ch-dict-side-ex-item" });
+        const zhRow = row.createDiv({ cls: "ch-dict-side-ex-zh-row" });
 
         const zhSpan = zhRow.createSpan({
-          cls: "ch-dict-ex-zh",
+          cls: "ch-dict-side-ex-zh",
           text: ex.chinese,
           attr: { title: t("tooltip.listen_example") || "Нажмите, чтобы прослушать пример" },
         });
@@ -998,7 +967,7 @@ export class DictTooltip {
         });
 
         const exAudioBtn = zhRow.createEl("button", {
-          cls: "ch-dict-ex-audio-btn",
+          cls: "ch-dict-side-ex-audio-btn",
           text: "🔊",
           attr: { title: "Прослушать / Listen" },
         });
@@ -1008,43 +977,41 @@ export class DictTooltip {
         });
 
         if (ex.pinyin) {
-          row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+          row.createDiv({ cls: "ch-dict-side-ex-py", text: ex.pinyin });
         }
         const translationText = (isRu && ex.russian) ? ex.russian : (ex.english || ex.russian || "");
         if (translationText) {
-          row.createDiv({ cls: "ch-dict-ex-tr", text: translationText });
+          row.createDiv({ cls: "ch-dict-side-ex-tr", text: translationText });
         }
       });
     };
 
     if (localExamples && localExamples.length > 0) {
-      renderExampleItems(localExamples.slice(0, 3));
+      renderTwo(localExamples);
     } else {
       const loadingEl = exContainer.createDiv({
-        cls: "ch-dict-drawer-loading",
+        cls: "ch-dict-side-loading",
         text: t("tooltip.examples_loading") || "Поиск примеров...",
       });
 
       const wordAtFetch = match.word;
       const targetLang = isRu ? "rus" : "eng";
       fetchDynamicExamples(match.word, targetLang).then((fetched) => {
-        if (!this.isVisible || this.currentWord !== wordAtFetch || !drawer.isConnected) {
+        if (!this.isVisible || this.currentWord !== wordAtFetch || !panel.isConnected) {
           return;
         }
         loadingEl.remove();
         if (fetched && fetched.length > 0) {
-          renderExampleItems(fetched.slice(0, 3));
+          renderTwo(fetched);
         } else {
           exContainer.createDiv({
-            cls: "ch-dict-drawer-empty",
+            cls: "ch-dict-side-empty",
             text: t("tooltip.examples_empty") || "Примеры не найдены",
           });
         }
-        this.adjustPopoverBoundsAfterExpand();
       }).catch(() => {
-        if (drawer.isConnected) {
+        if (panel.isConnected) {
           loadingEl.setText(t("tooltip.examples_error") || "Ошибка загрузки примеров");
-          this.adjustPopoverBoundsAfterExpand();
         }
       });
     }

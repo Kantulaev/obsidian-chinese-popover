@@ -9,15 +9,12 @@ div.menu {
 .ch-dict-tooltip {
   position: fixed;
   z-index: 10000;
-  width: var(--ch-dict-width, 330px);
-  min-width: var(--ch-dict-width, 330px);
-  max-width: var(--ch-dict-width, 330px);
-  min-height: var(--ch-dict-height, 165px);
-  max-height: 480px;
+  width: auto;
+  max-width: min(720px, calc(100vw - 24px));
+  min-height: var(--ch-dict-height, 160px);
+  max-height: 520px;
   box-sizing: border-box;
-  padding: 13px 16px;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: 12px 14px;
   overflow: visible;
 
   /* Hidden by default */
@@ -25,55 +22,52 @@ div.menu {
   pointer-events: none;
   visibility: hidden;
 
-  /* Apple Squircle */
-  border-radius: 20px;
+  /* Apple Squircle (18px) */
+  border-radius: 18px;
 
-  /* Liquid Glass Dark Theme default */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%),
-              rgba(20, 22, 28, 0.82);
-  backdrop-filter: blur(var(--ch-dict-blur, 34px)) saturate(200%) contrast(105%);
-  -webkit-backdrop-filter: blur(var(--ch-dict-blur, 34px)) saturate(200%) contrast(105%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Liquid Glass Dark Theme default - Apple Minimalist */
+  background: rgba(22, 24, 30, 0.82);
+  backdrop-filter: blur(var(--ch-dict-blur, 30px)) saturate(190%);
+  -webkit-backdrop-filter: blur(var(--ch-dict-blur, 30px)) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.65),
-    0 8px 18px -4px rgba(0, 0, 0, 0.45),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25);
+    0 20px 45px -10px rgba(0, 0, 0, 0.6),
+    0 8px 18px -4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
 
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   user-select: text;
 
   opacity: 0;
-  transform: scale(0.94) translateY(6px);
-  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.15),
-              width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              left 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-              top 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scale(0.96) translateY(5px);
+  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   scrollbar-gutter: stable;
 }
 
-/* Light Theme Liquid Glass (Auto in light mode) */
+/* Light Theme Liquid Glass (Apple Minimalist) */
 .theme-light .ch-dict-tooltip,
 .ch-dict-tooltip.ch-dict-theme-glass_light {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.68) 100%),
-              rgba(238, 240, 246, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(var(--ch-dict-blur, 30px)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--ch-dict-blur, 30px)) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow:
-    0 20px 42px -10px rgba(0, 0, 0, 0.16),
-    0 6px 14px -3px rgba(0, 0, 0, 0.09),
+    0 18px 40px -10px rgba(0, 0, 0, 0.14),
+    0 6px 14px -3px rgba(0, 0, 0, 0.07),
     inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
 }
 
 /* Force Dark Liquid Glass */
 .ch-dict-tooltip.ch-dict-theme-glass_dark {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 100%),
-              rgba(20, 22, 28, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(22, 24, 30, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
-    0 24px 48px -12px rgba(0, 0, 0, 0.65),
-    0 8px 18px -4px rgba(0, 0, 0, 0.45),
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.4);
+    0 20px 45px -10px rgba(0, 0, 0, 0.6),
+    0 8px 18px -4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 /* Solid Minimalist Theme (No blur, high contrast) */
@@ -94,10 +88,44 @@ div.menu {
 /* Visible popover state */
 .ch-dict-tooltip.ch-dict-visible {
   display: flex;
+  flex-direction: row;
+  align-items: stretch;
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
   transform: scale(1) translateY(0);
+}
+
+/* Main Card Column (contains top-bar, hero pinyin, translations, breakdown) */
+.ch-dict-main-card {
+  width: var(--ch-dict-width, 330px);
+  min-width: var(--ch-dict-width, 330px);
+  max-width: var(--ch-dict-width, 330px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+/* Subtle Apple-style drag grabber at top of card */
+.ch-dict-drag-grabber {
+  width: 32px;
+  height: 3.5px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 0 auto 6px auto;
+  cursor: grab;
+  transition: background 0.15s ease;
+}
+.ch-dict-drag-grabber:hover {
+  background: rgba(255, 255, 255, 0.42);
+}
+.theme-light .ch-dict-drag-grabber {
+  background: rgba(0, 0, 0, 0.14);
+}
+.theme-light .ch-dict-drag-grabber:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Top bar: Hanzi capsule pill and action buttons */
@@ -151,7 +179,8 @@ div.menu {
 
 /* Simplified characters */
 .ch-dict-hanzi {
-  font-size: var(--ch-dict-font-hanzi, 19px);
+  font-size: var(--ch-dict-font-hanzi, 21px);
+  font-family: var(--ch-dict-font-hanzi-family, inherit);
   font-weight: 600;
   color: #ffffff;
   letter-spacing: 0.5px;
@@ -165,7 +194,7 @@ div.menu {
 
 /* Dash separating Simplified and Traditional */
 .ch-dict-dash {
-  font-size: calc(var(--ch-dict-font-hanzi, 19px) - 2px);
+  font-size: calc(var(--ch-dict-font-hanzi, 21px) - 2px);
   font-weight: 400;
   color: rgba(255, 255, 255, 0.55);
   margin: 0 2px;
@@ -179,7 +208,8 @@ div.menu {
 
 /* Traditional characters: Exact same size as simplified */
 .ch-dict-trad-hanzi {
-  font-size: var(--ch-dict-font-hanzi, 19px);
+  font-size: var(--ch-dict-font-hanzi, 21px);
+  font-family: var(--ch-dict-font-hanzi-family, inherit);
   font-weight: 600;
   color: #ffffff;
   letter-spacing: 0.5px;
@@ -262,13 +292,13 @@ div.menu {
 
 /* Pinyin Hero: Refined typography, balanced font size and line height */
 .ch-dict-pinyin-hero {
-  font-size: var(--ch-dict-font-pinyin, 15px);
-  font-weight: 600;
+  font-size: var(--ch-dict-font-pinyin, 13px);
+  font-weight: 550;
   line-height: 1.3;
-  letter-spacing: -0.1px;
-  color: #ffffff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  margin: 3px 0 5px 0;
+  letter-spacing: 0.1px;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: none;
+  margin: 2px 0 5px 0;
   white-space: normal;
   word-break: break-word;
   display: flex;
@@ -281,7 +311,7 @@ div.menu {
 
 .theme-light .ch-dict-pinyin-hero,
 .ch-dict-theme-glass_light .ch-dict-pinyin-hero {
-  color: #111113;
+  color: rgba(0, 0, 0, 0.75);
   text-shadow: none;
 }
 
@@ -492,13 +522,14 @@ div.menu {
 .ch-dict-def-item {
   display: inline-flex;
   align-items: baseline;
-  font-size: var(--ch-dict-font-translation, 14.5px);
-  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--ch-dict-font-translation, 16px);
+  color: #ffffff;
   font-weight: 500;
+  line-height: 1.45;
   transition: color 0.12s ease;
 }
 .theme-light .ch-dict-def-item {
-  color: #1f2937;
+  color: #111827;
 }
 
 .ch-dict-def-num {
@@ -524,13 +555,13 @@ div.menu {
 
 /* Backward compatibility fallback */
 .ch-dict-translations {
-  font-size: var(--ch-dict-font-translation, 15px);
-  line-height: 1.35;
+  font-size: var(--ch-dict-font-translation, 16px);
+  line-height: 1.45;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
 }
 .theme-light .ch-dict-translations {
-  color: #2c2c2e;
+  color: #111827;
 }
 
 /* ==========================================
@@ -1833,215 +1864,184 @@ rt {
 }
 
 /* ==========================================
-   Details & Example Sentences Drawer (On "⋯" Click)
+   Horizontal Side Expansion (Strictly Right or Left on "⋯" Click)
    ========================================== */
-.ch-dict-tooltip.ch-dict-expanded-details,
-.ch-dict-tooltip.ch-dict-expanded-examples {
-  width: min(540px, calc(100vw - 28px));
-  min-width: min(520px, calc(100vw - 28px));
-  max-width: min(580px, calc(100vw - 28px));
-  max-height: 80vh;
-  overflow-y: auto;
+.ch-dict-tooltip.ch-dict-expanded-horiz-right,
+.ch-dict-tooltip.ch-dict-expanded-horiz-left {
+  width: calc(var(--ch-dict-width, 330px) + 284px);
+  min-width: calc(var(--ch-dict-width, 330px) + 284px);
+  max-width: min(calc(var(--ch-dict-width, 330px) + 284px), calc(100vw - 24px));
 }
 
-.ch-dict-details-drawer,
-.ch-dict-example-drawer {
-  margin-top: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+.ch-dict-side-panel {
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  animation: chDetailsFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 380px;
+  animation: chSidePanelFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.theme-light .ch-dict-details-drawer,
-.theme-light .ch-dict-example-drawer {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+.ch-dict-side-panel-right {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  margin-left: 12px;
+  padding-left: 12px;
 }
 
-@keyframes chDetailsFadeIn {
+.theme-light .ch-dict-side-panel-right {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ch-dict-side-panel-left {
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  margin-right: 12px;
+  padding-right: 12px;
+}
+
+.theme-light .ch-dict-side-panel-left {
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@keyframes chSidePanelFadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateX(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
-.ch-dict-details-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.ch-dict-details-section-header {
+.ch-dict-side-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-light .ch-dict-side-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.ch-dict-side-title {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.6));
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
 }
 
-.theme-light .ch-dict-details-section-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+.theme-light .ch-dict-side-title {
+  color: rgba(0, 0, 0, 0.55);
 }
 
-.ch-dict-details-section-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.ch-dict-details-defs-list {
+.ch-dict-side-ex-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-left: 2px;
+  gap: 8px;
 }
 
-.ch-dict-details-entry-item {
+.ch-dict-side-ex-item {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 6px 9px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.theme-light .ch-dict-details-entry-item {
-  background: rgba(0, 0, 0, 0.02);
+.theme-light .ch-dict-side-ex-item {
+  background: rgba(0, 0, 0, 0.025);
   border-color: rgba(0, 0, 0, 0.05);
 }
 
-.ch-dict-details-entry-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ch-dict-details-entry-pinyin {
-  font-size: 12px;
-  font-weight: 600;
-  color: #38bdf8;
-}
-
-.ch-dict-details-entry-trad {
-  font-size: 11px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.5));
-}
-
-.ch-dict-details-entry-defs {
-  font-size: 13px;
-  color: var(--text-normal, #f1f2f6);
-  line-height: 1.4;
-}
-
-.ch-dict-details-ex-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ch-dict-example-row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.theme-light .ch-dict-example-row {
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.04);
-}
-
-.ch-dict-example-zh-row {
+.ch-dict-side-ex-zh-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
-.ch-dict-ex-zh {
+.ch-dict-side-ex-zh {
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
   cursor: pointer;
+  line-height: 1.35;
   transition: color 0.12s ease;
 }
 
-.theme-light .ch-dict-ex-zh {
+.theme-light .ch-dict-side-ex-zh {
   color: #0f172a;
 }
 
-.ch-dict-ex-zh:hover {
+.ch-dict-side-ex-zh:hover {
   color: #38bdf8;
-  text-decoration: underline;
 }
 
-.ch-dict-ex-audio-btn {
+.ch-dict-side-ex-audio-btn {
   background: transparent;
   border: none;
   font-size: 12px;
   cursor: pointer;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 4px;
   opacity: 0.7;
+  flex-shrink: 0;
   transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
-.ch-dict-ex-audio-btn:hover {
+.ch-dict-side-ex-audio-btn:hover {
   opacity: 1;
   transform: scale(1.15);
 }
 
-.ch-dict-ex-py {
+.ch-dict-side-ex-py {
   font-size: 11.5px;
   font-weight: 500;
   color: #93c5fd;
+  line-height: 1.3;
 }
 
-.theme-light .ch-dict-ex-py {
+.theme-light .ch-dict-side-ex-py {
   color: #2563eb;
 }
 
-.ch-dict-ex-tr {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+.ch-dict-side-ex-tr {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.82);
   line-height: 1.35;
 }
 
-.theme-light .ch-dict-ex-tr {
+.theme-light .ch-dict-side-ex-tr {
   color: #334155;
 }
 
-.ch-dict-drawer-loading,
-.ch-dict-drawer-empty {
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.65);
+.ch-dict-side-loading,
+.ch-dict-side-empty {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
   font-style: italic;
-  padding: 6px 2px;
+  padding: 8px 4px;
 }
 
-.theme-light .ch-dict-drawer-loading,
-.theme-light .ch-dict-drawer-empty {
+.theme-light .ch-dict-side-loading,
+.theme-light .ch-dict-side-empty {
   color: #64748b;
+}
+
+/* Backward compatibility for drawers */
+.ch-dict-tooltip.ch-dict-expanded-details,
+.ch-dict-tooltip.ch-dict-expanded-examples {
+  max-width: min(600px, calc(100vw - 28px));
 }
 
 /* ==========================================

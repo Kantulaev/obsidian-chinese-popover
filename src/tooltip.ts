@@ -227,6 +227,7 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
+    this.el.removeClass("ch-dict-expanded-examples");
     if (this.burgerFloatingMenu) {
       this.burgerFloatingMenu.removeClass("is-visible");
       this.burgerFloatingMenu.removeClass("is-open");
@@ -464,10 +465,14 @@ export class DictTooltip {
       const updateMenuPos = () => {
         if (!this.burgerFloatingMenu || !burgerBtn.isConnected) return;
         const rect = burgerBtn.getBoundingClientRect();
-        const menuHeight = this.burgerFloatingMenu.offsetHeight || 225;
-        const willOverflowBottom = rect.bottom + menuHeight + 10 > globalThis.innerHeight;
-        const top = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
-        const right = Math.max(10, globalThis.innerWidth - rect.right);
+        const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
+        const winH = globalThis.innerHeight;
+        const winW = globalThis.innerWidth;
+        // Prioritize upward flip whenever space below is tight (<150px) or would overflow bottom
+        const willOverflowBottom = (rect.bottom + menuHeight + 10 > winH) || (winH - rect.bottom < 150);
+        let top = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
+        top = Math.max(10, Math.min(top, winH - menuHeight - 10));
+        const right = Math.max(10, Math.min(winW - rect.right, winW - 300));
 
         this.burgerFloatingMenu.setCssStyles({
           top: `${Math.round(top)}px`,
@@ -562,7 +567,7 @@ export class DictTooltip {
         },
       });
       const copyIcon = copyItem.createSpan({ cls: "ch-dict-menu-icon", text: "📋" });
-      const copyLabel = copyItem.createSpan({ cls: "ch-dict-menu-label", text: "Копировать карточку" });
+      const copyLabel = copyItem.createSpan({ cls: "ch-dict-menu-label", text: "Копировать" });
 
       copyItem.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -572,7 +577,7 @@ export class DictTooltip {
         copyItem.addClass("ch-dict-btn-success");
         globalThis.setTimeout(() => {
           copyIcon.setText("📋");
-          copyLabel.setText("Копировать карточку");
+          copyLabel.setText("Копировать");
           copyItem.removeClass("ch-dict-btn-success");
         }, 1200);
       });
@@ -593,7 +598,7 @@ export class DictTooltip {
       });
       const starLabel = starItem.createSpan({
         cls: "ch-dict-menu-label",
-        text: isStarred ? "В словарике" : "В личный словарик",
+        text: isStarred ? "В словарике" : "В словарик",
       });
 
       starItem.addEventListener("click", (e) => {
@@ -604,7 +609,7 @@ export class DictTooltip {
             globalThis.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
             const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
             starIcon.setText(nowStarred ? "⭐" : "☆");
-            starLabel.setText(nowStarred ? "В словарике" : "В личный словарик");
+            starLabel.setText(nowStarred ? "В словарике" : "В словарик");
             starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
             this.plugin.refreshVocabularyViews();
 
@@ -632,13 +637,13 @@ export class DictTooltip {
       const pinIcon = pinItem.createSpan({ cls: "ch-dict-menu-icon", text: this.isPinned ? "📍" : "📌" });
       const pinLabel = pinItem.createSpan({
         cls: "ch-dict-menu-label",
-        text: this.isPinned ? "Открепить карточку" : "Закрепить на экране",
+        text: this.isPinned ? "Открепить" : "Закрепить",
       });
       pinItem.addEventListener("click", (e) => {
         e.stopPropagation();
         const pinned = this.togglePin();
         pinIcon.setText(pinned ? "📍" : "📌");
-        pinLabel.setText(pinned ? "Открепить карточку" : "Закрепить на экране");
+        pinLabel.setText(pinned ? "Открепить" : "Закрепить");
         pinItem.setAttribute("title", pinned ? "Открепить карточку" : "Закрепить карточку на экране");
       });
 
@@ -651,7 +656,7 @@ export class DictTooltip {
         },
       });
       noteItem.createSpan({ cls: "ch-dict-menu-icon", text: "📝" });
-      noteItem.createSpan({ cls: "ch-dict-menu-label", text: "Создать заметку" });
+      noteItem.createSpan({ cls: "ch-dict-menu-label", text: "Заметка" });
       noteItem.addEventListener("click", (e) => {
         e.stopPropagation();
         void (async () => {
@@ -673,16 +678,13 @@ export class DictTooltip {
         },
       });
       strokeItem.createSpan({ cls: "ch-dict-menu-icon", text: "🖌️" });
-      strokeItem.createSpan({ cls: "ch-dict-menu-label", text: "Порядок черт" });
+      strokeItem.createSpan({ cls: "ch-dict-menu-label", text: "Черты" });
       strokeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         if (this.plugin) {
           new StrokeOrderModal(this.plugin.app, match.word).open();
         }
       });
-
-      // Separator
-      this.burgerFloatingMenu.createDiv({ cls: "ch-dict-menu-separator" });
 
       // --- Item: Close ---
       const closeItem = this.burgerFloatingMenu.createEl("button", {
@@ -693,7 +695,7 @@ export class DictTooltip {
         },
       });
       closeItem.createSpan({ cls: "ch-dict-menu-icon", text: "✕" });
-      closeItem.createSpan({ cls: "ch-dict-menu-label", text: "Закрыть (Esc)" });
+      closeItem.createSpan({ cls: "ch-dict-menu-label", text: "Закрыть" });
       closeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.hide(true);
@@ -812,16 +814,91 @@ export class DictTooltip {
       });
     }
 
-    // Metadata Row under translation: HSK Level
+    // Metadata / Action Row under translation: HSK Level on left, Examples Toggle Button on right
+    const bottomRow = this.el.createDiv({ cls: "ch-dict-bottom-row" });
     const hsk = getHskBadgeInfo(match.word);
     if (hsk) {
-      const metaRow = this.el.createDiv({ cls: "ch-dict-meta-row" });
+      const metaRow = bottomRow.createDiv({ cls: "ch-dict-meta-row" });
       metaRow.createSpan({
         cls: "ch-dict-meta-item ch-dict-meta-hsk",
         text: hsk.label,
         attr: { title: `Официальный уровень: ${hsk.label}` },
       });
+    } else {
+      bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
     }
+
+    // Small On-Demand Examples Button in bottom-right corner
+    let exampleDrawer: HTMLElement | null = null;
+    const exToggleBtn = bottomRow.createEl("button", {
+      cls: "ch-dict-ex-toggle-btn",
+      attr: {
+        title: "Показать/скрыть 1-2 примера предложений (расширяет карточку)",
+        "aria-label": "Примеры предложений",
+      },
+    });
+    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-icon", text: "💬" });
+    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-label", text: "Примеры" });
+
+    exToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (exampleDrawer) {
+        // Collapse drawer
+        exampleDrawer.remove();
+        exampleDrawer = null;
+        exToggleBtn.removeClass("is-active");
+        this.el.removeClass("ch-dict-expanded-examples");
+        this.adjustPopoverBoundsAfterExpand();
+        return;
+      }
+
+      // Expand popover adaptively & show drawer
+      exToggleBtn.addClass("is-active");
+      this.el.addClass("ch-dict-expanded-examples");
+
+      exampleDrawer = createDiv({ cls: "ch-dict-example-drawer" });
+      bottomRow.after(exampleDrawer);
+
+      const exHeader = exampleDrawer.createDiv({ cls: "ch-dict-drawer-header" });
+      exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: "例句 Примеры" });
+
+      const isRu = settings.translationLanguage !== "en";
+      const localExamples = getExampleSentences(match.word);
+
+      if (localExamples && localExamples.length > 0) {
+        this.renderExamplesIntoDrawer(exampleDrawer, localExamples.slice(0, 2), settings, isRu);
+        this.adjustPopoverBoundsAfterExpand();
+      } else {
+        const loadingEl = exampleDrawer.createDiv({
+          cls: "ch-dict-drawer-loading",
+          text: isRu ? "Поиск аутентичных примеров..." : "Fetching authentic examples...",
+        });
+        this.adjustPopoverBoundsAfterExpand();
+
+        const wordAtFetch = match.word;
+        const targetLang = isRu ? "rus" : "eng";
+        fetchDynamicExamples(match.word, targetLang).then((fetched) => {
+          if (!this.isVisible || this.currentWord !== wordAtFetch || !exampleDrawer || !exampleDrawer.isConnected) {
+            return;
+          }
+          loadingEl.remove();
+          if (fetched && fetched.length > 0) {
+            this.renderExamplesIntoDrawer(exampleDrawer, fetched.slice(0, 2), settings, isRu);
+          } else {
+            exampleDrawer.createDiv({
+              cls: "ch-dict-drawer-empty",
+              text: isRu ? "Примеры для этого слова не найдены" : "No examples found for this word",
+            });
+          }
+          this.adjustPopoverBoundsAfterExpand();
+        }).catch(() => {
+          if (exampleDrawer && exampleDrawer.isConnected) {
+            loadingEl.setText(isRu ? "Не удалось загрузить примеры" : "Could not load examples");
+            this.adjustPopoverBoundsAfterExpand();
+          }
+        });
+      }
+    });
 
     // 4. Character Breakdown (for compound words >= 2 chars)
     if (settings.showCharacterBreakdown) {
@@ -842,6 +919,7 @@ export class DictTooltip {
             // Clicking same character collapses drawer
             activeChar = null;
             chipElements.forEach((el) => el.removeClass("is-active"));
+            this.adjustPopoverBoundsAfterExpand();
             return;
           }
 
@@ -922,6 +1000,7 @@ export class DictTooltip {
               text: isRu ? "Базовый неделимый иероглиф" : "Basic ideogram / pictogram",
             });
           }
+          this.adjustPopoverBoundsAfterExpand();
         };
 
         for (const char of chars) {
@@ -999,6 +1078,7 @@ export class DictTooltip {
           cls: "ch-dict-chengyu-story",
           text: isRu ? chengyu.storyRu : chengyu.storyEn,
         });
+        this.adjustPopoverBoundsAfterExpand();
       };
 
       const localStory = getChengyuStory(match.word);
@@ -1013,53 +1093,96 @@ export class DictTooltip {
         }).catch(() => {});
       }
     }
+  }
 
-    // 6. Example Sentences Drawer
-    if (settings.showExamples) {
-      const renderExampleDrawer = (sentences: ExampleSentence[]) => {
-        if (!sentences || sentences.length === 0) return;
-        if (this.el.querySelector(".ch-dict-example-drawer")) return;
-
-        const exEl = this.el.createDiv({ cls: "ch-dict-example-drawer" });
-        const exHeader = exEl.createDiv({ cls: "ch-dict-drawer-header" });
-        exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: "例句 Примеры" });
-
-        const isRu = settings.translationLanguage !== "en";
-        for (const ex of sentences.slice(0, 2)) {
-          const row = exEl.createDiv({ cls: "ch-dict-example-row" });
-          const zhSpan = row.createSpan({
-            cls: "ch-dict-ex-zh",
-            text: ex.chinese,
-            attr: { title: "Нажмите, чтобы прослушать пример" },
-          });
-          zhSpan.addEventListener("click", (e) => {
-            e.stopPropagation();
-            this.playSpeech(ex.chinese, settings);
-          });
-          if (ex.pinyin) {
-            row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
-          }
-          const trText = isRu ? (ex.russian || ex.english) : (ex.english || ex.russian);
-          if (trText) {
-            row.createDiv({ cls: "ch-dict-ex-tr", text: trText });
-          }
-        }
-      };
-
-      const localExamples = getExampleSentences(match.word);
-      if (localExamples && localExamples.length > 0) {
-        renderExampleDrawer(localExamples);
-      } else {
-        // Query Tatoeba live corpus in background
-        const targetLang = settings.translationLanguage === "en" ? "eng" : "rus";
-        const wordAtFetch = match.word;
-        fetchDynamicExamples(match.word, targetLang).then((fetched) => {
-          if (this.isVisible && this.currentWord === wordAtFetch && fetched && fetched.length > 0) {
-            renderExampleDrawer(fetched);
-          }
-        }).catch(() => {});
+  /**
+   * Renders 1-2 example sentences into the on-demand example drawer
+   */
+  private renderExamplesIntoDrawer(
+    drawer: HTMLElement,
+    sentences: ExampleSentence[],
+    settings: ChineseDictSettings,
+    isRu: boolean
+  ): void {
+    for (const ex of sentences) {
+      const row = drawer.createDiv({ cls: "ch-dict-example-row" });
+      const zhSpan = row.createSpan({
+        cls: "ch-dict-ex-zh",
+        text: ex.chinese,
+        attr: { title: "Нажмите, чтобы прослушать пример" },
+      });
+      zhSpan.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.playSpeech(ex.chinese, settings);
+      });
+      if (ex.pinyin) {
+        row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+      }
+      const trText = isRu ? (ex.russian || ex.english) : (ex.english || ex.russian);
+      if (trText) {
+        row.createDiv({ cls: "ch-dict-ex-tr", text: trText });
       }
     }
+  }
+
+  /**
+   * Intelligently recalculates and adjusts tooltip position after dynamic content
+   * (e.g. Example sentences drawer or Character Decomposition) expands or collapses.
+   * Expands in all 4 directions (down/up, right/left) smoothly depending on available space.
+   */
+  public adjustPopoverBoundsAfterExpand(): void {
+    if (!this.isVisible) return;
+
+    globalThis.requestAnimationFrame(() => {
+      if (!this.isVisible || !this.el.isConnected) return;
+      const rect = this.el.getBoundingClientRect();
+      const winW = globalThis.innerWidth;
+      const winH = globalThis.innerHeight;
+      const padding = 12;
+
+      let currentTop = rect.top;
+      let currentLeft = rect.left;
+
+      // Vertical adjustment (Up/Down)
+      if (rect.bottom > winH - padding) {
+        const overflow = rect.bottom - (winH - padding);
+        currentTop = Math.max(padding, currentTop - overflow);
+      }
+      if (currentTop < padding) {
+        currentTop = padding;
+      }
+
+      // Horizontal adjustment (Left/Right)
+      if (rect.right > winW - padding) {
+        const overflow = rect.right - (winW - padding);
+        currentLeft = Math.max(padding, currentLeft - overflow);
+      }
+      if (currentLeft < padding) {
+        currentLeft = padding;
+      }
+
+      this.el.setCssStyles({
+        top: `${Math.round(currentTop)}px`,
+        left: `${Math.round(currentLeft)}px`,
+      });
+
+      // Keep floating action menu attached to burger button if menu is visible
+      if (this.burgerFloatingMenu && this.burgerFloatingMenu.hasClass("is-visible")) {
+        const burgerBtn = this.el.querySelector(".ch-dict-burger-btn");
+        if (burgerBtn) {
+          const btnRect = burgerBtn.getBoundingClientRect();
+          const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
+          const willOverflowBottom = (btnRect.bottom + menuHeight + 10 > winH) || (winH - btnRect.bottom < 150);
+          let top = willOverflowBottom ? btnRect.top - menuHeight - 6 : btnRect.bottom + 6;
+          top = Math.max(10, Math.min(top, winH - menuHeight - 10));
+          const right = Math.max(10, Math.min(winW - btnRect.right, winW - 300));
+          this.burgerFloatingMenu.setCssStyles({
+            top: `${Math.round(top)}px`,
+            right: `${Math.round(right)}px`,
+          });
+        }
+      }
+    });
   }
 
   /**
@@ -1356,10 +1479,13 @@ export class DictTooltip {
           const burgerBtn = this.el.querySelector(".ch-dict-burger-btn");
           if (burgerBtn) {
             const rect = burgerBtn.getBoundingClientRect();
-            const menuHeight = this.burgerFloatingMenu.offsetHeight || 225;
-            const willOverflowBottom = rect.bottom + menuHeight + 10 > globalThis.innerHeight;
-            const topPos = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
-            const rightPos = Math.max(10, globalThis.innerWidth - rect.right);
+            const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
+            const winH = globalThis.innerHeight;
+            const winW = globalThis.innerWidth;
+            const willOverflowBottom = (rect.bottom + menuHeight + 10 > winH) || (winH - rect.bottom < 150);
+            let topPos = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
+            topPos = Math.max(10, Math.min(topPos, winH - menuHeight - 10));
+            const rightPos = Math.max(10, Math.min(winW - rect.right, winW - 300));
             this.burgerFloatingMenu.setCssStyles({
               top: `${Math.round(topPos)}px`,
               right: `${Math.round(rightPos)}px`,

@@ -46,7 +46,10 @@ div.menu {
   opacity: 0;
   transform: scale(0.94) translateY(6px);
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+              transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.15),
+              width 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              left 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              top 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   scrollbar-gutter: stable;
 }
 
@@ -260,11 +263,12 @@ div.menu {
 .ch-dict-burger-floating-menu {
   position: fixed;
   z-index: 10050;
-  min-width: 185px;
-  max-width: 230px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  width: 290px;
+  min-width: 280px;
+  max-width: 310px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
   padding: 6px;
   box-sizing: border-box;
 
@@ -284,6 +288,14 @@ div.menu {
   transform-origin: top right;
   transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
               transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ch-dict-burger-floating-menu::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  z-index: -1;
+  pointer-events: auto;
 }
 
 .theme-light .ch-dict-burger-floating-menu,
@@ -306,35 +318,41 @@ div.menu {
 .ch-dict-menu-item {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   width: 100%;
-  padding: 6px 10px;
-  border-radius: 9px;
+  padding: 6px 8px;
+  border-radius: 8px;
   border: none;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   color: #f1f2f6;
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   box-sizing: border-box;
   text-align: left;
   transition: all 0.12s ease;
   user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .theme-light .ch-dict-menu-item {
   color: #1f2937;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .ch-dict-menu-item:hover {
-  background: rgba(255, 255, 255, 0.14);
-  transform: translateX(2px);
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .theme-light .ch-dict-menu-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.08);
   color: #111827;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .ch-dict-menu-item:active {
@@ -342,9 +360,9 @@ div.menu {
 }
 
 .ch-dict-menu-icon {
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1;
-  width: 18px;
+  width: 16px;
   text-align: center;
   flex-shrink: 0;
 }
@@ -352,16 +370,20 @@ div.menu {
 .ch-dict-menu-label {
   flex: 1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ch-dict-menu-item-close {
+  color: #f87171;
+}
+
+.theme-light .ch-dict-menu-item-close {
+  color: #dc2626;
 }
 
 .ch-dict-menu-separator {
-  height: 1px;
-  margin: 3px 4px;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.theme-light .ch-dict-menu-separator {
-  background: rgba(0, 0, 0, 0.08);
+  display: none;
 }
 
 .ch-dict-menu-item.ch-dict-btn-success {
@@ -615,15 +637,78 @@ div.menu {
 }
 
 /* ==========================================
-   Metadata Row under Translation (HSK & Tags)
+   Bottom Action Row (HSK Badge + Examples Toggle)
    ========================================== */
+.ch-dict-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 5px;
+  margin-bottom: 2px;
+  gap: 8px;
+}
+
+.ch-dict-bottom-spacer {
+  flex: 1;
+}
+
+.ch-dict-ex-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.25;
+  user-select: none;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.theme-light .ch-dict-ex-toggle-btn {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ch-dict-ex-toggle-btn:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(56, 189, 248, 0.22);
+}
+
+.ch-dict-ex-toggle-btn.is-active {
+  background: rgba(56, 189, 248, 0.26);
+  border-color: rgba(56, 189, 248, 0.6);
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+.ch-dict-ex-btn-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.ch-dict-ex-btn-label {
+  letter-spacing: 0.1px;
+}
+
 .ch-dict-meta-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
-  margin-bottom: 2px;
 }
 
 .ch-dict-meta-item {
@@ -1859,12 +1944,31 @@ rt {
 /* ==========================================
    Example Sentences Drawer
    ========================================== */
+.ch-dict-tooltip.ch-dict-expanded-examples {
+  width: min(390px, calc(100vw - 24px));
+  min-width: min(390px, calc(100vw - 24px));
+  max-width: min(440px, calc(100vw - 24px));
+}
+
 .ch-dict-example-drawer {
   margin-top: 8px;
   padding: 8px 10px;
   border-radius: 12px;
   background: rgba(59, 130, 246, 0.08);
   border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ch-dict-drawer-loading,
+.ch-dict-drawer-empty {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.65);
+  font-style: italic;
+  padding: 4px 2px;
+}
+
+.theme-light .ch-dict-drawer-loading,
+.theme-light .ch-dict-drawer-empty {
+  color: #64748b;
 }
 
 .ch-dict-example-row {
@@ -2135,6 +2239,7 @@ body.ch-dict-is-dragging,
 .ch-dict-tooltip.ch-dict-is-dragging {
   cursor: grabbing;
   user-select: none;
+  transition: none !important;
 }
 
 /* Resizable Popover */

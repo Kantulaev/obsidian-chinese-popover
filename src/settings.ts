@@ -9,6 +9,8 @@ import {
 } from "./anki.ts";
 import { generatePlecoFlashcards } from "./pleco.ts";
 import { WorksheetModal } from "./worksheet.ts";
+import { SUPPORTED_LANGUAGES, t, setActiveLanguage } from "./i18n/index.ts";
+import { DICT_PACKS } from "./dict-packs.ts";
 
 export type ChineseDialect = "cantonese" | "mandarin";
 export type TriggerMode = "dblclick" | "hover_modifier" | "hover" | "command_only";
@@ -86,8 +88,15 @@ export interface ChineseDictSettings {
   anki: AnkiConnectSettings;
   ankiSyncOnStar: boolean;
 
+  // UI Localization (20 languages supported)
+  uiLanguage: string;
+
+  // Dictionary Packs (On-demand downloads)
+  activeDictPack: string;
+  installedDictPacks: string[];
+
   // Translation Language
-  translationLanguage: "en" | "ru" | "both";
+  translationLanguage: string;
 
   // Grammar & Advanced Learning
   showPartOfSpeech: boolean;
@@ -163,7 +172,10 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   anki: DEFAULT_ANKI_SETTINGS,
   ankiSyncOnStar: false,
 
-  translationLanguage: "en",
+  uiLanguage: "auto",
+  activeDictPack: "en",
+  installedDictPacks: ["en"],
+  translationLanguage: "auto",
   showPartOfSpeech: false,
   showRadicals: false,
   showChengyuStories: false,
@@ -232,6 +244,39 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             }
           })
       );
+
+    // ==========================================
+    // 0. ЯЗЫК ИНТЕРФЕЙСА И СЛОВАРИ (I18N & DICTIONARY PACKS)
+    // ==========================================
+    new Setting(containerEl)
+      .setName("🌐 Язык и Словари / Language & Dictionaries")
+      .setHeading();
+
+    new Setting(containerEl)
+      .setName(t("settings.ui_language"))
+      .setDesc(t("settings.ui_language_desc"))
+      .addDropdown((dropdown) => {
+        dropdown.addOption("auto", t("settings.ui_language_auto"));
+        for (const lang of SUPPORTED_LANGUAGES) {
+          dropdown.addOption(lang.code, `${lang.flag} ${lang.nativeName} (${lang.name})`);
+        }
+        dropdown.setValue(this.plugin.settings.uiLanguage || "auto");
+        dropdown.onChange(async (val) => {
+          this.plugin.settings.uiLanguage = val;
+          setActiveLanguage(val);
+          await this.plugin.saveSettings();
+          this.renderSettings();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName(t("settings.dict_packs_title"))
+      .setDesc(t("settings.dict_packs_desc"));
+
+    const packsContainer = containerEl.createDiv({ cls: "ch-dict-packs-container" });
+    void this.renderDictPacksCards(packsContainer);
+
+    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
 
     // ==========================================
     // 1. АКТИВАЦИЯ И ТРИГГЕРЫ
@@ -530,22 +575,23 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Язык перевода / Translation Language")
-      .setDesc("Выберите язык определений словаря: Английский (по умолчанию), Русский (БКРС с резервным английским) или оба языка одновременно.")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("en", "English / Английский (CC-CEDICT, по умолчанию)")
-          .addOption("ru", "Русский (БКРС / Большой словарь)")
-          .addOption("both", "Оба языка (Русский + English)")
-          .setValue(this.plugin.settings.translationLanguage)
-          .onChange(async (value) => {
-            this.plugin.settings.translationLanguage = value as "en" | "ru" | "both";
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
+      .setName(t("settings.trans_lang"))
+      .setDesc(t("settings.trans_lang_desc"))
+      .addDropdown((dropdown) => {
+        dropdown.addOption("auto", t("settings.trans_lang_auto"));
+        dropdown.addOption("both", t("settings.trans_lang_both"));
+        for (const lang of SUPPORTED_LANGUAGES) {
+          dropdown.addOption(lang.code, `${lang.flag} ${lang.nativeName} (${lang.name})`);
+        }
+        dropdown.setValue(this.plugin.settings.translationLanguage || "auto");
+        dropdown.onChange(async (value) => {
+          this.plugin.settings.translationLanguage = value;
+          await this.plugin.saveSettings();
+          if (this.plugin.tooltip.getIsOpen()) {
+            this.plugin.tooltip.refresh(this.plugin.settings);
+          }
+        });
+      });
 
     new Setting(containerEl)
       .setName("Определять части речи / Detect Parts of Speech")
@@ -1282,5 +1328,97 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     const ruInfo = ruCard.createDiv({ cls: "ch-dict-channel-info" });
     ruInfo.createSpan({ cls: "ch-dict-channel-title", text: "@kantulaevCN (Русский)" });
     ruInfo.createSpan({ cls: "ch-dict-channel-sub", text: "Бесплатные видеоуроки китайского языка с нуля" });
+  }
+
+  private async renderDictPacksCards(containerEl: HTMLElement): Promise<void> {
+    containerEl.empty();
+    const activePack = this.plugin.settings.activeDictPack || "en";
+
+    for (const pack of DICT_PACKS) {
+      const isInstalled = await this.plugin.dictionary.isPackInstalled(pack.id);
+      const isActive = activePack === pack.id;
+
+      const card = containerEl.createDiv({ cls: "ch-dict-pack-card" });
+      if (isActive) card.addClass("is-active-pack");
+      if (isInstalled) card.addClass("is-installed");
+
+      // Left: Flag & Details
+      const leftCol = card.createDiv({ cls: "ch-dict-pack-left" });
+      leftCol.createSpan({ cls: "ch-dict-pack-flag", text: pack.flag });
+
+      const infoCol = leftCol.createDiv({ cls: "ch-dict-pack-info" });
+      const titleRow = infoCol.createDiv({ cls: "ch-dict-pack-title-row" });
+      titleRow.createSpan({ cls: "ch-dict-pack-name", text: pack.nativeName });
+
+      if (isActive) {
+        titleRow.createSpan({ cls: "ch-dict-pack-badge ch-dict-pack-badge-active", text: t("settings.dict_active") });
+      } else if (isInstalled) {
+        titleRow.createSpan({ cls: "ch-dict-pack-badge ch-dict-pack-badge-installed", text: t("settings.dict_installed") });
+      }
+
+      const metaRow = infoCol.createDiv({ cls: "ch-dict-pack-meta" });
+      metaRow.createSpan({ text: `${pack.entries} ${t("settings.dict_entries")} • ${pack.approxSize} • ${pack.source}` });
+
+      // Right: Actions (Download / Activate / Delete)
+      const actions = card.createDiv({ cls: "ch-dict-pack-actions" });
+
+      if (isInstalled) {
+        if (!isActive) {
+          const activateBtn = actions.createEl("button", {
+            cls: "mod-cta ch-dict-pack-btn",
+            text: t("settings.dict_activate"),
+          });
+          activateBtn.addEventListener("click", async () => {
+            this.plugin.settings.activeDictPack = pack.id;
+            this.plugin.settings.translationLanguage = pack.id;
+            await this.plugin.saveSettings();
+            await this.plugin.dictionary.loadPack(pack.id);
+            new Notice(`${t("notices.dict_activated")} ${pack.flag} ${pack.nativeName}`);
+            await this.renderDictPacksCards(containerEl);
+          });
+        }
+
+        const deleteBtn = actions.createEl("button", {
+          cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
+          text: t("settings.dict_delete"),
+        });
+        deleteBtn.addEventListener("click", async () => {
+          const ok = await this.plugin.dictionary.deletePack(pack.id);
+          if (ok) {
+            if (this.plugin.settings.activeDictPack === pack.id) {
+              this.plugin.settings.activeDictPack = "en";
+              this.plugin.settings.translationLanguage = "en";
+              await this.plugin.saveSettings();
+            }
+            await this.renderDictPacksCards(containerEl);
+          }
+        });
+      } else {
+        const downloadBtn = actions.createEl("button", {
+          cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
+          text: `📥 ${t("settings.dict_download")}`,
+        });
+        downloadBtn.addEventListener("click", async () => {
+          downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
+          downloadBtn.setAttribute("disabled", "true");
+          const ok = await this.plugin.dictionary.downloadPack(pack.id);
+          if (ok) {
+            if (!this.plugin.settings.installedDictPacks) {
+              this.plugin.settings.installedDictPacks = ["en"];
+            }
+            if (!this.plugin.settings.installedDictPacks.includes(pack.id)) {
+              this.plugin.settings.installedDictPacks.push(pack.id);
+            }
+            this.plugin.settings.activeDictPack = pack.id;
+            this.plugin.settings.translationLanguage = pack.id;
+            await this.plugin.saveSettings();
+            await this.renderDictPacksCards(containerEl);
+          } else {
+            downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
+            downloadBtn.removeAttribute("disabled");
+          }
+        });
+      }
+    }
   }
 }

@@ -3,6 +3,8 @@
  * Identifies single and multi-POS categories (兼类词) in Russian and English.
  */
 
+import { t } from "./i18n/index.ts";
+
 export type PartOfSpeech =
   | "noun"        // 名词 (существительное)
   | "verb"        // 动词 (глагол)
@@ -322,7 +324,7 @@ export function groupDefinitionsByPos(
   rawDefs: string[],
   word: string,
   allCedictDefs: string[],
-  language: "en" | "ru" | "both" = "ru",
+  language: string = "ru",
   maxCount: number = 6
 ): PosDefinitionGroup[] {
   if (!rawDefs || rawDefs.length === 0) {
@@ -340,7 +342,9 @@ export function groupDefinitionsByPos(
   // If word has no multi-POS or only 1 detected POS
   if (wordPosList.length <= 1) {
     const singlePos = wordPosList[0];
-    const label = singlePos && POS_METADATA[singlePos] ? (POS_METADATA[singlePos][isRu ? "ru" : "en"] || "") : "";
+    const label = singlePos
+      ? (t("pos." + singlePos, language) || POS_METADATA[singlePos]?.[isRu ? "ru" : "en"] || "")
+      : "";
     return [{
       pos: singlePos || "other",
       posLabel: label,
@@ -394,7 +398,7 @@ export function groupDefinitionsByPos(
     const firstBucket = activeBuckets[0];
     if (firstBucket) {
       const [pos, items] = firstBucket;
-      const label = POS_METADATA[pos]?.[isRu ? "ru" : "en"] || "";
+      const label = t("pos." + pos, language) || POS_METADATA[pos]?.[isRu ? "ru" : "en"] || "";
       return [{
         pos,
         posLabel: label,
@@ -418,7 +422,7 @@ export function groupDefinitionsByPos(
     const take = Math.min(items.length, perBucketLimit, remainingBudget);
     const slice = items.slice(0, take);
     if (slice.length > 0) {
-      const label = POS_METADATA[pos]?.[isRu ? "ru" : "en"] || pos;
+      const label = t("pos." + pos, language) || POS_METADATA[pos]?.[isRu ? "ru" : "en"] || pos;
       groups.push({
         pos,
         posLabel: label,

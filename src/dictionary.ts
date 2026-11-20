@@ -1,4 +1,13 @@
-import { Notice, Plugin, requestUrl } from "obsidian";
+import { Notice, requestUrl } from "obsidian";
+import type ChineseHoverDictPlugin from "./main.ts";
+import {
+  isDictPackInstalled,
+  downloadDictPack,
+  deleteDictPack,
+  loadDictPackData,
+  MULTILANG_CORE_VOCAB,
+} from "./dict-packs.ts";
+import { getRussianDefinitions } from "./russian-dict.ts";
 import {
   sortAllDictionaryEntriesInPlace,
   sortEntriesByPinyinFrequency,
@@ -582,14 +591,19 @@ function getSharedZhSegmenter(): ZhSegmenterLike | null {
 
 export class DictionaryManager {
   private data: DictionaryData = {};
+  private loadedPacks: Map<string, Record<string, string[]>> = new Map();
   private isLoaded: boolean = false;
-  private plugin: Plugin;
+  private plugin: ChineseHoverDictPlugin;
 
-  constructor(plugin: Plugin) {
+  constructor(plugin: ChineseHoverDictPlugin) {
     this.plugin = plugin;
     this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
     sortAllDictionaryEntriesInPlace(this.data);
     this.isLoaded = false;
+  }
+
+  private getPluginDir(): string {
+    return this.plugin.manifest.dir || "";
   }
 
   getData(): DictionaryData {
@@ -597,11 +611,12 @@ export class DictionaryManager {
   }
 
   /**
-   * Loads dictionary data from plugin's cedict.json file, or downloads it on first run
+   * Loads dictionary data from plugin's cedict.json file, or built-in core vocabulary.
+   * Never freezes startup.
    */
   async load(): Promise<void> {
     try {
-      const dictPath = `${this.plugin.manifest.dir}/cedict.json`;
+      const dictPath = `${this.getPluginDir()}/cedict.json`;
       const adapter = this.plugin.app.vault.adapter;
 
       if (await adapter.exists(dictPath)) {
@@ -609,18 +624,18 @@ export class DictionaryManager {
         this.data = Object.assign({}, JSON.parse(rawContent) as DictionaryData, CANTONESE_CORE_DICT);
         sortAllDictionaryEntriesInPlace(this.data);
         this.isLoaded = true;
-        return;
+      } else {
+        // If local file is not present, use built-in core vocabulary first
+        this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
+        sortAllDictionaryEntriesInPlace(this.data);
+        this.isLoaded = true;
       }
 
-      // If local file is not present, use built-in core vocabulary first
-      this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-      sortAllDictionaryEntriesInPlace(this.data);
-      this.isLoaded = true;
-
-      // Trigger automatic background download on first run
-      this.downloadDictionary().catch((err) => {
-        console.warn("[Chinese Dict] Automatic dictionary download skipped or failed:", err);
-      });
+      // Preload active non-English pack if configured
+      const activePack = this.plugin.settings?.activeDictPack;
+      if (activePack && activePack !== "en") {
+        await this.loadPack(activePack);
+      }
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
@@ -630,17 +645,32 @@ export class DictionaryManager {
   }
 
   /**
+   * Quiet background check & download for default English CC-CEDICT pack.
+   * Scheduled lazily after Obsidian is fully loaded.
+   */
+  async ensureDefaultEnglishDictPack(): Promise<void> {
+    const dictPath = `${this.getPluginDir()}/cedict.json`;
+    const adapter = this.plugin.app.vault.adapter;
+    if (await adapter.exists(dictPath)) {
+      return;
+    }
+    await this.downloadDictionary(true);
+  }
+
+  /**
    * Downloads cedict.json from GitHub release assets and caches it locally
    */
-  async downloadDictionary(): Promise<boolean> {
-    const dictPath = `${this.plugin.manifest.dir}/cedict.json`;
+  async downloadDictionary(isSilent: boolean = false): Promise<boolean> {
+    const dictPath = `${this.getPluginDir()}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
 
-    const version = this.plugin.manifest.version || "1.3.2";
+    const version = this.plugin.manifest.version || "1.7.3";
     const downloadUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/${version}/cedict.json`;
-    const fallbackUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.0.0/cedict.json`;
+    const fallbackUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/cedict.json`;
 
-    new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
+    if (!isSilent) {
+      new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
+    }
 
     try {
       let res;
@@ -655,12 +685,87 @@ export class DictionaryManager {
       sortAllDictionaryEntriesInPlace(this.data);
       this.isLoaded = true;
       const count = Object.keys(this.data).length;
-      new Notice(`Chinese Popover: Словарь успешно загружен (${count} слов)!`, 5000);
+      if (!isSilent) {
+        new Notice(`Chinese Popover: Словарь успешно загружен (${count} слов)!`, 5000);
+      }
       return true;
     } catch (err) {
       console.warn("[Chinese Dict] Failed to download dictionary file:", err);
       return false;
     }
+  }
+
+  async isPackInstalled(packId: string): Promise<boolean> {
+    return await isDictPackInstalled(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
+  }
+
+  async downloadPack(packId: string): Promise<boolean> {
+    if (packId === "en") {
+      return await this.downloadDictionary(false);
+    }
+    const ok = await downloadDictPack(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
+    if (ok) {
+      await this.loadPack(packId);
+    }
+    return ok;
+  }
+
+  async deletePack(packId: string): Promise<boolean> {
+    if (packId === "en") {
+      const dictPath = `${this.getPluginDir()}/cedict.json`;
+      const adapter = this.plugin.app.vault.adapter;
+      if (await adapter.exists(dictPath)) {
+        await adapter.remove(dictPath);
+        this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
+        sortAllDictionaryEntriesInPlace(this.data);
+        new Notice("Chinese Popover: Словарь CC-CEDICT удален с диска.", 4000);
+        return true;
+      }
+      return false;
+    }
+    const ok = await deleteDictPack(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
+    if (ok) {
+      this.loadedPacks.delete(packId);
+    }
+    return ok;
+  }
+
+  async loadPack(packId: string): Promise<boolean> {
+    if (packId === "en") return true;
+    const data = await loadDictPackData(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
+    if (data) {
+      this.loadedPacks.set(packId, data);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Retrieves definition translations for a word in any of the 20 supported languages.
+   * Checks loaded pack -> built-in core vocab -> null (falling back to English).
+   */
+  getMultiLangDefs(word: string, lang: string): string[] | null {
+    if (!word || !lang || lang === "en") return null;
+
+    // 1. Check loaded offline dictionary pack
+    const packDefs = this.loadedPacks.get(lang)?.[word];
+    if (packDefs && packDefs.length > 0) {
+      return packDefs;
+    }
+
+    // 2. Check Russian dictionary
+    if (lang === "ru") {
+      const ru = getRussianDefinitions(word);
+      if (ru && ru.length > 0) return ru;
+    }
+
+    // 3. Check built-in multi-language core vocabulary
+    const core = MULTILANG_CORE_VOCAB[word]?.[lang];
+    if (core && core.length > 0) {
+      return core;
+    }
+
+    return null;
   }
 
   isFullDictionaryLoaded(): boolean {

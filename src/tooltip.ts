@@ -15,6 +15,7 @@ import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
 import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
 import { ExampleSentence, fetchDynamicExamples, getExampleSentences } from "./examples.ts";
 import { createWordNote } from "./word-notes.ts";
+import { t, getActiveLanguage } from "./i18n/index.ts";
 
 export interface ContentBounds {
   left: number;
@@ -141,20 +142,47 @@ export class DictTooltip {
     entries: DictEntry[],
     maxCount: number = 6,
     word?: string,
-    language: "en" | "ru" | "both" = "ru"
+    language?: string
   ): string {
     const rawEnglish = this.extractEnglishDefinitions(entries);
     if (!word) {
-      return rawEnglish.slice(0, maxCount).join(", ") || "No definition found";
+      return rawEnglish.slice(0, maxCount).join(", ") || (t("tooltip.no_def") || "No definition found");
     }
 
-    const rawDefs = getRawDefinitionsList(word, rawEnglish, language, maxCount);
+    let targetLang = language || "auto";
+    if (targetLang === "auto") {
+      targetLang = getActiveLanguage();
+    }
+
+    let targetDefs: string[] | null = null;
+    if (targetLang !== "en" && targetLang !== "both") {
+      targetDefs = this.plugin?.dictionary?.getMultiLangDefs(word, targetLang) || null;
+    }
+
+    let finalDefs: string[] = [];
+    if (targetLang === "both") {
+      const activeL = getActiveLanguage();
+      const nonEnDefs = this.plugin?.dictionary?.getMultiLangDefs(word, activeL) ||
+        (activeL === "ru" ? getRawDefinitionsList(word, rawEnglish, "ru", maxCount) : []);
+      if (nonEnDefs && nonEnDefs.length > 0) {
+        finalDefs = Array.from(new Set([...nonEnDefs, ...rawEnglish])).slice(0, maxCount);
+      } else {
+        finalDefs = rawEnglish.slice(0, maxCount);
+      }
+    } else if (targetDefs && targetDefs.length > 0) {
+      finalDefs = targetDefs.slice(0, maxCount);
+    } else if (targetLang === "ru") {
+      finalDefs = getRawDefinitionsList(word, rawEnglish, "ru", maxCount);
+    } else {
+      finalDefs = rawEnglish.slice(0, maxCount);
+    }
+
     const allDefs = entries.flatMap((e) => e.definitions);
-    const groups = groupDefinitionsByPos(rawDefs, word, allDefs, language, maxCount);
+    const groups = groupDefinitionsByPos(finalDefs, word, allDefs, targetLang, maxCount);
 
     return groups
       .map((g) => `${g.posLabel ? `[${g.posLabel}] ` : ""}${g.items.join(", ")}`)
-      .join("; ") || "Нет перевода / No definition";
+      .join("; ") || (t("tooltip.no_def") || "No definition");
   }
 
   /**
@@ -251,10 +279,10 @@ export class DictTooltip {
     this.isPinned = !this.isPinned;
     if (this.isPinned) {
       this.el.addClass("ch-dict-pinned");
-      new Notice("📌 Карточка закреплена (не исчезает при кликах и скролле)");
+      new Notice(`📌 ${t("tooltip.pin_hint")}`);
     } else {
       this.el.removeClass("ch-dict-pinned");
-      new Notice("📌 Карточка откреплена");
+      new Notice(`📌 ${t("tooltip.unpin_hint")}`);
     }
     return this.isPinned;
   }
@@ -350,9 +378,9 @@ export class DictTooltip {
     }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
-      new Notice(`Скопировано (${activeFormat}): ${textToCopy}`);
+      new Notice(`${t("tooltip.copied")} (${activeFormat}): ${textToCopy}`);
     }).catch(() => {
-      new Notice("Не удалось скопировать в буфер обмена");
+      new Notice(t("notices.copy_failed"));
     });
   }
 
@@ -562,22 +590,22 @@ export class DictTooltip {
       const copyItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item",
         attr: {
-          title: "Копировать карточку (Клик - стандарт, Правый клик - выбор формата)",
-          "aria-label": "Копировать",
+          title: t("tooltip.copy_hint"),
+          "aria-label": t("tooltip.copy"),
         },
       });
       const copyIcon = copyItem.createSpan({ cls: "ch-dict-menu-icon", text: "📋" });
-      const copyLabel = copyItem.createSpan({ cls: "ch-dict-menu-label", text: "Копировать" });
+      const copyLabel = copyItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.copy") });
 
       copyItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.copyCurrentEntry(settings);
         copyIcon.setText("✓");
-        copyLabel.setText("Скопировано!");
+        copyLabel.setText(t("tooltip.copied"));
         copyItem.addClass("ch-dict-btn-success");
         globalThis.setTimeout(() => {
           copyIcon.setText("📋");
-          copyLabel.setText("Копировать");
+          copyLabel.setText(t("tooltip.copy"));
           copyItem.removeClass("ch-dict-btn-success");
         }, 1200);
       });
@@ -588,8 +616,8 @@ export class DictTooltip {
       const starItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item",
         attr: {
-          title: isStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик",
-          "aria-label": isStarred ? "Удалить из словарика" : "Сохранить в словарик",
+          title: isStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint"),
+          "aria-label": isStarred ? t("tooltip.starred") : t("tooltip.star"),
         },
       });
       const starIcon = starItem.createSpan({
@@ -598,7 +626,7 @@ export class DictTooltip {
       });
       const starLabel = starItem.createSpan({
         cls: "ch-dict-menu-label",
-        text: isStarred ? "В словарике" : "В словарик",
+        text: isStarred ? t("tooltip.starred") : t("tooltip.star"),
       });
 
       starItem.addEventListener("click", (e) => {
@@ -609,8 +637,8 @@ export class DictTooltip {
             globalThis.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
             const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
             starIcon.setText(nowStarred ? "⭐" : "☆");
-            starLabel.setText(nowStarred ? "В словарике" : "В словарик");
-            starItem.setAttribute("title", nowStarred ? "Удалить из личного словарика" : "Сохранить в личный словарик");
+            starLabel.setText(nowStarred ? t("tooltip.starred") : t("tooltip.star"));
+            starItem.setAttribute("title", nowStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint"));
             this.plugin.refreshVocabularyViews();
 
             if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
@@ -618,7 +646,7 @@ export class DictTooltip {
               if (item) {
                 const ok = await addNoteToAnki(this.plugin.settings.anki, item);
                 if (ok) {
-                  new Notice(`Слово "${match.word}" добавлено в Anki!`);
+                  new Notice(t("notices.anki_added"));
                 }
               }
             }
@@ -630,33 +658,33 @@ export class DictTooltip {
       const pinItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item",
         attr: {
-          title: this.isPinned ? "Открепить карточку" : "Закрепить карточку на экране",
-          "aria-label": this.isPinned ? "Открепить карточку" : "Закрепить карточку",
+          title: this.isPinned ? t("tooltip.unpin_hint") : t("tooltip.pin_hint"),
+          "aria-label": this.isPinned ? t("tooltip.unpin") : t("tooltip.pin"),
         },
       });
       const pinIcon = pinItem.createSpan({ cls: "ch-dict-menu-icon", text: this.isPinned ? "📍" : "📌" });
       const pinLabel = pinItem.createSpan({
         cls: "ch-dict-menu-label",
-        text: this.isPinned ? "Открепить" : "Закрепить",
+        text: this.isPinned ? t("tooltip.unpin") : t("tooltip.pin"),
       });
       pinItem.addEventListener("click", (e) => {
         e.stopPropagation();
         const pinned = this.togglePin();
         pinIcon.setText(pinned ? "📍" : "📌");
-        pinLabel.setText(pinned ? "Открепить" : "Закрепить");
-        pinItem.setAttribute("title", pinned ? "Открепить карточку" : "Закрепить карточку на экране");
+        pinLabel.setText(pinned ? t("tooltip.unpin") : t("tooltip.pin"));
+        pinItem.setAttribute("title", pinned ? t("tooltip.unpin_hint") : t("tooltip.pin_hint"));
       });
 
       // --- Item: Word Note (Zettelkasten) ---
       const noteItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item",
         attr: {
-          title: "Создать атомную заметку слова (Zettelkasten Note)",
-          "aria-label": "Создать заметку слова",
+          title: t("tooltip.note_hint"),
+          "aria-label": t("tooltip.note"),
         },
       });
       noteItem.createSpan({ cls: "ch-dict-menu-icon", text: "📝" });
-      noteItem.createSpan({ cls: "ch-dict-menu-label", text: "Заметка" });
+      noteItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.note") });
       noteItem.addEventListener("click", (e) => {
         e.stopPropagation();
         void (async () => {
@@ -673,12 +701,12 @@ export class DictTooltip {
       const strokeItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item",
         attr: {
-          title: "Порядок черт (Анимация написания)",
-          "aria-label": "Порядок черт",
+          title: t("tooltip.strokes_hint"),
+          "aria-label": t("tooltip.strokes"),
         },
       });
       strokeItem.createSpan({ cls: "ch-dict-menu-icon", text: "🖌️" });
-      strokeItem.createSpan({ cls: "ch-dict-menu-label", text: "Черты" });
+      strokeItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.strokes") });
       strokeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         if (this.plugin) {
@@ -690,12 +718,12 @@ export class DictTooltip {
       const closeItem = this.burgerFloatingMenu.createEl("button", {
         cls: "ch-dict-menu-item ch-dict-menu-item-close",
         attr: {
-          title: "Закрыть карточку (Esc)",
-          "aria-label": "Закрыть карточку",
+          title: t("tooltip.close_hint"),
+          "aria-label": t("tooltip.close"),
         },
       });
       closeItem.createSpan({ cls: "ch-dict-menu-icon", text: "✕" });
-      closeItem.createSpan({ cls: "ch-dict-menu-label", text: "Закрыть" });
+      closeItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.close") });
       closeItem.addEventListener("click", (e) => {
         e.stopPropagation();
         this.hide(true);
@@ -764,19 +792,43 @@ export class DictTooltip {
     }
 
     // 3. Rich Structured Translation (5-6 main meanings divided by Parts of Speech)
+    let transLang = settings.translationLanguage || "auto";
+    if (transLang === "auto") {
+      transLang = getActiveLanguage();
+    }
     const rawEnglishDefs = this.extractEnglishDefinitions(match.entries);
-    const rawDefs = getRawDefinitionsList(
-      match.word,
-      rawEnglishDefs,
-      settings.translationLanguage || "ru",
-      settings.maxDefinitions || 6
-    );
+    let targetDefs: string[] | null = null;
+    if (transLang !== "en" && transLang !== "both") {
+      targetDefs = this.plugin?.dictionary?.getMultiLangDefs(match.word, transLang) || null;
+    }
+    let finalDefs: string[] = [];
+    if (settings.translationLanguage === "both") {
+      const activeL = getActiveLanguage();
+      const nonEnDefs = this.plugin?.dictionary?.getMultiLangDefs(match.word, activeL) ||
+        (activeL === "ru" ? getRawDefinitionsList(match.word, rawEnglishDefs, "ru", settings.maxDefinitions || 6) : []);
+      if (nonEnDefs && nonEnDefs.length > 0) {
+        finalDefs = Array.from(new Set([...nonEnDefs, ...rawEnglishDefs])).slice(0, settings.maxDefinitions || 6);
+      } else {
+        finalDefs = rawEnglishDefs.slice(0, settings.maxDefinitions || 6);
+      }
+    } else if (targetDefs && targetDefs.length > 0) {
+      finalDefs = targetDefs.slice(0, settings.maxDefinitions || 6);
+    } else if (transLang === "ru") {
+      finalDefs = getRawDefinitionsList(
+        match.word,
+        rawEnglishDefs,
+        "ru",
+        settings.maxDefinitions || 6
+      );
+    } else {
+      finalDefs = rawEnglishDefs.slice(0, settings.maxDefinitions || 6);
+    }
     const allDefs = match.entries.flatMap((e) => e.definitions);
     const posGroups = groupDefinitionsByPos(
-      rawDefs,
+      finalDefs,
       match.word,
       allDefs,
-      settings.translationLanguage || "ru",
+      transLang,
       settings.maxDefinitions || 6
     );
 
@@ -793,7 +845,7 @@ export class DictTooltip {
         groupEl.createSpan({
           cls: `ch-dict-pos-tag ${group.posClass}`,
           text: group.posLabel,
-          attr: { title: `Часть речи: ${group.pos}` },
+          attr: { title: `${t("tooltip.pos")}: ${group.pos}` },
         });
       }
 
@@ -822,7 +874,7 @@ export class DictTooltip {
       metaRow.createSpan({
         cls: "ch-dict-meta-item ch-dict-meta-hsk",
         text: hsk.label,
-        attr: { title: `Официальный уровень: ${hsk.label}` },
+        attr: { title: `${t("tooltip.hsk_badge")}: ${hsk.label}` },
       });
     } else {
       bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
@@ -833,12 +885,12 @@ export class DictTooltip {
     const exToggleBtn = bottomRow.createEl("button", {
       cls: "ch-dict-ex-toggle-btn",
       attr: {
-        title: "Показать/скрыть 1-2 примера предложений (расширяет карточку)",
-        "aria-label": "Примеры предложений",
+        title: t("tooltip.examples_hint"),
+        "aria-label": t("tooltip.examples"),
       },
     });
     exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-icon", text: "💬" });
-    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-label", text: "Примеры" });
+    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-label", text: t("tooltip.examples") });
 
     exToggleBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -860,9 +912,9 @@ export class DictTooltip {
       bottomRow.after(exampleDrawer);
 
       const exHeader = exampleDrawer.createDiv({ cls: "ch-dict-drawer-header" });
-      exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: "例句 Примеры" });
+      exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: `例句 ${t("tooltip.examples")}` });
 
-      const isRu = settings.translationLanguage !== "en";
+      const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
       const localExamples = getExampleSentences(match.word);
 
       if (localExamples && localExamples.length > 0) {
@@ -871,7 +923,7 @@ export class DictTooltip {
       } else {
         const loadingEl = exampleDrawer.createDiv({
           cls: "ch-dict-drawer-loading",
-          text: isRu ? "Поиск аутентичных примеров..." : "Fetching authentic examples...",
+          text: t("tooltip.examples_loading"),
         });
         this.adjustPopoverBoundsAfterExpand();
 
@@ -887,13 +939,13 @@ export class DictTooltip {
           } else {
             exampleDrawer.createDiv({
               cls: "ch-dict-drawer-empty",
-              text: isRu ? "Примеры для этого слова не найдены" : "No examples found for this word",
+              text: t("tooltip.examples_empty"),
             });
           }
           this.adjustPopoverBoundsAfterExpand();
         }).catch(() => {
           if (exampleDrawer && exampleDrawer.isConnected) {
-            loadingEl.setText(isRu ? "Не удалось загрузить примеры" : "Could not load examples");
+            loadingEl.setText(t("tooltip.examples_error"));
             this.adjustPopoverBoundsAfterExpand();
           }
         });
@@ -963,8 +1015,8 @@ export class DictTooltip {
             cls: "ch-dict-decomp-drawer-audio",
             text: "🔊",
             attr: {
-              title: `Озвучить ${targetChar}`,
-              "aria-label": `Озвучить ${targetChar}`,
+              title: `${t("tooltip.audio") || "Озвучить"} ${targetChar}`,
+              "aria-label": `${t("tooltip.audio") || "Озвучить"} ${targetChar}`,
             },
           });
           audioBtn.addEventListener("click", (e) => {
@@ -980,10 +1032,10 @@ export class DictTooltip {
             const radLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
             radLine.createSpan({
               cls: "ch-dict-decomp-detail-label",
-              text: isRu ? "Ключ:" : "Radical:",
+              text: `${t("tooltip.radical")}:`,
             });
             radLine.createSpan({
-              text: `#${radInfo.number} «${radInfo.radical}» [${radInfo.pinyin}] — ${radMeaning} (${radInfo.strokeCount} ${isRu ? "черт" : "strokes"})`,
+              text: `#${radInfo.number} «${radInfo.radical}» [${radInfo.pinyin}] — ${radMeaning} (${radInfo.strokeCount} ${t("tooltip.strokes_count")})`,
             });
           }
 
@@ -991,13 +1043,13 @@ export class DictTooltip {
             const compLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
             compLine.createSpan({
               cls: "ch-dict-decomp-detail-label",
-              text: isRu ? "Состав:" : "Components:",
+              text: `${t("tooltip.components")}:`,
             });
             compLine.createSpan({ text: comps.join(" + ") });
           } else if (!radInfo) {
             const basicLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
             basicLine.createSpan({
-              text: isRu ? "Базовый неделимый иероглиф" : "Basic ideogram / pictogram",
+              text: t("tooltip.basic_char"),
             });
           }
           this.adjustPopoverBoundsAfterExpand();
@@ -1020,19 +1072,20 @@ export class DictTooltip {
             const comps = getCharacterComponents(char);
             let tooltipText = `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}`;
             if (radInfo) {
-              const radMeaning = settings.translationLanguage === "ru" ? radInfo.meaningRu : radInfo.meaningEn;
-              tooltipText += `\nКлюч #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning})`;
+              const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
+              const radMeaning = isRu ? radInfo.meaningRu : radInfo.meaningEn;
+              tooltipText += `\n${t("tooltip.radical")} #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning})`;
             }
             if (comps && comps.length > 0) {
-              tooltipText += `\nСостав: ${comps.join(" + ")}`;
+              tooltipText += `\n${t("tooltip.components")}: ${comps.join(" + ")}`;
             }
-            tooltipText += `\nНажмите, чтобы раскрыть строение и состав`;
+            tooltipText += `\n${t("tooltip.decomp_hint")}`;
 
             const chip = decompRow.createDiv({
               cls: "ch-dict-decomp-chip",
               attr: {
                 title: tooltipText,
-                "aria-label": `${char}: строение и состав`,
+                "aria-label": `${char}: ${t("tooltip.components")}`,
               },
             });
             chipElements.set(char, chip);
@@ -1044,7 +1097,7 @@ export class DictTooltip {
               chip.createSpan({
                 cls: "ch-dict-decomp-rad",
                 text: radInfo.radical,
-                attr: { title: `Ключ: ${radInfo.radical} (${radInfo.meaningRu})` },
+                attr: { title: `${t("tooltip.radical")} ${radInfo.radical} (${radInfo.meaningRu})` },
               });
             }
 
@@ -1063,13 +1116,13 @@ export class DictTooltip {
         if (!chengyu || this.el.querySelector(".ch-dict-chengyu-drawer")) return;
         const storyEl = this.el.createDiv({ cls: "ch-dict-chengyu-drawer" });
         const header = storyEl.createDiv({ cls: "ch-dict-drawer-header" });
-        header.createSpan({ cls: "ch-dict-drawer-tag", text: "成语故事 Притча" });
+        header.createSpan({ cls: "ch-dict-drawer-tag", text: t("chengyu.title") });
         if (chengyu.dynasty) {
           header.createSpan({ cls: "ch-dict-drawer-dynasty", text: chengyu.dynasty });
         }
 
         const storyBody = storyEl.createDiv({ cls: "ch-dict-drawer-body" });
-        const isRu = settings.translationLanguage !== "en";
+        const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
         storyBody.createDiv({
           cls: "ch-dict-chengyu-lit",
           text: `«${chengyu.literal}» — ${chengyu.figurative}`,
@@ -1109,7 +1162,7 @@ export class DictTooltip {
       const zhSpan = row.createSpan({
         cls: "ch-dict-ex-zh",
         text: ex.chinese,
-        attr: { title: "Нажмите, чтобы прослушать пример" },
+        attr: { title: t("tooltip.listen_example") || "Click to listen to example" },
       });
       zhSpan.addEventListener("click", (e) => {
         e.stopPropagation();

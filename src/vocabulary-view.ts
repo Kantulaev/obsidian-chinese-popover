@@ -12,6 +12,7 @@ import { inferPartsOfSpeech, formatPosBadge } from "./pos.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
 import { createWordNote } from "./word-notes.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
+import { t } from "./i18n/index.ts";
 
 export const VIEW_TYPE_CHINESE_VOCABULARY = "chinese-vocabulary-view";
 
@@ -66,7 +67,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const titleGroup = titleRow.createDiv({ cls: "ch-vocab-title-group" });
     titleGroup.createSpan({ cls: "ch-vocab-lantern", text: "🏮" });
-    titleGroup.createSpan({ cls: "ch-vocab-title-text", text: "Мой словарик" });
+    titleGroup.createSpan({ cls: "ch-vocab-title-text", text: t("vocab.title") });
     titleGroup.createSpan({
       cls: "ch-vocab-count-badge",
       text: `${allItems.length}`,
@@ -77,7 +78,7 @@ export class ChineseVocabularyView extends ItemView {
     // 1. Quick Search Button (Spotlight)
     const searchModalBtn = headerActions.createEl("button", {
       cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Поиск по словарю", title: "Быстрый поиск по словарю (Spotlight)" },
+      attr: { "aria-label": t("vocab.spotlight") || "Search", title: t("vocab.spotlight") || "Spotlight" },
       text: "🔍",
     });
     searchModalBtn.addEventListener("click", () => {
@@ -87,7 +88,7 @@ export class ChineseVocabularyView extends ItemView {
     // 2. Consolidated More Actions & Export Menu Button
     const moreBtn = headerActions.createEl("button", {
       cls: "ch-vocab-glass-icon-btn",
-      attr: { "aria-label": "Экспорт и действия", title: "Экспорт и инструменты словарика" },
+      attr: { "aria-label": t("vocab.more_actions") || "Actions", title: t("vocab.more_actions") || "Actions" },
       text: "⋯",
     });
     moreBtn.addEventListener("click", (e) => {
@@ -95,7 +96,7 @@ export class ChineseVocabularyView extends ItemView {
       const menu = new Menu();
 
       menu.addItem((i) =>
-        i.setTitle("📥 Экспорт в Anki (.tsv)")
+        i.setTitle(`📥 ${t("vocab.export_anki")}`)
           .setIcon("download")
           .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
@@ -141,7 +142,7 @@ export class ChineseVocabularyView extends ItemView {
       }
 
       menu.addItem((i) =>
-        i.setTitle("📱 Экспорт в Pleco (.txt)")
+        i.setTitle(`📱 ${t("vocab.export_pleco") || "Экспорт в Pleco (.txt)"}`)
           .setIcon("smartphone")
           .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
@@ -226,7 +227,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const savedTabBtn = tabBar.createEl("button", {
       cls: `ch-vocab-tab-btn ${this.activeTab === "saved" ? "ch-vocab-tab-active" : ""}`,
-      text: `⭐ Избранное (${allItems.length})`,
+      text: `${t("vocab.tab_saved") || "⭐ Избранное"} (${allItems.length})`,
     });
     savedTabBtn.addEventListener("click", () => {
       this.activeTab = "saved";
@@ -235,7 +236,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const historyTabBtn = tabBar.createEl("button", {
       cls: `ch-vocab-tab-btn ${this.activeTab === "history" ? "ch-vocab-tab-active" : ""}`,
-      text: `🕒 Недавние (${historyItems.length})`,
+      text: `${t("vocab.tab_history") || "🕒 Недавние"} (${historyItems.length})`,
     });
     historyTabBtn.addEventListener("click", () => {
       this.activeTab = "history";
@@ -254,7 +255,7 @@ export class ChineseVocabularyView extends ItemView {
     const searchInput = searchWrap.createEl("input", {
       type: "text",
       cls: "ch-vocab-search-input",
-      placeholder: "Поиск (иероглифы, пиньинь, перевод)...",
+      placeholder: t("vocab.search_placeholder"),
       value: this.searchQuery,
     });
     searchInput.addEventListener("input", (e) => {
@@ -282,7 +283,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const listModeBtn = segmentedGroup.createEl("button", {
       cls: `ch-vocab-seg-btn ${!this.practiceMode ? "ch-vocab-seg-active" : ""}`,
-      text: "📋 Список",
+      text: t("vocab.mode_list") || "📋 Список",
     });
     listModeBtn.addEventListener("click", () => {
       void (async () => {
@@ -299,7 +300,7 @@ export class ChineseVocabularyView extends ItemView {
 
     const cardsModeBtn = segmentedGroup.createEl("button", {
       cls: `ch-vocab-seg-btn ${this.practiceMode ? "ch-vocab-seg-active" : ""}`,
-      text: "🃏 Карточки",
+      text: t("vocab.mode_cards") || "🎴 Карточки",
     });
     cardsModeBtn.addEventListener("click", () => {
       void (async () => {
@@ -400,13 +401,15 @@ export class ChineseVocabularyView extends ItemView {
       emptyWrap.createDiv({ cls: "ch-vocab-empty-icon", text: "🏮" });
       emptyWrap.createDiv({
         cls: "ch-vocab-empty-title",
-        text: this.searchQuery ? "Ничего не найдено" : (this.filterDueOnly ? "На сегодня всё повторено! 🎉" : "Словарик пока пуст"),
+        text: this.searchQuery
+          ? (t("vocab.empty_search") || "Ничего не найдено")
+          : (this.filterDueOnly ? (t("vocab.empty_due") || "На сегодня всё повторено! 🎉") : t("vocab.empty_title")),
       });
       emptyWrap.createDiv({
         cls: "ch-vocab-empty-desc",
         text: this.searchQuery
-          ? "Попробуйте изменить поисковый запрос"
-          : (this.filterDueOnly ? "Слов для повторения на сегодня нет. Отличная работа!" : "Нажимайте звёздочку ⭐ во всплывающем окне подсказки, чтобы сохранять слова в этот список."),
+          ? (t("vocab.empty_search_desc") || "Попробуйте изменить поисковый запрос")
+          : (this.filterDueOnly ? (t("vocab.empty_due_desc") || "Слов для повторения на сегодня нет. Отличная работа!") : t("vocab.empty_desc")),
       });
       return;
     }

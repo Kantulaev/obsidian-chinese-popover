@@ -26,6 +26,7 @@ import { generatePlecoFlashcards } from "./pleco.ts";
 import { WorksheetModal } from "./worksheet.ts";
 import { HistoryManager } from "./history.ts";
 import { ChineseSearchModal } from "./search-modal.ts";
+import { setActiveLanguage } from "./i18n/index.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -48,6 +49,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
   override async onload(): Promise<void> {
     await this.loadSettings();
+    setActiveLanguage(this.settings.uiLanguage);
 
     // Apply Chinese font settings to Obsidian workspace DOM
     applyChineseFontToDOM(
@@ -60,6 +62,13 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // Non-blocking background load: Obsidian launches instantly without freeze
     this.dictionary.load().catch((err) => {
       console.error("[Chinese Dict] Background load error:", err);
+    });
+
+    // Schedule lazy background download of default English CC-CEDICT pack after layout is fully ready
+    this.app.workspace.onLayoutReady(() => {
+      globalThis.setTimeout(() => {
+        this.dictionary.ensureDefaultEnglishDictPack().catch(() => {});
+      }, 5000);
     });
 
     this.vocabulary = new VocabularyManager(this);
@@ -638,9 +647,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (loaded && loaded.toneColoring === "phonetics" && !loaded.toneColoringExplicit) {
       this.settings.toneColoring = "off";
     }
+    setActiveLanguage(this.settings.uiLanguage);
   }
 
   async saveSettings(): Promise<void> {
+    setActiveLanguage(this.settings.uiLanguage);
     await this.saveData(this.settings);
   }
 

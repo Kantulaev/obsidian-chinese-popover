@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.6.6-blue.svg" alt="Version 1.6.6" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-v1.8.0-blue.svg" alt="Version 1.8.0" /></a>
   <a href="https://www.youtube.com/@ChineseWithKantulaev"><img src="https://img.shields.io/badge/YouTube-@ChineseWithKantulaev-FF0000?logo=youtube&logoColor=white" alt="English YouTube Channel" /></a>
   <a href="https://www.youtube.com/@kantulaevCN"><img src="https://img.shields.io/badge/YouTube-@kantulaevCN-FF0000?logo=youtube&logoColor=white" alt="Russian YouTube Channel" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
@@ -24,17 +24,20 @@
 
 ---
 
-## 💎 Popover & Character Anatomy
+## 💎 Minimalist Apple Popover & Horizontal Context Examples
 
 <p align="center">
-  <img src="./assets/feature-popover.svg" alt="Liquid Glass Popover and Character Anatomy" width="100%" />
+  <img src="./assets/feature-popover.svg" alt="Minimalist Apple Popover and Context Examples" width="100%" />
 </p>
 
-* **Apple Liquid Glass UI** — Translucent frosted glass card with fluid blur, draggable header bar, and pin (📌) to freeze on screen.
+* **Apple Liquid Glass Minimalist UI** — Refined 18px squircle frosted card with fluid blur, subtle specular borders, and draggable grabber bar.
+* **Balanced Typography** — Crisp Hanzi (`21px`), refined compact Pinyin (`13px`) with tone coloring, and large readable definitions (`16px`).
+* **Structured Parts of Speech** — Translations automatically classified by grammar role (verb, noun, adjective, adverb, idiom, etc.) with discreet mini HSK level indicator (`1`–`6`).
+* **Side-by-Side Context Examples (`⋯`)** — One-click horizontal expansion strictly to the right, showing 2 authentic context sentences with textbook-quality accented tone marks (ā, á, ǎ, à), neural audio pronunciation (🔊), and translations.
+* **Streamlined Header Actions** — Simplified Hanzi capsule pill (click to speak), audio pronunciation button (🔊), and one-click favorite button (⭐) to add words directly to your vocabulary notebook.
 * **Character Anatomy & 214 Radicals** — Click any character chip in compound words to reveal its Kangxi radical, stroke count, meaning, and etymological components (`宀 + 子`).
-* **Ultra-Compact Action Palette** — 34px icon-only quick dock (`📋`, `⭐`, `📌`, `📝`, `🖌️`, `✕`) that never spills over or hides prematurely.
-* **Dual English & Russian Translations** — Choose English (CC-CEDICT), Russian (BKRS), or both simultaneously.
-* **Dual Phonetics & Tone Colors** — Mandarin diacritic Pinyin + Cantonese Jyutping (`粵`) with customizable tone colors.
+* **Ancient Chengyu Stories (成语故事)** — Expandable ancient fables, literal and figurative meanings, and historical dynasty context for 4-character idioms.
+* **Multi-Language Dictionaries** — Instant offline English (CC-CEDICT) & Russian (BKRS) out-of-the-box, plus in-app 1-click download/removal of dictionary packs for the top 20 world languages.
 
 ---
 

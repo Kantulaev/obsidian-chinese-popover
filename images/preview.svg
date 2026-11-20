@@ -15,26 +15,14 @@
 
     <!-- Liquid Glass Popover Body -->
     <linearGradient id="glass-popover" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="rgba(30, 42, 68, 0.94)" />
-      <stop offset="100%" stop-color="rgba(16, 23, 40, 0.98)" />
-    </linearGradient>
-
-    <!-- Anatomy Drawer Glass -->
-    <linearGradient id="drawer-glass" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="rgba(10, 16, 30, 0.88)" />
-      <stop offset="100%" stop-color="rgba(6, 10, 20, 0.94)" />
+      <stop offset="0%" stop-color="rgba(24, 30, 46, 0.94)" />
+      <stop offset="100%" stop-color="rgba(14, 18, 30, 0.98)" />
     </linearGradient>
 
     <!-- Specular Highlight Reflections -->
     <linearGradient id="glass-specular" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.32)" />
-      <stop offset="35%" stop-color="rgba(255, 255, 255, 0.04)" />
-      <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
-    </linearGradient>
-
-    <linearGradient id="card-specular" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.2)" />
-      <stop offset="50%" stop-color="rgba(255, 255, 255, 0.02)" />
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.28)" />
+      <stop offset="35%" stop-color="rgba(255, 255, 255, 0.03)" />
       <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
     </linearGradient>
 
@@ -49,19 +37,14 @@
       <stop offset="100%" stop-color="#059669" />
     </linearGradient>
 
-    <linearGradient id="amber-glow" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#fbbf24" />
-      <stop offset="100%" stop-color="#f59e0b" />
-    </linearGradient>
-
     <!-- Drop Shadows -->
     <filter id="ambient-shadow" x="-20%" y="-20%" width="140%" height="145%">
       <feDropShadow dx="0" dy="28" stdDeviation="36" flood-color="#000000" flood-opacity="0.85" />
     </filter>
 
     <filter id="popover-shadow" x="-20%" y="-20%" width="140%" height="145%">
-      <feDropShadow dx="0" dy="30" stdDeviation="36" flood-color="#000000" flood-opacity="0.9" />
-      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#38bdf8" flood-opacity="0.22" />
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#000000" flood-opacity="0.9" />
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#38bdf8" flood-opacity="0.22" />
     </filter>
 
     <filter id="pill-glow" x="-15%" y="-15%" width="130%" height="135%">
@@ -70,7 +53,7 @@
   </defs>
 
   <style>
-    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .font-sans { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
     .font-kaiti { font-family: "KaiTi", "楷体", "STKaiti", "PingFang SC", serif; }
     .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   </style>
@@ -79,19 +62,19 @@
   <rect width="1200" height="700" fill="url(#main-bg)" />
 
   <!-- Ambient Soft Lighting Orbs -->
-  <circle cx="220" cy="160" r="220" fill="#38bdf8" opacity="0.1" filter="blur(80px)" />
-  <circle cx="980" cy="220" r="240" fill="#818cf8" opacity="0.1" filter="blur(85px)" />
+  <circle cx="200" cy="160" r="220" fill="#38bdf8" opacity="0.1" filter="blur(80px)" />
+  <circle cx="1000" cy="220" r="240" fill="#818cf8" opacity="0.1" filter="blur(85px)" />
   <circle cx="600" cy="560" r="200" fill="#10b981" opacity="0.08" filter="blur(75px)" />
 
   <!-- ================= OBSIDIAN APP CONTAINER ================= -->
-  <g transform="translate(80, 50)" filter="url(#ambient-shadow)">
+  <g transform="translate(60, 45)" filter="url(#ambient-shadow)">
     <!-- App Window Outer Frame -->
-    <rect width="1040" height="600" rx="18" fill="url(#window-bg)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1.2" />
+    <rect width="1080" height="610" rx="18" fill="url(#window-bg)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1.2" />
 
     <!-- TITLEBAR -->
     <g>
-      <path d="M 0 18 A 18 18 0 0 1 18 0 L 1022 0 A 18 18 0 0 1 1040 18 L 1040 46 L 0 46 Z" fill="#0e131f" />
-      <line x1="0" y1="46" x2="1040" y2="46" stroke="rgba(255, 255, 255, 0.07)" stroke-width="1" />
+      <path d="M 0 18 A 18 18 0 0 1 18 0 L 1062 0 A 18 18 0 0 1 1080 18 L 1080 46 L 0 46 Z" fill="#0e131f" />
+      <line x1="0" y1="46" x2="1080" y2="46" stroke="rgba(255, 255, 255, 0.07)" stroke-width="1" />
 
       <!-- Traffic Lights -->
       <circle cx="24" cy="23" r="6" fill="#ff5f57" />
@@ -99,33 +82,29 @@
       <circle cx="64" cy="23" r="6" fill="#28c840" />
 
       <!-- Tabs -->
-      <!-- Tab 1 (Active) -->
       <g transform="translate(100, 10)">
         <rect width="190" height="28" rx="7" fill="#182032" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
         <circle cx="16" cy="14" r="3.5" fill="#38bdf8" />
         <text x="26" y="19" class="font-sans" font-size="12" font-weight="600" fill="#f1f5f9">Daily-Chinese.md</text>
         <text x="172" y="18" class="font-sans" font-size="11" fill="#64748b">✕</text>
       </g>
-      <!-- Tab 2 (Inactive) -->
       <g transform="translate(298, 10)">
         <rect width="180" height="28" rx="7" fill="transparent" />
         <text x="14" y="19" class="font-sans" font-size="12" fill="#64748b">Chinese Vocabulary.md</text>
       </g>
 
       <!-- Vault Name (Center) -->
-      <text x="520" y="27" class="font-sans" font-size="12" font-weight="500" fill="#475569" text-anchor="middle">Personal Knowledge Vault — Obsidian v1.8</text>
+      <text x="540" y="27" class="font-sans" font-size="12" font-weight="500" fill="#475569" text-anchor="middle">Personal Knowledge Vault — Obsidian v1.8</text>
     </g>
 
     <!-- LEFT RIBBON BAR -->
     <g transform="translate(0, 46)">
-      <rect width="44" height="526" fill="#0b0f19" />
-      <line x1="44" y1="0" x2="44" y2="526" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" />
+      <rect width="44" height="536" fill="#0b0f19" />
+      <line x1="44" y1="0" x2="44" y2="536" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" />
       
-      <!-- Ribbon Icons -->
       <g transform="translate(12, 16)" fill="#64748b">
         <text y="14" class="font-sans" font-size="15">📁</text>
         <text y="50" class="font-sans" font-size="15">🔍</text>
-        <!-- Active Ribbon: Chinese Dictionary Book -->
         <rect x="-4" y="74" width="28" height="28" rx="6" fill="rgba(56, 189, 248, 0.16)" />
         <text y="94" class="font-sans" font-size="15" fill="#38bdf8">🏮</text>
         <text y="138" class="font-sans" font-size="15">⭐</text>
@@ -135,7 +114,6 @@
 
     <!-- MAIN EDITOR CANVAS -->
     <g transform="translate(68, 66)">
-      <!-- Document Content -->
       <g transform="translate(20, 16)">
         <text x="0" y="24" class="font-sans" font-size="22" font-weight="800" fill="#ffffff"># 🏮 Everyday Chinese Practice · 常用中文</text>
         <text x="0" y="58" class="font-sans" font-size="14" fill="#94a3b8">Interactive study session for Mandarin Putonghua &amp; Cantonese Jyutping:</text>
@@ -146,7 +124,7 @@
           <text x="14" y="14" class="font-sans" font-size="14" fill="#cbd5e1">早晨！今朝天气真系好。(Morning! The weather this morning is great.)</text>
         </g>
 
-        <!-- Bullet 2 (Target Double-Click Selection Sentence) -->
+        <!-- Bullet 2 (Target Selection Sentence: 学习) -->
         <g transform="translate(0, 126)">
           <text x="0" y="14" class="font-sans" font-size="14" fill="#64748b">•</text>
           <text x="14" y="14" class="font-sans" font-size="15" fill="#cbd5e1">我们一起去</text>
@@ -166,163 +144,178 @@
           <text x="0" y="14" class="font-sans" font-size="14" fill="#64748b">•</text>
           <text x="14" y="14" class="font-sans" font-size="14" fill="#cbd5e1">唔該晒你嘅幫忙。(Thank you very much for your kind help.)</text>
         </g>
-
-        <!-- Bullet 4 -->
-        <g transform="translate(0, 202)">
-          <text x="0" y="14" class="font-sans" font-size="14" fill="#64748b">•</text>
-          <text x="14" y="14" class="font-sans" font-size="14" fill="#cbd5e1">朋友，明天见！(See you tomorrow, my friend!)</text>
-        </g>
       </g>
     </g>
 
     <!-- BOTTOM STATUS BAR -->
-    <g transform="translate(0, 572)">
-      <rect width="1040" height="28" fill="#0a0d16" />
-      <line x1="0" y1="0" x2="1040" y2="0" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" />
+    <g transform="translate(0, 582)">
+      <rect width="1080" height="28" fill="#0a0d16" />
+      <line x1="0" y1="0" x2="1080" y2="0" stroke="rgba(255, 255, 255, 0.06)" stroke-width="1" />
       <g transform="translate(20, 18)" class="font-sans" font-size="11" fill="#64748b">
         <text x="0" y="0">UTF-8</text>
         <text x="70" y="0">428 words</text>
         <text x="150" y="0">HSK 1–2</text>
-        <!-- Status Bar Dict Pill -->
-        <g transform="translate(850, -12)">
+        <g transform="translate(890, -12)">
           <rect width="150" height="20" rx="5" fill="rgba(56, 189, 248, 0.15)" stroke="rgba(56, 189, 248, 0.3)" />
           <text x="8" y="14" font-size="10.5" font-weight="600" fill="#38bdf8">🏮 Chinese Dict: Active</text>
         </g>
       </g>
     </g>
 
-    <!-- ================= FLOATING APPLE LIQUID GLASS POPOVER ================= -->
-    <g transform="translate(190, 180)" filter="url(#popover-shadow)">
-      <!-- Popover Main Card Base -->
-      <rect width="560" height="340" rx="18" fill="url(#glass-popover)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.2" />
-      <rect x="1" y="1" width="558" height="60" rx="17" fill="url(#glass-specular)" pointer-events="none" />
+    <!-- ================= FLOATING APPLE LIQUID GLASS POPOVER (SIDE-BY-SIDE EXPANDED) ================= -->
+    <g transform="translate(130, 195)" filter="url(#popover-shadow)">
+      <!-- Popover Main Card Base (Width 770 = Main Card 350 + Side Panel 370 + Padding 50) -->
+      <rect width="770" height="340" rx="18" fill="url(#glass-popover)" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1.2" />
+      <rect x="1" y="1" width="768" height="50" rx="17" fill="url(#glass-specular)" pointer-events="none" />
 
-      <!-- TOP BAR: Hanzi + Audio + 34px Compact Icon Dock -->
-      <g transform="translate(20, 16)">
-        <!-- Hanzi Badge -->
+      <!-- Drag grabber centered on left main card -->
+      <rect x="160" y="7" width="34" height="3.5" rx="2" fill="rgba(255, 255, 255, 0.22)" />
+
+      <!-- LEFT COLUMN: MAIN CARD (350px) -->
+      <g transform="translate(18, 16)">
+        <!-- Top Bar: Hanzi Pill (Simplified - Traditional) + 🔊 Audio + ⭐ Star Button -->
         <g>
-          <rect width="200" height="36" rx="9" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1" />
-          <text x="14" y="24" class="font-kaiti" font-size="20" font-weight="700" fill="#ffffff">学习</text>
-          <text x="64" y="23" class="font-sans" font-size="13" fill="#64748b">|</text>
-          <text x="80" y="24" class="font-kaiti" font-size="20" font-weight="600" fill="#94a3b8">學習</text>
-          <rect x="142" y="8" width="46" height="20" rx="5" fill="#3b82f6" fill-opacity="0.25" />
-          <text x="151" y="22" class="font-sans" font-size="10" font-weight="700" fill="#60a5fa">SIMP</text>
-        </g>
-
-        <!-- Audio TTS Button (Mandarin Active) -->
-        <g transform="translate(212, 0)">
-          <rect width="134" height="36" rx="9" fill="rgba(16, 185, 129, 0.16)" stroke="#10b981" stroke-width="1.2" />
-          <text x="12" y="23" class="font-sans" font-size="14" fill="#34d399">🔊</text>
-          <text x="32" y="22" class="font-sans" font-size="12" font-weight="700" fill="#34d399">Mandarin</text>
-          <text x="96" y="22" class="font-sans" font-size="11" fill="#6ee7b7">1.0x</text>
-        </g>
-
-        <!-- 34px Compact Icon Palette (Ultra-Clean Burger Menu) -->
-        <g transform="translate(356, 0)">
-          <rect width="168" height="36" rx="9" fill="rgba(0, 0, 0, 0.35)" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1" />
-          <text x="12" y="23" class="font-sans" font-size="13" fill="#cbd5e1" title="Copy">📋</text>
-          <text x="40" y="23" class="font-sans" font-size="13" fill="#fbbf24" title="Star to Vocab">⭐</text>
-          <text x="68" y="23" class="font-sans" font-size="13" fill="#38bdf8" title="Pin Mode">📌</text>
-          <text x="96" y="23" class="font-sans" font-size="13" fill="#c084fc" title="Atomic Note">📝</text>
-          <text x="122" y="23" class="font-sans" font-size="13" fill="#f43f5e" title="Stroke Order">🖌️</text>
-          <text x="148" y="23" class="font-sans" font-size="13" fill="#64748b" title="Close">✕</text>
-        </g>
-      </g>
-
-      <!-- PHONETICS & BADGES ROW -->
-      <g transform="translate(22, 70)">
-        <!-- Tone-colored Mandarin Pinyin -->
-        <text x="0" y="22" class="font-sans" font-size="24" font-weight="700" fill="url(#cyan-glow)" letter-spacing="0.5">xué xí</text>
-
-        <!-- Cantonese Jyutping Badge -->
-        <g transform="translate(118, 2)">
-          <rect width="118" height="26" rx="7" fill="rgba(16, 185, 129, 0.16)" stroke="rgba(16, 185, 129, 0.35)" stroke-width="1" />
-          <text x="8" y="18" class="font-mono" font-size="12" font-weight="700" fill="#34d399">粵</text>
-          <text x="24" y="18" class="font-mono" font-size="13" font-weight="700" fill="#6ee7b7">hok6 zaap6</text>
-        </g>
-
-        <!-- Official HSK 1 Badge -->
-        <g transform="translate(248, 2)">
-          <rect width="64" height="26" rx="7" fill="rgba(56, 189, 248, 0.18)" stroke="#38bdf8" stroke-width="1" />
-          <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#38bdf8">HSK 1</text>
-        </g>
-
-        <!-- Multi-POS Tag Badge -->
-        <g transform="translate(322, 2)">
-          <rect width="90" height="26" rx="7" fill="rgba(192, 132, 252, 0.18)" stroke="#c084fc" stroke-width="1" />
-          <text x="10" y="17" class="font-sans" font-size="11" font-weight="600" fill="#c084fc">verb · noun</text>
-        </g>
-      </g>
-
-      <!-- DEFINITIONS ROW -->
-      <g transform="translate(22, 114)">
-        <circle cx="6" cy="7" r="3" fill="#38bdf8" />
-        <text x="18" y="12" class="font-sans" font-size="13.5" font-weight="600" fill="#ffffff">to learn; to study; learning, study, education</text>
-        <circle cx="6" cy="27" r="3" fill="#64748b" />
-        <text x="18" y="31" class="font-sans" font-size="12.5" fill="#cbd5e1">to acquire knowledge or skill through lessons or experience</text>
-      </g>
-
-      <!-- DIVIDER -->
-      <line x1="22" y1="160" x2="538" y2="160" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" />
-
-      <!-- CHARACTER ANATOMY ROW (Compound Breakdown) -->
-      <g transform="translate(22, 172)">
-        <text x="0" y="18" class="font-sans" font-size="11" font-weight="600" fill="#94a3b8">CHARACTER ANATOMY:</text>
-
-        <!-- Chip 1: 学 (Active / Expanded) -->
-        <g transform="translate(142, 0)">
-          <rect width="180" height="28" rx="7" fill="rgba(56, 189, 248, 0.22)" stroke="#38bdf8" stroke-width="1.2" />
-          <text x="10" y="19" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">学</text>
-          <text x="28" y="18" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xué</text>
-          <text x="58" y="18" class="font-sans" font-size="11" fill="#e2e8f0">to study</text>
-          <rect x="134" y="5" width="38" height="18" rx="4" fill="rgba(56, 189, 248, 0.25)" />
-          <text x="140" y="17" class="font-kaiti" font-size="10" fill="#38bdf8">#39 子</text>
-        </g>
-
-        <!-- Chip 2: 习 -->
-        <g transform="translate(332, 0)">
-          <rect width="180" height="28" rx="7" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1" />
-          <text x="10" y="19" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">习</text>
-          <text x="28" y="18" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xí</text>
-          <text x="50" y="18" class="font-sans" font-size="11" fill="#94a3b8">to practice</text>
-          <rect x="130" y="5" width="42" height="18" rx="4" fill="rgba(255, 255, 255, 0.1)" />
-          <text x="136" y="17" class="font-kaiti" font-size="10" fill="#94a3b8">#124 羽</text>
-        </g>
-      </g>
-
-      <!-- EXPANDED CHARACTER ANATOMY DRAWER (Under 学) -->
-      <g transform="translate(22, 214)">
-        <rect width="516" height="108" rx="12" fill="url(#drawer-glass)" stroke="rgba(56, 189, 248, 0.35)" stroke-width="1.2" />
-
-        <!-- Drawer Header -->
-        <g transform="translate(14, 14)">
-          <text x="0" y="16" class="font-kaiti" font-size="20" font-weight="700" fill="#ffffff">学</text>
-          <text x="24" y="16" class="font-sans" font-size="13" font-weight="600" fill="#38bdf8">[xué]</text>
-          <text x="68" y="16" class="font-sans" font-size="12.5" fill="#f1f5f9">to study, to learn, knowledge</text>
-
-          <g transform="translate(426, -4)">
-            <rect width="64" height="24" rx="6" fill="rgba(255, 255, 255, 0.1)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1" />
-            <text x="8" y="16" class="font-sans" font-size="11" fill="#38bdf8">🔊</text>
-            <text x="24" y="16" class="font-sans" font-size="10.5" font-weight="600" fill="#ffffff">Audio</text>
-          </g>
-        </g>
-
-        <line x1="14" y1="42" x2="502" y2="42" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
-
-        <!-- Drawer Content -->
-        <g transform="translate(14, 58)">
-          <!-- Radical -->
+          <!-- Capsule Pill -->
           <g>
-            <rect width="56" height="18" rx="4" fill="rgba(56, 189, 248, 0.18)" />
-            <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#38bdf8">RADICAL</text>
-            <text x="66" y="13" class="font-sans" font-size="12" fill="#cbd5e1">#39 <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">«子»</tspan> [zǐ] — child, son, seed (3 strokes)</text>
+            <rect width="240" height="34" rx="17" fill="rgba(255, 255, 255, 0.1)" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1" />
+            <text x="14" y="23" class="font-kaiti" font-size="21" font-weight="700" fill="#ffffff">学习</text>
+            <text x="64" y="22" class="font-sans" font-size="16" fill="rgba(255, 255, 255, 0.45)">-</text>
+            <text x="76" y="23" class="font-kaiti" font-size="21" font-weight="600" fill="#cbd5e1">學習</text>
           </g>
-          <!-- Composition -->
-          <g transform="translate(0, 24)">
-            <rect width="64" height="18" rx="4" fill="rgba(192, 132, 252, 0.18)" />
-            <text x="6" y="13" class="font-sans" font-size="10" font-weight="700" fill="#c084fc">ANATOMY</text>
-            <text x="74" y="13" class="font-sans" font-size="12" fill="#cbd5e1"><tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">冖</tspan> (roof/shelter) + <tspan fill="#ffffff" font-weight="700" font-family="'KaiTi', serif">子</tspan> (child) — acquiring knowledge under shelter</text>
+
+          <!-- Actions: 🔊 Audio & ⭐ Star -->
+          <g transform="translate(254, 3)">
+            <!-- Audio Button -->
+            <circle cx="14" cy="14" r="14" fill="rgba(255, 255, 255, 0.08)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1" />
+            <text x="8" y="19" class="font-sans" font-size="12">🔊</text>
+
+            <!-- Star Button (Favorited) -->
+            <g transform="translate(36, 0)">
+              <circle cx="14" cy="14" r="14" fill="rgba(255, 214, 10, 0.18)" stroke="rgba(255, 214, 10, 0.4)" stroke-width="1" />
+              <text x="8" y="19" class="font-sans" font-size="13" fill="#ffd60a">⭐</text>
+            </g>
           </g>
+        </g>
+
+        <!-- Refined Compact Pinyin (13px) -->
+        <g transform="translate(2, 54)">
+          <text x="0" y="14" class="font-sans" font-size="13.5" font-weight="600" fill="#38bdf8" letter-spacing="0.2">xué xí</text>
+          <text x="46" y="14" class="font-sans" font-size="13" fill="rgba(255, 255, 255, 0.35)">/</text>
+          <text x="56" y="14" class="font-mono" font-size="13" font-weight="500" fill="#34d399">hok6 zaap6</text>
+        </g>
+
+        <!-- Structured Definitions Grouped by Part of Speech (Large 16px Translation) -->
+        <g transform="translate(2, 88)">
+          <!-- Definition Group 1: Verb with Mini HSK Number -->
+          <g>
+            <!-- Discreet Mini HSK Badge -->
+            <circle cx="9" cy="9" r="8.5" fill="rgba(234, 179, 8, 0.15)" stroke="rgba(234, 179, 8, 0.4)" stroke-width="1" />
+            <text x="6" y="13" class="font-sans" font-size="9.5" font-weight="700" fill="#facc15">1</text>
+
+            <!-- POS Tag [гл] -->
+            <g transform="translate(24, 0)">
+              <rect width="28" height="18" rx="5" fill="rgba(16, 185, 129, 0.18)" stroke="rgba(16, 185, 129, 0.38)" stroke-width="1" />
+              <text x="5" y="13" class="font-sans" font-size="10.5" font-weight="700" fill="#34d399">гл</text>
+            </g>
+
+            <!-- Numbered Definitions (16px) -->
+            <g transform="translate(60, 14)">
+              <text x="0" y="0" class="font-sans" font-size="16" font-weight="500" fill="#ffffff">
+                <tspan font-size="11" font-weight="700" fill="rgba(255,255,255,0.45)">1. </tspan>учиться
+                <tspan fill="rgba(255,255,255,0.3)"> • </tspan>
+                <tspan font-size="11" font-weight="700" fill="rgba(255,255,255,0.45)">2. </tspan>изучать
+              </text>
+              <text x="0" y="24" class="font-sans" font-size="16" font-weight="500" fill="#ffffff">
+                <tspan font-size="11" font-weight="700" fill="rgba(255,255,255,0.45)">3. </tspan>перенимать опыт
+              </text>
+            </g>
+          </g>
+
+          <!-- Definition Group 2: Noun -->
+          <g transform="translate(0, 52)">
+            <!-- POS Tag [сущ] -->
+            <g transform="translate(24, 0)">
+              <rect width="36" height="18" rx="5" fill="rgba(56, 189, 248, 0.18)" stroke="rgba(56, 189, 248, 0.38)" stroke-width="1" />
+              <text x="5" y="13" class="font-sans" font-size="10.5" font-weight="700" fill="#38bdf8">сущ</text>
+            </g>
+            <g transform="translate(68, 14)">
+              <text x="0" y="0" class="font-sans" font-size="16" font-weight="500" fill="#ffffff">
+                <tspan font-size="11" font-weight="700" fill="rgba(255,255,255,0.45)">1. </tspan>учёба
+                <tspan fill="rgba(255,255,255,0.3)"> • </tspan>
+                <tspan font-size="11" font-weight="700" fill="rgba(255,255,255,0.45)">2. </tspan>обучение
+              </text>
+            </g>
+          </g>
+        </g>
+
+        <!-- Character Decomposition Chips -->
+        <g transform="translate(2, 192)">
+          <g>
+            <rect width="150" height="26" rx="6" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+            <text x="8" y="18" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">学</text>
+            <text x="24" y="17" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xué</text>
+            <text x="52" y="17" class="font-sans" font-size="11" fill="#cbd5e1">to study</text>
+          </g>
+          <g transform="translate(158, 0)">
+            <rect width="150" height="26" rx="6" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+            <text x="8" y="18" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">习</text>
+            <text x="24" y="17" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xí</text>
+            <text x="44" y="17" class="font-sans" font-size="11" fill="#cbd5e1">to practice</text>
+          </g>
+        </g>
+
+        <!-- Bottom Action Row: Spacer + Active ⋯ Details Button -->
+        <g transform="translate(2, 276)">
+          <g transform="translate(290, 0)">
+            <rect width="28" height="22" rx="6" fill="rgba(56, 189, 248, 0.28)" stroke="rgba(56, 189, 248, 0.65)" stroke-width="1" />
+            <text x="8" y="16" class="font-sans" font-size="14" font-weight="700" fill="#38bdf8">⋯</text>
+          </g>
+        </g>
+      </g>
+
+      <!-- VERTICAL DIVIDER -->
+      <line x1="364" y1="18" x2="364" y2="322" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
+
+      <!-- RIGHT COLUMN: EXPANDED CONTEXT EXAMPLES PANEL (370px) -->
+      <g transform="translate(382, 16)">
+        <!-- Side Panel Header -->
+        <g>
+          <text x="0" y="14" class="font-sans" font-size="11.5" font-weight="700" fill="rgba(255, 255, 255, 0.7)" letter-spacing="0.5">例句 ПРИМЕРЫ (2)</text>
+          <line x1="0" y1="24" x2="360" y2="24" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+        </g>
+
+        <!-- Example Sentence 1 Box -->
+        <g transform="translate(0, 36)">
+          <rect width="364" height="114" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+          
+          <!-- Chinese + Audio -->
+          <g transform="translate(12, 16)">
+            <text x="0" y="14" class="font-kaiti" font-size="16" font-weight="700" fill="#ffffff">我每天都在学习中文。</text>
+            <text x="318" y="14" class="font-sans" font-size="12">🔊</text>
+          </g>
+
+          <!-- Book-style Pinyin with Accent Tone Marks (no digits!) -->
+          <text x="12" y="58" class="font-sans" font-size="12.5" font-weight="550" fill="#38bdf8" letter-spacing="0.2">Wǒ měitiān dōu zài xuéxí zhōngwén.</text>
+
+          <!-- Russian Translation -->
+          <text x="12" y="84" class="font-sans" font-size="13.5" fill="#f1f5f9">Я каждый день учу китайский язык.</text>
+        </g>
+
+        <!-- Example Sentence 2 Box -->
+        <g transform="translate(0, 164)">
+          <rect width="364" height="114" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
+          
+          <!-- Chinese + Audio -->
+          <g transform="translate(12, 16)">
+            <text x="0" y="14" class="font-kaiti" font-size="16" font-weight="700" fill="#ffffff">我们要向他学习。</text>
+            <text x="318" y="14" class="font-sans" font-size="12">🔊</text>
+          </g>
+
+          <!-- Book-style Pinyin with Accent Tone Marks (no digits!) -->
+          <text x="12" y="58" class="font-sans" font-size="12.5" font-weight="550" fill="#38bdf8" letter-spacing="0.2">Wǒmen yào xiàng tā xuéxí.</text>
+
+          <!-- Russian Translation -->
+          <text x="12" y="84" class="font-sans" font-size="13.5" fill="#f1f5f9">Нам следует учиться у него.</text>
         </g>
       </g>
     </g>
@@ -330,26 +323,26 @@
 
   <!-- ================= FLOATING FEATURE CALLOUT PILLS ================= -->
   <!-- Pill 1: Top Right - Apple Liquid Glass & Pin -->
-  <g transform="translate(860, 28)" filter="url(#pill-glow)">
-    <rect width="260" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#38bdf8" stroke-width="1.2" />
+  <g transform="translate(860, 24)" filter="url(#pill-glow)">
+    <rect width="270" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#38bdf8" stroke-width="1.2" />
     <circle cx="22" cy="21" r="10" fill="rgba(56, 189, 248, 0.2)" />
     <text x="16" y="26" class="font-sans" font-size="12">💎</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Apple Liquid Glass UI (📌 Pin)</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Apple Liquid Glass (18px)</text>
   </g>
 
-  <!-- Pill 2: Bottom Right - Dual Phonetics & Neural Voice -->
-  <g transform="translate(820, 610)" filter="url(#pill-glow)">
-    <rect width="300" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#10b981" stroke-width="1.2" />
+  <!-- Pill 2: Bottom Right - Horizontal Examples -->
+  <g transform="translate(760, 620)" filter="url(#pill-glow)">
+    <rect width="370" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#38bdf8" stroke-width="1.2" />
+    <circle cx="22" cy="21" r="10" fill="rgba(56, 189, 248, 0.2)" />
+    <text x="15" y="26" class="font-sans" font-size="12">⋯</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Side-by-Side Examples · 例句 (Accent Pinyin)</text>
+  </g>
+
+  <!-- Pill 3: Bottom Left - Parts of Speech & Mini HSK -->
+  <g transform="translate(60, 620)" filter="url(#pill-glow)">
+    <rect width="330" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#10b981" stroke-width="1.2" />
     <circle cx="22" cy="21" r="10" fill="rgba(16, 185, 129, 0.2)" />
-    <text x="16" y="26" class="font-sans" font-size="12">🔊</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Mandarin &amp; Cantonese Voice (0.8x)</text>
-  </g>
-
-  <!-- Pill 3: Bottom Left - Kangxi 214 Radicals & Anatomy -->
-  <g transform="translate(80, 610)" filter="url(#pill-glow)">
-    <rect width="290" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#c084fc" stroke-width="1.2" />
-    <circle cx="22" cy="21" r="10" fill="rgba(192, 132, 252, 0.2)" />
-    <text x="16" y="26" class="font-sans" font-size="12">🔬</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">214 Kangxi Radicals &amp; Anatomy</text>
+    <text x="16" y="26" class="font-sans" font-size="12">📚</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Parts of Speech &amp; Discreet Mini HSK</text>
   </g>
 </svg>

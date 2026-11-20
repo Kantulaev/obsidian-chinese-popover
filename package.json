@@ -1,7 +1,7 @@
 {
   "name": "chinese-popover-dict",
-  "version": "1.7.9",
-  "description": "Double-click Apple Liquid Glass Chinese popover dictionary with Pinyin, Jyutping, Cantonese pronunciation, and concise definitions.",
+  "version": "1.8.0",
+  "description": "Double-click Apple Liquid Glass Chinese popover dictionary with refined Pinyin, Jyutping, parts-of-speech definitions, side context examples, character radical anatomy, flashcards & personal vocabulary notebook.",
   "main": "main.js",
   "scripts": {
     "dev": "deno run -A build.ts",

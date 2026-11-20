@@ -712,7 +712,7 @@ export class DictTooltip {
       this.el.addClass("ch-dict-expanded-examples");
 
       const baseWidth = settings.popoverWidth || 330;
-      const sidePanelWidth = 270;
+      const sidePanelWidth = 370;
       const extraMarginPadding = 14 + 28; // margin-left 14px + tooltip padding (14 + 14)
       const totalExpandedWidth = baseWidth + sidePanelWidth + extraMarginPadding;
 

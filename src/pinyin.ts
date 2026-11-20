@@ -121,3 +121,28 @@ export function formatPinyin(pinyinStr: string, accented: boolean = true): strin
     .join("");
 }
 
+/**
+ * Converts a sentence or phrase with numeric pinyin (e.g. "Wo3 de ming2zi4 shi4 Li3 Hua2.")
+ * into proper literary book-style accented pinyin with diacritics ("Wǒ de míngzì shì Lǐ Huá.").
+ * Works seamlessly with punctuation, capitalization, and concatenated syllables.
+ */
+export function formatPinyinSentence(sentence: string): string {
+  if (!sentence) return "";
+
+  // Replace syllables ending in tone numbers 1-5 (e.g. Wo3, zhi1dao4, nv3, lu:4, etc.)
+  const withAccents = sentence.replace(
+    /([a-zA-ZüÜvV:]+)([1-5])/g,
+    (_full, syl, tone) => convertSyllable(`${syl}${tone}`)
+  );
+
+  // Normalize any leftover umlaut notations (e.g. lu:, nv)
+  const cleaned = normalizeUmlaut(withAccents);
+
+  // Capitalize the first letter if it is lowercase Latin
+  if (/^[a-z]/.test(cleaned)) {
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  return cleaned;
+}
+

@@ -42,9 +42,7 @@ div.menu {
   transform: scale(0.96) translateY(5px);
   transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
               transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              width 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-  scrollbar-gutter: stable;
 }
 
 /* Light Theme Liquid Glass (Apple Minimalist) */
@@ -1864,13 +1862,10 @@ rt {
 }
 
 /* ==========================================
-   Horizontal Side Expansion (Strictly Right or Left on "⋯" Click)
+   Horizontal Side Expansion (Examples Panel on Right on "⋯" Click)
    ========================================== */
-.ch-dict-tooltip.ch-dict-expanded-horiz-right,
-.ch-dict-tooltip.ch-dict-expanded-horiz-left {
-  width: calc(var(--ch-dict-width, 330px) + 284px);
-  min-width: calc(var(--ch-dict-width, 330px) + 284px);
-  max-width: min(calc(var(--ch-dict-width, 330px) + 284px), calc(100vw - 24px));
+.ch-dict-tooltip.ch-dict-expanded-examples {
+  max-width: min(720px, calc(100vw - 24px));
 }
 
 .ch-dict-side-panel {
@@ -1881,35 +1876,22 @@ rt {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  margin-left: 14px;
+  padding-left: 14px;
   overflow-y: auto;
   max-height: 380px;
   animation: chSidePanelFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ch-dict-side-panel-right {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  margin-left: 12px;
-  padding-left: 12px;
-}
-
-.theme-light .ch-dict-side-panel-right {
+.theme-light .ch-dict-side-panel {
   border-left: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.ch-dict-side-panel-left {
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  margin-right: 12px;
-  padding-right: 12px;
-}
-
-.theme-light .ch-dict-side-panel-left {
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 @keyframes chSidePanelFadeIn {
   from {
     opacity: 0;
-    transform: translateX(4px);
+    transform: translateX(6px);
   }
   to {
     opacity: 1;
@@ -2005,14 +1987,16 @@ rt {
 }
 
 .ch-dict-side-ex-py {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: #93c5fd;
-  line-height: 1.3;
+  font-size: 12px;
+  font-weight: 550;
+  color: #38bdf8;
+  line-height: 1.35;
+  letter-spacing: 0.15px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
 }
 
 .theme-light .ch-dict-side-ex-py {
-  color: #2563eb;
+  color: #0284c7;
 }
 
 .ch-dict-side-ex-tr {

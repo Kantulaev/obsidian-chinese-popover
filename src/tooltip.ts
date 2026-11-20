@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
-import { formatPinyin } from "./pinyin.ts";
+import { formatPinyin, formatPinyinSentence } from "./pinyin.ts";
 import { getCharPinyinFromWordPinyin } from "./pinyin-frequency.ts";
 import { ChineseDictSettings, CopyFormat } from "./settings.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
@@ -251,10 +251,14 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
+    this.el.removeClass("ch-dict-expanded-examples");
     this.el.removeClass("ch-dict-expanded-horiz-right");
     this.el.removeClass("ch-dict-expanded-horiz-left");
     this.el.removeClass("ch-dict-expanded-details");
-    this.el.removeClass("ch-dict-expanded-examples");
+    const side = this.el.querySelector(".ch-dict-side-panel");
+    if (side) {
+      side.remove();
+    }
     this.isVisible = false;
     this.isPinned = false;
     this.hasCustomPosition = false;
@@ -675,15 +679,15 @@ export class DictTooltip {
     const bottomRow = mainCard.createDiv({ cls: "ch-dict-bottom-row" });
     bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
 
-    // Side-by-side horizontal expansion state (expands strictly right or left)
+    // Side-by-side horizontal expansion state (cleanly opens examples panel on the right)
     let sidePanel: HTMLElement | null = null;
-    let expandedSide: "right" | "left" | null = null;
+    let originalLeftBeforeShift: number | null = null;
 
     const expandBtn = bottomRow.createEl("button", {
       cls: "ch-dict-details-btn",
       text: "⋯",
       attr: {
-        title: "2 примера предложений (расширить вправо/влево) / 2 context examples",
+        title: "2 примера предложений / 2 context examples",
         "aria-label": "Примеры",
       },
     });
@@ -692,44 +696,39 @@ export class DictTooltip {
       e.stopPropagation();
       if (sidePanel) {
         // Collapse horizontal side panel
-        if (expandedSide === "left") {
-          const curLeft = parseFloat(this.el.style.left) || this.el.getBoundingClientRect().left;
-          this.el.style.left = `${Math.round(curLeft + 270)}px`;
+        if (originalLeftBeforeShift !== null) {
+          this.el.style.left = `${Math.round(originalLeftBeforeShift)}px`;
+          originalLeftBeforeShift = null;
         }
         sidePanel.remove();
         sidePanel = null;
-        expandedSide = null;
         expandBtn.removeClass("is-active");
-        this.el.removeClass("ch-dict-expanded-horiz-right", "ch-dict-expanded-horiz-left");
+        this.el.removeClass("ch-dict-expanded-examples");
         return;
       }
 
-      // Check space on right vs left to expand strictly horizontally
-      const rect = this.el.getBoundingClientRect();
-      const sideWidth = 270;
-      const winW = globalThis.innerWidth;
-      const spaceRight = winW - rect.right;
-      const expandRight = spaceRight >= sideWidth + 12;
-
+      // Open side panel cleanly on the right
       expandBtn.addClass("is-active");
+      this.el.addClass("ch-dict-expanded-examples");
 
-      if (expandRight) {
-        expandedSide = "right";
-        this.el.addClass("ch-dict-expanded-horiz-right");
-        this.el.removeClass("ch-dict-expanded-horiz-left");
-        sidePanel = this.el.createDiv({ cls: "ch-dict-side-panel ch-dict-side-panel-right" });
+      const baseWidth = settings.popoverWidth || 330;
+      const sidePanelWidth = 270;
+      const extraMarginPadding = 14 + 28; // margin-left 14px + tooltip padding (14 + 14)
+      const totalExpandedWidth = baseWidth + sidePanelWidth + extraMarginPadding;
+
+      const curLeft = parseFloat(this.el.style.left) || this.el.getBoundingClientRect().left;
+      const winW = globalThis.innerWidth;
+
+      // If opening on the right would exceed screen boundary, smoothly shift left
+      if (curLeft + totalExpandedWidth > winW - 16) {
+        originalLeftBeforeShift = curLeft;
+        const safeLeft = Math.max(16, winW - totalExpandedWidth - 16);
+        this.el.style.left = `${Math.round(safeLeft)}px`;
       } else {
-        expandedSide = "left";
-        this.el.addClass("ch-dict-expanded-horiz-left");
-        this.el.removeClass("ch-dict-expanded-horiz-right");
-        sidePanel = createDiv({ cls: "ch-dict-side-panel ch-dict-side-panel-left" });
-        mainCard.before(sidePanel);
-
-        const curLeft = parseFloat(this.el.style.left) || rect.left;
-        const nextLeft = Math.max(12, curLeft - sideWidth);
-        this.el.style.left = `${Math.round(nextLeft)}px`;
+        originalLeftBeforeShift = null;
       }
 
+      sidePanel = this.el.createDiv({ cls: "ch-dict-side-panel" });
       this.renderTwoExamplesIntoSidePanel(sidePanel, match, settings);
     });
 
@@ -949,6 +948,40 @@ export class DictTooltip {
     const exContainer = panel.createDiv({ cls: "ch-dict-side-ex-list" });
     const localExamples = getExampleSentences(match.word);
 
+    const getSentencePinyin = (chinese: string, rawPinyin?: string): string => {
+      if (rawPinyin && rawPinyin.trim().length > 0) {
+        return formatPinyinSentence(rawPinyin);
+      }
+      if (!chinese) return "";
+      const dict = this.plugin?.dictionary;
+      if (!dict) return "";
+
+      const chars = Array.from(chinese.trim());
+      const parts: string[] = [];
+      for (let i = 0; i < chars.length; ) {
+        let matched = false;
+        for (let len = Math.min(4, chars.length - i); len >= 1; len--) {
+          const slice = chars.slice(i, i + len).join("");
+          const entries = dict.get(slice);
+          if (entries && entries[0]?.pinyin) {
+            parts.push(formatPinyin(entries[0].pinyin, true));
+            i += len;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          parts.push(chars[i]);
+          i++;
+        }
+      }
+      const rawAssembled = parts.join(" ")
+        .replace(/\s+([，。！？,.!?:;”’"')\]\}])/g, "$1")
+        .replace(/([“‘(\[\{])\s+/g, "$1")
+        .trim();
+      return formatPinyinSentence(rawAssembled);
+    };
+
     const renderTwo = (sentences: ExampleSentence[]) => {
       exContainer.empty();
       const two = sentences.slice(0, 2);
@@ -976,8 +1009,9 @@ export class DictTooltip {
           this.playSpeech(ex.chinese, settings);
         });
 
-        if (ex.pinyin) {
-          row.createDiv({ cls: "ch-dict-side-ex-py", text: ex.pinyin });
+        const pyText = getSentencePinyin(ex.chinese, ex.pinyin);
+        if (pyText) {
+          row.createDiv({ cls: "ch-dict-side-ex-py", text: pyText });
         }
         const translationText = (isRu && ex.russian) ? ex.russian : (ex.english || ex.russian || "");
         if (translationText) {

@@ -4,6 +4,7 @@
  */
 
 import { requestUrl } from "obsidian";
+import { formatPinyinSentence } from "./pinyin.ts";
 
 export interface ExampleSentence {
   chinese: string;
@@ -295,7 +296,7 @@ interface TatoebaResponse {
       if (zh && trans) {
         sentences.push({
           chinese: zh,
-          pinyin: py,
+          pinyin: formatPinyinSentence(py),
           english: targetLang === "eng" ? trans : "",
           russian: targetLang === "rus" ? trans : "",
         });

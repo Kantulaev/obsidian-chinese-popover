@@ -68,6 +68,9 @@ export interface I18nBundle {
     strokes_count: string;
     hsk_badge: string;
     drag_hint: string;
+    details?: string;
+    details_hint?: string;
+    all_definitions?: string;
     pos?: string;
     no_def?: string;
   };

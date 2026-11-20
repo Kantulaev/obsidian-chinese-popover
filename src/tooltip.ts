@@ -1,11 +1,10 @@
-import { Menu, Notice } from "obsidian";
+import { Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
 import { formatPinyin } from "./pinyin.ts";
 import { getCharPinyinFromWordPinyin } from "./pinyin-frequency.ts";
 import { ChineseDictSettings, CopyFormat } from "./settings.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
-import { StrokeOrderModal } from "./stroke-order.ts";
 import { resolveChineseFontFamily } from "./font.ts";
 import { addNoteToAnki } from "./anki.ts";
 import { groupDefinitionsByPos } from "./pos.ts";
@@ -14,7 +13,6 @@ import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
 import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
 import { ExampleSentence, fetchDynamicExamples, getExampleSentences } from "./examples.ts";
-import { createWordNote } from "./word-notes.ts";
 import { t, getActiveLanguage } from "./i18n/index.ts";
 
 export interface ContentBounds {
@@ -40,8 +38,6 @@ export class DictTooltip {
   private currentAudio: HTMLAudioElement | null = null;
   private cleanupActiveDrag: (() => void) | null = null;
   private plugin: ChineseHoverDictPlugin | null = null;
-  private burgerFloatingMenu: HTMLElement | null = null;
-  private burgerHoverTimer: number | null = null;
 
   constructor(plugin?: ChineseHoverDictPlugin) {
     this.plugin = plugin ?? null;
@@ -76,9 +72,9 @@ export class DictTooltip {
       "--ch-dict-width": `${width}px`,
       "--ch-dict-height": `${height}px`,
       "--ch-dict-blur": `${blur}px`,
-      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 19}px`,
-      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 22}px`,
-      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 15}px`,
+      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 20}px`,
+      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 15}px`,
+      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 14}px`,
       "--ch-dict-font-hanzi-family": fontFamily,
     });
 
@@ -255,11 +251,8 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
+    this.el.removeClass("ch-dict-expanded-details");
     this.el.removeClass("ch-dict-expanded-examples");
-    if (this.burgerFloatingMenu) {
-      this.burgerFloatingMenu.removeClass("is-visible");
-      this.burgerFloatingMenu.removeClass("is-open");
-    }
     this.isVisible = false;
     this.isPinned = false;
     this.hasCustomPosition = false;
@@ -451,13 +444,13 @@ export class DictTooltip {
       this.playSpeech(match.word, settings);
     });
 
-    // Action buttons: Speaker & Hover Burger Menu
+    // Action buttons: Speaker (Pronunciation) & Star (Add/Remove from Favorites)
     if (settings.showActionButtons) {
       const actions = topBar.createDiv({ cls: "ch-dict-actions" });
 
-      // Audio TTS Button
+      // 1. Audio TTS Button
       const audioBtn = actions.createEl("button", {
-        cls: "ch-dict-glass-btn",
+        cls: "ch-dict-glass-btn ch-dict-audio-btn",
         text: "🔊",
         attr: {
           "aria-label": "Pronounce word",
@@ -471,174 +464,40 @@ export class DictTooltip {
         this.playSpeech(match.word, settings);
       });
 
-      // 2. Burger Action Button
-      const burgerWrap = actions.createDiv({ cls: "ch-dict-burger-wrap" });
-      const burgerBtn = burgerWrap.createEl("button", {
-        cls: "ch-dict-glass-btn ch-dict-burger-btn",
-        text: "☰",
-        attr: {
-          "aria-label": "Actions Menu",
-          title: "Действия карточки / Card Actions",
-        },
-      });
-
-      // Floating menu attached to document.body - completely decoupled from popover scroll container!
-      if (!this.burgerFloatingMenu) {
-        this.burgerFloatingMenu = document.body.createDiv({
-          cls: "ch-dict-burger-floating-menu",
-        });
-      }
-      this.burgerFloatingMenu.empty();
-
-      const updateMenuPos = () => {
-        if (!this.burgerFloatingMenu || !burgerBtn.isConnected) return;
-        const rect = burgerBtn.getBoundingClientRect();
-        const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
-        const winH = globalThis.innerHeight;
-        const winW = globalThis.innerWidth;
-        // Prioritize upward flip whenever space below is tight (<150px) or would overflow bottom
-        const willOverflowBottom = (rect.bottom + menuHeight + 10 > winH) || (winH - rect.bottom < 150);
-        let top = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
-        top = Math.max(10, Math.min(top, winH - menuHeight - 10));
-        const right = Math.max(10, Math.min(winW - rect.right, winW - 300));
-
-        this.burgerFloatingMenu.setCssStyles({
-          top: `${Math.round(top)}px`,
-          right: `${Math.round(right)}px`,
-        });
-      };
-
-      const openMenu = () => {
-        if (this.burgerHoverTimer !== null) {
-          globalThis.clearTimeout(this.burgerHoverTimer);
-          this.burgerHoverTimer = null;
-        }
-        if (this.burgerFloatingMenu) {
-          updateMenuPos();
-          this.burgerFloatingMenu.addClass("is-visible");
-        }
-      };
-
-      const closeMenuWithDelay = () => {
-        if (this.burgerHoverTimer !== null) {
-          globalThis.clearTimeout(this.burgerHoverTimer);
-        }
-        this.burgerHoverTimer = globalThis.setTimeout(() => {
-          if (this.burgerFloatingMenu) {
-            this.burgerFloatingMenu.removeClass("is-visible");
-            this.burgerFloatingMenu.removeClass("is-open");
-          }
-          this.burgerHoverTimer = null;
-        }, 350);
-      };
-
-      burgerWrap.addEventListener("mouseenter", openMenu);
-      burgerWrap.addEventListener("mouseleave", closeMenuWithDelay);
-      this.burgerFloatingMenu.addEventListener("mouseenter", openMenu);
-      this.burgerFloatingMenu.addEventListener("mouseleave", closeMenuWithDelay);
-
-      burgerBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (this.burgerHoverTimer !== null) {
-          globalThis.clearTimeout(this.burgerHoverTimer);
-          this.burgerHoverTimer = null;
-        }
-        if (!this.burgerFloatingMenu) return;
-        const willOpen = !this.burgerFloatingMenu.hasClass("is-open");
-        if (willOpen) {
-          updateMenuPos();
-          this.burgerFloatingMenu.addClass("is-open");
-          this.burgerFloatingMenu.addClass("is-visible");
-        } else {
-          this.burgerFloatingMenu.removeClass("is-open");
-          this.burgerFloatingMenu.removeClass("is-visible");
-        }
-      });
-
-      // Helper to open Obsidian context menu on top of popover
-      const showCopyFormatMenu = (e: MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const menu = new Menu();
-        menu.addItem((i) =>
-          i.setTitle("📋 Полная карточка (Стандарт)")
-           .setIcon("copy")
-           .onClick(() => this.copyEntryFormatted(match, settings, "default"))
-        );
-        menu.addItem((i) =>
-          i.setTitle("🀄 Только иероглифы (汉字)")
-           .onClick(() => this.copyEntryFormatted(match, settings, "hanzi_only"))
-        );
-        menu.addItem((i) =>
-          i.setTitle("🔤 Иероглиф + Пиньинь (汉字 + Pinyin)")
-           .onClick(() => this.copyEntryFormatted(match, settings, "pinyin_only"))
-        );
-        menu.addItem((i) =>
-          i.setTitle("🔗 Вики-ссылка Obsidian ([[Слово]])")
-           .onClick(() => this.copyEntryFormatted(match, settings, "wikilink"))
-        );
-        menu.addItem((i) =>
-          i.setTitle("📊 Строка таблицы Markdown (| 汉字 | py | def |)")
-           .onClick(() => this.copyEntryFormatted(match, settings, "markdown_table"))
-        );
-        menu.showAtMouseEvent(e);
-      };
-
-      burgerBtn.addEventListener("contextmenu", showCopyFormatMenu);
-
-      // --- Item: Copy ---
-      const copyItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item",
-        attr: {
-          title: t("tooltip.copy_hint"),
-          "aria-label": t("tooltip.copy"),
-        },
-      });
-      const copyIcon = copyItem.createSpan({ cls: "ch-dict-menu-icon", text: "📋" });
-      const copyLabel = copyItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.copy") });
-
-      copyItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.copyCurrentEntry(settings);
-        copyIcon.setText("✓");
-        copyLabel.setText(t("tooltip.copied"));
-        copyItem.addClass("ch-dict-btn-success");
-        globalThis.setTimeout(() => {
-          copyIcon.setText("📋");
-          copyLabel.setText(t("tooltip.copy"));
-          copyItem.removeClass("ch-dict-btn-success");
-        }, 1200);
-      });
-      copyItem.addEventListener("contextmenu", showCopyFormatMenu);
-
-      // --- Item: Star (Vocabulary) ---
+      // 2. Star / Favorites Button (Add/Remove from Vocabulary)
       const isStarred = this.plugin?.vocabulary?.hasWord(match.word) ?? false;
-      const starItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item",
+      const starBtn = actions.createEl("button", {
+        cls: `ch-dict-glass-btn ch-dict-star-btn ${isStarred ? "ch-dict-btn-starred" : "ch-dict-btn-unstarred"}`,
+        text: isStarred ? "⭐" : "☆",
         attr: {
-          title: isStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint"),
           "aria-label": isStarred ? t("tooltip.starred") : t("tooltip.star"),
+          title: isStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint"),
         },
       });
-      const starIcon = starItem.createSpan({
-        cls: "ch-dict-menu-icon",
-        text: isStarred ? "⭐" : "☆",
-      });
-      const starLabel = starItem.createSpan({
-        cls: "ch-dict-menu-label",
-        text: isStarred ? t("tooltip.starred") : t("tooltip.star"),
-      });
 
-      starItem.addEventListener("click", (e) => {
+      starBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         void (async () => {
           if (this.plugin?.vocabulary) {
-            starIcon.addClass("ch-star-bouncing");
-            globalThis.setTimeout(() => starIcon.removeClass("ch-star-bouncing"), 450);
+            starBtn.addClass("ch-star-bouncing");
+            globalThis.setTimeout(() => starBtn.removeClass("ch-star-bouncing"), 450);
             const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
-            starIcon.setText(nowStarred ? "⭐" : "☆");
-            starLabel.setText(nowStarred ? t("tooltip.starred") : t("tooltip.star"));
-            starItem.setAttribute("title", nowStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint"));
+            starBtn.setText(nowStarred ? "⭐" : "☆");
+            if (nowStarred) {
+              starBtn.addClass("ch-dict-btn-starred");
+              starBtn.removeClass("ch-dict-btn-unstarred");
+            } else {
+              starBtn.removeClass("ch-dict-btn-starred");
+              starBtn.addClass("ch-dict-btn-unstarred");
+            }
+            starBtn.setAttribute(
+              "title",
+              nowStarred ? t("tooltip.star_remove_hint") : t("tooltip.star_add_hint")
+            );
+            starBtn.setAttribute(
+              "aria-label",
+              nowStarred ? t("tooltip.starred") : t("tooltip.star")
+            );
             this.plugin.refreshVocabularyViews();
 
             if (nowStarred && this.plugin.settings.ankiSyncOnStar && this.plugin.settings.anki.enabled) {
@@ -652,81 +511,6 @@ export class DictTooltip {
             }
           }
         })();
-      });
-
-      // --- Item: Pin / Sticky Mode ---
-      const pinItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item",
-        attr: {
-          title: this.isPinned ? t("tooltip.unpin_hint") : t("tooltip.pin_hint"),
-          "aria-label": this.isPinned ? t("tooltip.unpin") : t("tooltip.pin"),
-        },
-      });
-      const pinIcon = pinItem.createSpan({ cls: "ch-dict-menu-icon", text: this.isPinned ? "📍" : "📌" });
-      const pinLabel = pinItem.createSpan({
-        cls: "ch-dict-menu-label",
-        text: this.isPinned ? t("tooltip.unpin") : t("tooltip.pin"),
-      });
-      pinItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const pinned = this.togglePin();
-        pinIcon.setText(pinned ? "📍" : "📌");
-        pinLabel.setText(pinned ? t("tooltip.unpin") : t("tooltip.pin"));
-        pinItem.setAttribute("title", pinned ? t("tooltip.unpin_hint") : t("tooltip.pin_hint"));
-      });
-
-      // --- Item: Word Note (Zettelkasten) ---
-      const noteItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item",
-        attr: {
-          title: t("tooltip.note_hint"),
-          "aria-label": t("tooltip.note"),
-        },
-      });
-      noteItem.createSpan({ cls: "ch-dict-menu-icon", text: "📝" });
-      noteItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.note") });
-      noteItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        void (async () => {
-          if (this.plugin) {
-            await createWordNote(this.plugin.app, match, contextSentence, {
-              folderPath: settings.wordNotesFolder || "Chinese/Words",
-              openAfterCreation: true,
-            });
-          }
-        })();
-      });
-
-      // --- Item: Stroke Order Animation ---
-      const strokeItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item",
-        attr: {
-          title: t("tooltip.strokes_hint"),
-          "aria-label": t("tooltip.strokes"),
-        },
-      });
-      strokeItem.createSpan({ cls: "ch-dict-menu-icon", text: "🖌️" });
-      strokeItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.strokes") });
-      strokeItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (this.plugin) {
-          new StrokeOrderModal(this.plugin.app, match.word).open();
-        }
-      });
-
-      // --- Item: Close ---
-      const closeItem = this.burgerFloatingMenu.createEl("button", {
-        cls: "ch-dict-menu-item ch-dict-menu-item-close",
-        attr: {
-          title: t("tooltip.close_hint"),
-          "aria-label": t("tooltip.close"),
-        },
-      });
-      closeItem.createSpan({ cls: "ch-dict-menu-icon", text: "✕" });
-      closeItem.createSpan({ cls: "ch-dict-menu-label", text: t("tooltip.close") });
-      closeItem.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.hide(true);
       });
     }
 
@@ -838,14 +622,30 @@ export class DictTooltip {
       .join("; ");
     defsContainer.setAttribute("title", fullTranslationPlain);
 
+    const hsk = getHskBadgeInfo(match.word);
     let globalItemIndex = 1;
+    let isFirstGroup = true;
     for (const group of posGroups) {
       const groupEl = defsContainer.createDiv({ cls: "ch-dict-def-group" });
+
+      // Discreet mini HSK level number placed neatly to the left of the part of speech tag
+      if (isFirstGroup && hsk) {
+        groupEl.createSpan({
+          cls: `ch-dict-hsk-mini-num ch-dict-hsk-${hsk.level}`,
+          text: `${hsk.level}`,
+          attr: {
+            title: `HSK ${hsk.level}`,
+            "aria-label": `HSK ${hsk.level}`,
+          },
+        });
+      }
+      isFirstGroup = false;
+
       if (group.posLabel) {
         groupEl.createSpan({
           cls: `ch-dict-pos-tag ${group.posClass}`,
           text: group.posLabel,
-          attr: { title: `${t("tooltip.pos")}: ${group.pos}` },
+          attr: { title: `${t("tooltip.pos") || "Часть речи"}: ${group.posLabel}` },
         });
       }
 
@@ -866,90 +666,42 @@ export class DictTooltip {
       });
     }
 
-    // Metadata / Action Row under translation: HSK Level on left, Examples Toggle Button on right
+    // Action Row under translation: subtle spacer on left, "⋯" (Details & Examples) button on right
     const bottomRow = this.el.createDiv({ cls: "ch-dict-bottom-row" });
-    const hsk = getHskBadgeInfo(match.word);
-    if (hsk) {
-      const metaRow = bottomRow.createDiv({ cls: "ch-dict-meta-row" });
-      metaRow.createSpan({
-        cls: "ch-dict-meta-item ch-dict-meta-hsk",
-        text: hsk.label,
-        attr: { title: `${t("tooltip.hsk_badge")}: ${hsk.label}` },
-      });
-    } else {
-      bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
-    }
+    bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
 
-    // Small On-Demand Examples Button in bottom-right corner
-    let exampleDrawer: HTMLElement | null = null;
-    const exToggleBtn = bottomRow.createEl("button", {
-      cls: "ch-dict-ex-toggle-btn",
+    // Details button "⋯" (widely expands popover to display all definitions and context examples)
+    let detailsDrawer: HTMLElement | null = null;
+    const moreDetailsBtn = bottomRow.createEl("button", {
+      cls: "ch-dict-details-btn",
+      text: "⋯",
       attr: {
-        title: t("tooltip.examples_hint"),
-        "aria-label": t("tooltip.examples"),
+        title: t("tooltip.details_hint") || "Подробно: все варианты перевода и примеры предложений",
+        "aria-label": t("tooltip.details") || "Подробно",
       },
     });
-    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-icon", text: "💬" });
-    exToggleBtn.createSpan({ cls: "ch-dict-ex-btn-label", text: t("tooltip.examples") });
 
-    exToggleBtn.addEventListener("click", (e) => {
+    moreDetailsBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (exampleDrawer) {
+      if (detailsDrawer) {
         // Collapse drawer
-        exampleDrawer.remove();
-        exampleDrawer = null;
-        exToggleBtn.removeClass("is-active");
-        this.el.removeClass("ch-dict-expanded-examples");
+        detailsDrawer.remove();
+        detailsDrawer = null;
+        moreDetailsBtn.removeClass("is-active");
+        this.el.removeClass("ch-dict-expanded-details");
         this.adjustPopoverBoundsAfterExpand();
         return;
       }
 
-      // Expand popover adaptively & show drawer
-      exToggleBtn.addClass("is-active");
-      this.el.addClass("ch-dict-expanded-examples");
+      // Expand popover adaptively & show details drawer
+      moreDetailsBtn.addClass("is-active");
+      this.el.addClass("ch-dict-expanded-details");
 
-      exampleDrawer = createDiv({ cls: "ch-dict-example-drawer" });
-      bottomRow.after(exampleDrawer);
+      detailsDrawer = createDiv({ cls: "ch-dict-details-drawer" });
+      bottomRow.after(detailsDrawer);
 
-      const exHeader = exampleDrawer.createDiv({ cls: "ch-dict-drawer-header" });
-      exHeader.createSpan({ cls: "ch-dict-drawer-tag", text: `例句 ${t("tooltip.examples")}` });
-
-      const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
-      const localExamples = getExampleSentences(match.word);
-
-      if (localExamples && localExamples.length > 0) {
-        this.renderExamplesIntoDrawer(exampleDrawer, localExamples.slice(0, 2), settings, isRu);
-        this.adjustPopoverBoundsAfterExpand();
-      } else {
-        const loadingEl = exampleDrawer.createDiv({
-          cls: "ch-dict-drawer-loading",
-          text: t("tooltip.examples_loading"),
-        });
-        this.adjustPopoverBoundsAfterExpand();
-
-        const wordAtFetch = match.word;
-        const targetLang = isRu ? "rus" : "eng";
-        fetchDynamicExamples(match.word, targetLang).then((fetched) => {
-          if (!this.isVisible || this.currentWord !== wordAtFetch || !exampleDrawer || !exampleDrawer.isConnected) {
-            return;
-          }
-          loadingEl.remove();
-          if (fetched && fetched.length > 0) {
-            this.renderExamplesIntoDrawer(exampleDrawer, fetched.slice(0, 2), settings, isRu);
-          } else {
-            exampleDrawer.createDiv({
-              cls: "ch-dict-drawer-empty",
-              text: t("tooltip.examples_empty"),
-            });
-          }
-          this.adjustPopoverBoundsAfterExpand();
-        }).catch(() => {
-          if (exampleDrawer && exampleDrawer.isConnected) {
-            loadingEl.setText(t("tooltip.examples_error"));
-            this.adjustPopoverBoundsAfterExpand();
-          }
-        });
-      }
+      this.renderFullDetailsIntoDrawer(detailsDrawer, match, settings);
+      this.adjustPopoverBoundsAfterExpand();
     });
 
     // 4. Character Breakdown (for compound words >= 2 chars)
@@ -1149,38 +901,158 @@ export class DictTooltip {
   }
 
   /**
-   * Renders 1-2 example sentences into the on-demand example drawer
+   * Renders full details drawer: all definition variants & context example sentences
    */
-  private renderExamplesIntoDrawer(
+  private renderFullDetailsIntoDrawer(
     drawer: HTMLElement,
-    sentences: ExampleSentence[],
-    settings: ChineseDictSettings,
-    isRu: boolean
+    match: MatchResult,
+    settings: ChineseDictSettings
   ): void {
-    for (const ex of sentences) {
-      const row = drawer.createDiv({ cls: "ch-dict-example-row" });
-      const zhSpan = row.createSpan({
-        cls: "ch-dict-ex-zh",
-        text: ex.chinese,
-        attr: { title: t("tooltip.listen_example") || "Click to listen to example" },
-      });
-      zhSpan.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.playSpeech(ex.chinese, settings);
-      });
-      if (ex.pinyin) {
-        row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+    drawer.empty();
+    const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
+    const lang = getActiveLanguage();
+
+    // SECTION 1: All Definitions (все варианты перевода)
+    const defsSection = drawer.createDiv({ cls: "ch-dict-details-section" });
+    const defsHeader = defsSection.createDiv({ cls: "ch-dict-details-section-header" });
+    defsHeader.createSpan({
+      cls: "ch-dict-details-section-title",
+      text: `📖 ${t("tooltip.all_definitions") || (isRu ? "Все значения" : "All Definitions")}`,
+    });
+
+    const defsList = defsSection.createDiv({ cls: "ch-dict-details-defs-list" });
+
+    // Multi-lang or Russian rich definitions if available
+    const transLang = settings.translationLanguage || "auto";
+    let customPackDefs: string[] | null = null;
+    if (transLang !== "en" && transLang !== "both") {
+      customPackDefs = this.plugin?.dictionary?.getMultiLangDefs(match.word, lang) || null;
+    }
+    if (isRu && (!customPackDefs || customPackDefs.length === 0)) {
+      const allCedict = match.entries.flatMap((e) => e.definitions);
+      customPackDefs = getRawDefinitionsList(match.word, allCedict, "ru", 12);
+    }
+
+    if (customPackDefs && customPackDefs.length > 0) {
+      const allCedict = match.entries.flatMap((e) => e.definitions);
+      const groups = groupDefinitionsByPos(customPackDefs, match.word, allCedict, lang, 12);
+      let idx = 1;
+      for (const group of groups) {
+        const itemEl = defsList.createDiv({ cls: "ch-dict-details-entry-item" });
+        if (group.posLabel) {
+          itemEl.createSpan({
+            cls: `ch-dict-pos-tag ${group.posClass}`,
+            text: group.posLabel,
+          });
+        }
+        const textSpan = itemEl.createSpan({ cls: "ch-dict-details-entry-defs" });
+        textSpan.setText(group.items.map((it) => `${idx++}. ${it}`).join("  •  "));
       }
-      const trText = isRu ? (ex.russian || ex.english) : (ex.english || ex.russian);
-      if (trText) {
-        row.createDiv({ cls: "ch-dict-ex-tr", text: trText });
-      }
+    } else {
+      // Display from CEDICT entries with pinyin badges
+      match.entries.forEach((entry) => {
+        const itemEl = defsList.createDiv({ cls: "ch-dict-details-entry-item" });
+        const topRow = itemEl.createDiv({ cls: "ch-dict-details-entry-top" });
+        if (entry.pinyin) {
+          topRow.createSpan({
+            cls: "ch-dict-details-entry-pinyin",
+            text: formatPinyin(entry.pinyin, settings.showAccentedPinyin),
+          });
+        }
+        if (entry.traditional && entry.traditional !== entry.simplified) {
+          topRow.createSpan({
+            cls: "ch-dict-details-entry-trad",
+            text: `(трад. ${entry.traditional})`,
+          });
+        }
+        const textSpan = itemEl.createSpan({ cls: "ch-dict-details-entry-defs" });
+        textSpan.setText(entry.definitions.join("; "));
+      });
+    }
+
+    // SECTION 2: Context Examples (примеры предложений)
+    const exSection = drawer.createDiv({ cls: "ch-dict-details-section" });
+    const exHeader = exSection.createDiv({ cls: "ch-dict-details-section-header" });
+    exHeader.createSpan({
+      cls: "ch-dict-details-section-title",
+      text: `💬 ${t("tooltip.examples") || (isRu ? "Примеры предложений" : "Examples")}`,
+    });
+
+    const exContainer = exSection.createDiv({ cls: "ch-dict-details-ex-container" });
+    const localExamples = getExampleSentences(match.word);
+
+    const renderExampleItems = (examples: ExampleSentence[]) => {
+      exContainer.empty();
+      examples.forEach((ex) => {
+        const row = exContainer.createDiv({ cls: "ch-dict-example-row" });
+        const zhRow = row.createDiv({ cls: "ch-dict-example-zh-row" });
+
+        const zhSpan = zhRow.createSpan({
+          cls: "ch-dict-ex-zh",
+          text: ex.chinese,
+          attr: { title: t("tooltip.listen_example") || "Нажмите, чтобы прослушать пример" },
+        });
+        zhSpan.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.playSpeech(ex.chinese, settings);
+        });
+
+        const exAudioBtn = zhRow.createEl("button", {
+          cls: "ch-dict-ex-audio-btn",
+          text: "🔊",
+          attr: { title: "Прослушать / Listen" },
+        });
+        exAudioBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this.playSpeech(ex.chinese, settings);
+        });
+
+        if (ex.pinyin) {
+          row.createDiv({ cls: "ch-dict-ex-py", text: ex.pinyin });
+        }
+        const translationText = (isRu && ex.russian) ? ex.russian : (ex.english || ex.russian || "");
+        if (translationText) {
+          row.createDiv({ cls: "ch-dict-ex-tr", text: translationText });
+        }
+      });
+    };
+
+    if (localExamples && localExamples.length > 0) {
+      renderExampleItems(localExamples.slice(0, 3));
+    } else {
+      const loadingEl = exContainer.createDiv({
+        cls: "ch-dict-drawer-loading",
+        text: t("tooltip.examples_loading") || "Поиск примеров...",
+      });
+
+      const wordAtFetch = match.word;
+      const targetLang = isRu ? "rus" : "eng";
+      fetchDynamicExamples(match.word, targetLang).then((fetched) => {
+        if (!this.isVisible || this.currentWord !== wordAtFetch || !drawer.isConnected) {
+          return;
+        }
+        loadingEl.remove();
+        if (fetched && fetched.length > 0) {
+          renderExampleItems(fetched.slice(0, 3));
+        } else {
+          exContainer.createDiv({
+            cls: "ch-dict-drawer-empty",
+            text: t("tooltip.examples_empty") || "Примеры не найдены",
+          });
+        }
+        this.adjustPopoverBoundsAfterExpand();
+      }).catch(() => {
+        if (drawer.isConnected) {
+          loadingEl.setText(t("tooltip.examples_error") || "Ошибка загрузки примеров");
+          this.adjustPopoverBoundsAfterExpand();
+        }
+      });
     }
   }
 
   /**
    * Intelligently recalculates and adjusts tooltip position after dynamic content
-   * (e.g. Example sentences drawer or Character Decomposition) expands or collapses.
+   * (e.g. Details drawer or Character Decomposition) expands or collapses.
    * Expands in all 4 directions (down/up, right/left) smoothly depending on available space.
    */
   public adjustPopoverBoundsAfterExpand(): void {
@@ -1218,23 +1090,6 @@ export class DictTooltip {
         top: `${Math.round(currentTop)}px`,
         left: `${Math.round(currentLeft)}px`,
       });
-
-      // Keep floating action menu attached to burger button if menu is visible
-      if (this.burgerFloatingMenu && this.burgerFloatingMenu.hasClass("is-visible")) {
-        const burgerBtn = this.el.querySelector(".ch-dict-burger-btn");
-        if (burgerBtn) {
-          const btnRect = burgerBtn.getBoundingClientRect();
-          const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
-          const willOverflowBottom = (btnRect.bottom + menuHeight + 10 > winH) || (winH - btnRect.bottom < 150);
-          let top = willOverflowBottom ? btnRect.top - menuHeight - 6 : btnRect.bottom + 6;
-          top = Math.max(10, Math.min(top, winH - menuHeight - 10));
-          const right = Math.max(10, Math.min(winW - btnRect.right, winW - 300));
-          this.burgerFloatingMenu.setCssStyles({
-            top: `${Math.round(top)}px`,
-            right: `${Math.round(right)}px`,
-          });
-        }
-      }
     });
   }
 
@@ -1484,10 +1339,6 @@ export class DictTooltip {
     if (this.el && this.el.parentNode) {
       this.el.parentNode.removeChild(this.el);
     }
-    if (this.burgerFloatingMenu && this.burgerFloatingMenu.parentNode) {
-      this.burgerFloatingMenu.parentNode.removeChild(this.burgerFloatingMenu);
-      this.burgerFloatingMenu = null;
-    }
   }
 
   private setupDraggable(topBar: HTMLElement, settings: ChineseDictSettings): void {
@@ -1527,24 +1378,6 @@ export class DictTooltip {
           top: `${Math.round(nextTop)}px`,
         });
         this.hasCustomPosition = true;
-
-        if (this.burgerFloatingMenu && this.burgerFloatingMenu.hasClass("is-visible")) {
-          const burgerBtn = this.el.querySelector(".ch-dict-burger-btn");
-          if (burgerBtn) {
-            const rect = burgerBtn.getBoundingClientRect();
-            const menuHeight = this.burgerFloatingMenu.offsetHeight || 118;
-            const winH = globalThis.innerHeight;
-            const winW = globalThis.innerWidth;
-            const willOverflowBottom = (rect.bottom + menuHeight + 10 > winH) || (winH - rect.bottom < 150);
-            let topPos = willOverflowBottom ? rect.top - menuHeight - 6 : rect.bottom + 6;
-            topPos = Math.max(10, Math.min(topPos, winH - menuHeight - 10));
-            const rightPos = Math.max(10, Math.min(winW - rect.right, winW - 300));
-            this.burgerFloatingMenu.setCssStyles({
-              top: `${Math.round(topPos)}px`,
-              right: `${Math.round(rightPos)}px`,
-            });
-          }
-        }
       };
 
       const onPointerUp = () => {

@@ -143,9 +143,9 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   popoverHeight: 165,
   blurIntensity: 34,
   textColorPreset: "white",
-  fontSizeHanzi: 19,
-  fontSizePinyin: 22,
-  fontSizeTranslation: 15,
+  fontSizeHanzi: 20,
+  fontSizePinyin: 15,
+  fontSizeTranslation: 14,
 
   maxWordLength: 6,
 
@@ -887,10 +887,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Размер шрифта иероглифов / Hanzi Font Size")
-      .setDesc("Размер китайских символов в верхней плашке (по умолчанию 19px).")
+      .setDesc("Размер китайских символов в верхней плашке (по умолчанию 20px).")
       .addSlider((slider) =>
         slider
-          .setLimits(14, 28, 1)
+          .setLimits(14, 30, 1)
           .setValue(this.plugin.settings.fontSizeHanzi)
           .onChange(async (value) => {
             this.plugin.settings.fontSizeHanzi = value;
@@ -903,10 +903,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Размер шрифта фонетики / Pinyin Font Size")
-      .setDesc("Размер пиньиня и ютпинга в центральном блоке (по умолчанию 22px).")
+      .setDesc("Размер пиньиня и ютпинга в центральном блоке (по умолчанию 15px).")
       .addSlider((slider) =>
         slider
-          .setLimits(16, 32, 1)
+          .setLimits(12, 28, 1)
           .setValue(this.plugin.settings.fontSizePinyin)
           .onChange(async (value) => {
             this.plugin.settings.fontSizePinyin = value;
@@ -919,10 +919,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Размер шрифта перевода / Translation Font Size")
-      .setDesc("Размер текста перевода в нижней части карточки (по умолчанию 15px).")
+      .setDesc("Размер текста перевода в нижней части карточки (по умолчанию 14px).")
       .addSlider((slider) =>
         slider
-          .setLimits(12, 22, 1)
+          .setLimits(11, 22, 1)
           .setValue(this.plugin.settings.fontSizeTranslation)
           .onChange(async (value) => {
             this.plugin.settings.fontSizeTranslation = value;

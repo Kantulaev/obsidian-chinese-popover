@@ -43,31 +43,67 @@ export const POS_METADATA: Record<PartOfSpeech, PosLabels> = {
 // Common words with known multi-POS behavior (兼类词)
 const CORE_WORD_POS: Record<string, PartOfSpeech[]> = {
   // Noun + Verb (существительное + глагол)
-  "工作": ["noun", "verb"],
-  "学习": ["noun", "verb"],
+  "工作": ["verb", "noun"],
+  "学习": ["verb", "noun"],
   "生活": ["noun", "verb"],
-  "旅行": ["noun", "verb"],
-  "运动": ["noun", "verb"],
-  "研究": ["noun", "verb"],
+  "旅行": ["verb", "noun"],
+  "运动": ["verb", "noun"],
+  "研究": ["verb", "noun"],
   "计划": ["noun", "verb"],
-  "翻译": ["noun", "verb"],
-  "帮助": ["noun", "verb"],
-  "决定": ["noun", "verb"],
-  "影响": ["noun", "verb"],
-  "变化": ["noun", "verb"],
-  "通知": ["noun", "verb"],
-  "报告": ["noun", "verb"],
-  "感觉": ["noun", "verb"],
-  "经历": ["noun", "verb"],
-  "爱": ["noun", "verb"],
-  "希望": ["noun", "verb"],
-  "领导": ["noun", "verb"],
-  "教育": ["noun", "verb"],
-  "批评": ["noun", "verb"],
-  "表扬": ["noun", "verb"],
-  "调查": ["noun", "verb"],
-  "比较": ["noun", "verb"],
-  "说明": ["noun", "verb"],
+  "翻译": ["verb", "noun"],
+  "帮助": ["verb", "noun"],
+  "决定": ["verb", "noun"],
+  "影响": ["verb", "noun"],
+  "变化": ["verb", "noun"],
+  "通知": ["verb", "noun"],
+  "报告": ["verb", "noun"],
+  "感觉": ["verb", "noun"],
+  "经历": ["verb", "noun"],
+  "爱": ["verb", "noun"],
+  "恨": ["verb", "noun"],
+  "希望": ["verb", "noun"],
+  "领导": ["verb", "noun"],
+  "教育": ["verb", "noun"],
+  "批评": ["verb", "noun"],
+  "表扬": ["verb", "noun"],
+  "调查": ["verb", "noun"],
+  "比较": ["verb", "noun"],
+  "说明": ["verb", "noun"],
+  "练习": ["verb", "noun"],
+  "复习": ["verb", "noun"],
+  "预习": ["verb", "noun"],
+  "实习": ["verb", "noun"],
+  "训练": ["verb", "noun"],
+  "准备": ["verb", "noun"],
+  "打算": ["verb", "noun"],
+  "建议": ["verb", "noun"],
+  "考虑": ["verb", "noun"],
+  "讨论": ["verb", "noun"],
+  "联系": ["verb", "noun"],
+  "安排": ["verb", "noun"],
+  "发展": ["verb", "noun"],
+  "组织": ["verb", "noun"],
+  "支持": ["verb", "noun"],
+  "保护": ["verb", "noun"],
+  "设计": ["verb", "noun"],
+  "生产": ["verb", "noun"],
+  "制造": ["verb", "noun"],
+  "投资": ["verb", "noun"],
+  "管理": ["verb", "noun"],
+  "服务": ["verb", "noun"],
+  "比赛": ["verb", "noun"],
+  "考试": ["verb", "noun"],
+  "表演": ["verb", "noun"],
+  "演出": ["verb", "noun"],
+  "游戏": ["verb", "noun"],
+  "回答": ["verb", "noun"],
+  "要求": ["verb", "noun"],
+  "需要": ["verb", "noun"],
+  "照顾": ["verb", "noun"],
+  "访问": ["verb", "noun"],
+  "采访": ["verb", "noun"],
+  "实验": ["verb", "noun"],
+  "理解": ["verb", "noun"],
 
   // Adjective + Noun (прилагательное + существительное)
   "自由": ["adjective", "noun"],
@@ -394,22 +430,26 @@ export function groupDefinitionsByPos(
   // Filter only buckets that actually have items
   const activeBuckets = Array.from(buckets.entries()).filter(([_, items]) => items.length > 0);
 
+  // If word is multi-POS, generate composite label showing all detected roles (e.g. "глаг. / сущ." or "v. / n.")
+  const compositeLabel = wordPosList
+    .map((p) => t("pos." + p, language) || POS_METADATA[p]?.[isRu ? "ru" : "en"] || p)
+    .join(" / ");
+
   if (activeBuckets.length <= 1) {
     const firstBucket = activeBuckets[0];
     if (firstBucket) {
       const [pos, items] = firstBucket;
-      const label = t("pos." + pos, language) || POS_METADATA[pos]?.[isRu ? "ru" : "en"] || "";
       return [{
         pos,
-        posLabel: label,
+        posLabel: compositeLabel,
         posClass: POS_CSS_CLASSES[pos] || "ch-pos-tag-other",
         items: items.slice(0, maxCount),
       }];
     }
     return [{
-      pos: "other",
-      posLabel: "",
-      posClass: "ch-pos-tag-other",
+      pos: wordPosList[0] || "other",
+      posLabel: compositeLabel,
+      posClass: wordPosList[0] ? POS_CSS_CLASSES[wordPosList[0]] : "ch-pos-tag-other",
       items: rawDefs.slice(0, maxCount),
     }];
   }

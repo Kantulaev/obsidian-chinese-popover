@@ -162,16 +162,16 @@
       </g>
     </g>
 
-    <!-- ================= FLOATING APPLE LIQUID GLASS POPOVER (SIDE-BY-SIDE EXPANDED) ================= -->
-    <g transform="translate(130, 195)" filter="url(#popover-shadow)">
-      <!-- Popover Main Card Base (Width 760 = Main Card 350 + Side Panel 370 + Padding 40) -->
-      <rect width="770" height="340" rx="18" fill="url(#glass-popover)" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1.2" />
-      <rect x="1" y="1" width="768" height="50" rx="17" fill="url(#glass-specular)" pointer-events="none" />
+    <!-- ================= FLOATING APPLE LIQUID GLASS POPOVER (COMPACT CARD) ================= -->
+    <g transform="translate(180, 224)" filter="url(#popover-shadow)">
+      <!-- Popover Main Card Base (Width 370 x 276) -->
+      <rect width="370" height="276" rx="18" fill="url(#glass-popover)" stroke="rgba(255, 255, 255, 0.16)" stroke-width="1.2" />
+      <rect x="1" y="1" width="368" height="46" rx="17" fill="url(#glass-specular)" pointer-events="none" />
 
-      <!-- Drag grabber centered on left main card -->
-      <rect x="160" y="7" width="34" height="3.5" rx="2" fill="rgba(255, 255, 255, 0.22)" />
+      <!-- Drag grabber centered on card -->
+      <rect x="168" y="7" width="34" height="3.5" rx="2" fill="rgba(255, 255, 255, 0.22)" />
 
-      <!-- LEFT COLUMN: MAIN CARD (350px) -->
+      <!-- MAIN CARD CONTENT -->
       <g transform="translate(18, 16)">
         <!-- Top Bar: Hanzi Pill (Simplified - Traditional) + 🔊 Audio + ⭐ Star Button -->
         <g>
@@ -181,6 +181,8 @@
             <text x="14" y="23" class="font-kaiti" font-size="21" font-weight="700" fill="#ffffff">学习</text>
             <text x="64" y="22" class="font-sans" font-size="16" fill="rgba(255, 255, 255, 0.45)">-</text>
             <text x="76" y="23" class="font-kaiti" font-size="21" font-weight="600" fill="#cbd5e1">學習</text>
+            <rect x="184" y="7" width="46" height="20" rx="5" fill="#3b82f6" fill-opacity="0.25" />
+            <text x="193" y="21" class="font-sans" font-size="10" font-weight="700" fill="#60a5fa">SIMP</text>
           </g>
 
           <!-- Actions: 🔊 Audio & ⭐ Star -->
@@ -197,7 +199,7 @@
           </g>
         </g>
 
-        <!-- Refined Compact Pinyin (13px) -->
+        <!-- Refined Compact Pinyin (13.5px) -->
         <g transform="translate(2, 54)">
           <text x="0" y="14" class="font-sans" font-size="13.5" font-weight="600" fill="#38bdf8" letter-spacing="0.2">xué xí</text>
           <text x="46" y="14" class="font-sans" font-size="13" fill="rgba(255, 255, 255, 0.35)">/</text>
@@ -249,7 +251,7 @@
         </g>
 
         <!-- Character Decomposition Chips -->
-        <g transform="translate(2, 192)">
+        <g transform="translate(2, 194)">
           <g>
             <rect width="150" height="26" rx="6" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
             <text x="8" y="18" class="font-kaiti" font-size="14" font-weight="700" fill="#ffffff">学</text>
@@ -262,60 +264,6 @@
             <text x="24" y="17" class="font-sans" font-size="11" font-weight="600" fill="#38bdf8">xí</text>
             <text x="44" y="17" class="font-sans" font-size="11" fill="#cbd5e1">to practice</text>
           </g>
-        </g>
-
-        <!-- Bottom Action Row: Spacer + Active ⋯ Details Button -->
-        <g transform="translate(2, 276)">
-          <g transform="translate(290, 0)">
-            <rect width="28" height="22" rx="6" fill="rgba(56, 189, 248, 0.28)" stroke="rgba(56, 189, 248, 0.65)" stroke-width="1" />
-            <text x="8" y="16" class="font-sans" font-size="14" font-weight="700" fill="#38bdf8">⋯</text>
-          </g>
-        </g>
-      </g>
-
-      <!-- VERTICAL DIVIDER -->
-      <line x1="364" y1="18" x2="364" y2="322" stroke="rgba(255, 255, 255, 0.12)" stroke-width="1" />
-
-      <!-- RIGHT COLUMN: EXPANDED CONTEXT EXAMPLES PANEL (370px) -->
-      <g transform="translate(382, 16)">
-        <!-- Side Panel Header -->
-        <g>
-          <text x="0" y="14" class="font-sans" font-size="11.5" font-weight="700" fill="rgba(255, 255, 255, 0.7)" letter-spacing="0.5">例句 CONTEXT EXAMPLES (2)</text>
-          <line x1="0" y1="24" x2="360" y2="24" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
-        </g>
-
-        <!-- Example Sentence 1 Box -->
-        <g transform="translate(0, 36)">
-          <rect width="364" height="114" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
-          
-          <!-- Chinese + Audio -->
-          <g transform="translate(12, 16)">
-            <text x="0" y="14" class="font-kaiti" font-size="16" font-weight="700" fill="#ffffff">我每天都在学习中文。</text>
-            <text x="318" y="14" class="font-sans" font-size="12">🔊</text>
-          </g>
-
-          <!-- Book-style Pinyin with Accent Tone Marks (no digits!) -->
-          <text x="12" y="58" class="font-sans" font-size="12.5" font-weight="550" fill="#38bdf8" letter-spacing="0.2">Wǒ měitiān dōu zài xuéxí zhōngwén.</text>
-
-          <!-- English Translation -->
-          <text x="12" y="84" class="font-sans" font-size="13.5" fill="#f1f5f9">I study Chinese every day.</text>
-        </g>
-
-        <!-- Example Sentence 2 Box -->
-        <g transform="translate(0, 164)">
-          <rect width="364" height="114" rx="12" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" />
-          
-          <!-- Chinese + Audio -->
-          <g transform="translate(12, 16)">
-            <text x="0" y="14" class="font-kaiti" font-size="16" font-weight="700" fill="#ffffff">我们要向他学习。</text>
-            <text x="318" y="14" class="font-sans" font-size="12">🔊</text>
-          </g>
-
-          <!-- Book-style Pinyin with Accent Tone Marks (no digits!) -->
-          <text x="12" y="58" class="font-sans" font-size="12.5" font-weight="550" fill="#38bdf8" letter-spacing="0.2">Wǒmen yào xiàng tā xuéxí.</text>
-
-          <!-- English Translation -->
-          <text x="12" y="84" class="font-sans" font-size="13.5" fill="#f1f5f9">We should learn from him.</text>
         </g>
       </g>
     </g>
@@ -330,12 +278,12 @@
     <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Apple Liquid Glass (18px)</text>
   </g>
 
-  <!-- Pill 2: Bottom Right - Horizontal Examples -->
+  <!-- Pill 2: Bottom Right - 20-Language Dictionaries & Audio -->
   <g transform="translate(760, 620)" filter="url(#pill-glow)">
     <rect width="370" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#38bdf8" stroke-width="1.2" />
     <circle cx="22" cy="21" r="10" fill="rgba(56, 189, 248, 0.2)" />
-    <text x="15" y="26" class="font-sans" font-size="12">⋯</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Side-by-Side Examples · 例句 (Accent Pinyin)</text>
+    <text x="15" y="26" class="font-sans" font-size="12">🌏</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">20-Language Dictionaries &amp; Audio</text>
   </g>
 
   <!-- Pill 3: Bottom Left - Parts of Speech & Mini HSK -->

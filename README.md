@@ -24,16 +24,15 @@
 
 ---
 
-## 💎 Minimalist Apple Popover & Horizontal Context Examples
+## 💎 Minimalist Apple Liquid Glass Popover
 
 <p align="center">
-  <img src="./assets/feature-popover.svg" alt="Minimalist Apple Popover and Context Examples" width="100%" />
+  <img src="./assets/feature-popover.svg" alt="Minimalist Apple Liquid Glass Popover" width="100%" />
 </p>
 
 * **Apple Liquid Glass Minimalist UI** — Refined 18px squircle frosted card with fluid blur, subtle specular borders, and draggable grabber bar.
 * **Balanced Typography** — Crisp Hanzi (`21px`), refined compact Pinyin (`13px`) with tone coloring, and large readable definitions (`16px`).
 * **Structured Parts of Speech** — Translations automatically classified by grammar role (verb, noun, adjective, adverb, idiom, etc.) with discreet mini HSK level indicator (`1`–`6`).
-* **Side-by-Side Context Examples (`⋯`)** — One-click horizontal expansion strictly to the right, showing 2 authentic context sentences with textbook-quality accented tone marks (ā, á, ǎ, à), neural audio pronunciation (🔊), and translations.
 * **Streamlined Header Actions** — Simplified Hanzi capsule pill (click to speak), audio pronunciation button (🔊), and one-click favorite button (⭐) to add words directly to your vocabulary notebook.
 * **Character Anatomy & 214 Radicals** — Click any character chip in compound words to reveal its Kangxi radical, stroke count, meaning, and etymological components (`宀 + 子`).
 * **Ancient Chengyu Stories (成语故事)** — Expandable ancient fables, literal and figurative meanings, and historical dynasty context for 4-character idioms.

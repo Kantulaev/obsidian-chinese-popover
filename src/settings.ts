@@ -102,7 +102,6 @@ export interface ChineseDictSettings {
   showPartOfSpeech: boolean;
   showRadicals: boolean;
   showChengyuStories: boolean;
-  showExamples: boolean;
 
   // Tone Coloring (Pleco style)
   toneColoring: "off" | "phonetics" | "all";
@@ -179,7 +178,6 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   showPartOfSpeech: false,
   showRadicals: false,
   showChengyuStories: false,
-  showExamples: false,
   toneColoring: "off",
   wordNotesFolder: "Chinese/Words",
 
@@ -675,21 +673,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         }
       });
     })();
-
-    new Setting(containerEl)
-      .setName("Примеры предложений / Example Sentences (例句)")
-      .setDesc("Отображать живые примеры предложений с переводом для употребления слова в контексте.")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showExamples)
-          .onChange(async (value) => {
-            this.plugin.settings.showExamples = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
 
     new Setting(containerEl)
       .setName("Анимация порядка черт / Stroke Order Animation")

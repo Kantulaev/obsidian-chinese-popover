@@ -9,10 +9,11 @@ div.menu {
 .ch-dict-tooltip {
   position: fixed;
   z-index: 10000;
-  width: auto;
-  max-width: min(880px, calc(100vw - 24px));
-  min-height: var(--ch-dict-height, 160px);
-  max-height: 540px;
+  width: var(--ch-dict-width, 330px);
+  min-width: 280px;
+  max-width: min(440px, calc(100vw - 24px));
+  min-height: auto;
+  max-height: 520px;
   box-sizing: border-box;
   padding: 12px 14px;
   overflow: visible;
@@ -86,7 +87,7 @@ div.menu {
 /* Visible popover state */
 .ch-dict-tooltip.ch-dict-visible {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: stretch;
   pointer-events: auto;
   visibility: visible;
@@ -96,13 +97,11 @@ div.menu {
 
 /* Main Card Column (contains top-bar, hero pinyin, translations, breakdown) */
 .ch-dict-main-card {
-  width: var(--ch-dict-width, 330px);
-  min-width: var(--ch-dict-width, 330px);
-  max-width: var(--ch-dict-width, 330px);
+  width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-shrink: 0;
 }
 
@@ -563,67 +562,8 @@ div.menu {
 }
 
 /* ==========================================
-   Bottom Action Row (HSK Badge + Examples Toggle)
+   Metadata and Status Badges
    ========================================== */
-.ch-dict-bottom-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 5px;
-  margin-bottom: 2px;
-  gap: 8px;
-}
-
-.ch-dict-bottom-spacer {
-  flex: 1;
-}
-
-/* ⋯ Details button (widely expands popover to display all definitions and context examples) */
-.ch-dict-details-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 22px;
-  padding: 0;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  line-height: 1;
-  user-select: none;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.theme-light .ch-dict-details-btn {
-  border-color: rgba(0, 0, 0, 0.12);
-  background: rgba(0, 0, 0, 0.05);
-  color: #374151;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.ch-dict-details-btn:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #38bdf8;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(56, 189, 248, 0.25);
-}
-
-.ch-dict-details-btn.is-active {
-  background: rgba(56, 189, 248, 0.28);
-  border-color: rgba(56, 189, 248, 0.65);
-  color: #38bdf8;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
-}
-
 .ch-dict-meta-row {
   display: flex;
   align-items: center;
@@ -1861,189 +1801,9 @@ rt {
   color: #334155;
 }
 
-/* ==========================================
-   Horizontal Side Expansion (Examples Panel on Right on "⋯" Click)
-   ========================================== */
-.ch-dict-tooltip.ch-dict-expanded-examples {
-  max-width: min(880px, calc(100vw - 24px));
-}
-
-.ch-dict-side-panel {
-  width: 370px;
-  min-width: 340px;
-  max-width: 440px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  margin-left: 14px;
-  padding-left: 14px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 440px;
-  scrollbar-width: thin;
-  animation: chSidePanelFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.theme-light .ch-dict-side-panel {
-  border-left: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-@keyframes chSidePanelFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.ch-dict-side-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 6px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.theme-light .ch-dict-side-header {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.ch-dict-side-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.theme-light .ch-dict-side-title {
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.ch-dict-side-ex-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ch-dict-side-ex-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-sizing: border-box;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
-
-.theme-light .ch-dict-side-ex-item {
-  background: rgba(0, 0, 0, 0.025);
-  border-color: rgba(0, 0, 0, 0.05);
-}
-
-.ch-dict-side-ex-zh-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.ch-dict-side-ex-zh {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
-  cursor: pointer;
-  line-height: 1.4;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-  flex: 1;
-  min-width: 0;
-  transition: color 0.12s ease;
-}
-
-.theme-light .ch-dict-side-ex-zh {
-  color: #0f172a;
-}
-
-.ch-dict-side-ex-zh:hover {
-  color: #38bdf8;
-}
-
-.ch-dict-side-ex-audio-btn {
-  background: transparent;
-  border: none;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  opacity: 0.7;
-  flex-shrink: 0;
-  margin-top: 2px;
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.ch-dict-side-ex-audio-btn:hover {
-  opacity: 1;
-  transform: scale(1.15);
-}
-
-.ch-dict-side-ex-py {
-  font-size: 12.5px;
-  font-weight: 550;
-  color: #38bdf8;
-  line-height: 1.4;
-  letter-spacing: 0.15px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
-
-.theme-light .ch-dict-side-ex-py {
-  color: #0284c7;
-}
-
-.ch-dict-side-ex-tr {
-  font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.88);
-  line-height: 1.42;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
-}
-
-.theme-light .ch-dict-side-ex-tr {
-  color: #334155;
-}
-
-.ch-dict-side-loading,
-.ch-dict-side-empty {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  font-style: italic;
-  padding: 8px 4px;
-}
-
-.theme-light .ch-dict-side-loading,
-.theme-light .ch-dict-side-empty {
-  color: #64748b;
-}
-
 /* Backward compatibility for drawers */
-.ch-dict-tooltip.ch-dict-expanded-details,
-.ch-dict-tooltip.ch-dict-expanded-examples {
-  max-width: min(600px, calc(100vw - 28px));
+.ch-dict-tooltip.ch-dict-expanded-details {
+  max-width: min(440px, calc(100vw - 28px));
 }
 
 /* ==========================================
@@ -2568,7 +2328,6 @@ body.ch-dict-is-dragging,
 
 /* Drawer Smooth Fade-in Animations */
 .ch-dict-chengyu-drawer,
-.ch-dict-example-drawer,
 .ch-dict-decomp-row {
   animation: ch-drawer-fade-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

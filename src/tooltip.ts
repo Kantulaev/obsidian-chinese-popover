@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { DictEntry, MatchResult } from "./dictionary.ts";
-import { formatPinyin, formatPinyinSentence } from "./pinyin.ts";
+import { formatPinyin } from "./pinyin.ts";
 import { getCharPinyinFromWordPinyin } from "./pinyin-frequency.ts";
 import { ChineseDictSettings, CopyFormat } from "./settings.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
@@ -12,7 +12,6 @@ import { getRawDefinitionsList } from "./russian-dict.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
 import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
-import { ExampleSentence, fetchDynamicExamples, getExampleSentences } from "./examples.ts";
 import { t, getActiveLanguage } from "./i18n/index.ts";
 
 export interface ContentBounds {
@@ -251,14 +250,6 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
-    this.el.removeClass("ch-dict-expanded-examples");
-    this.el.removeClass("ch-dict-expanded-horiz-right");
-    this.el.removeClass("ch-dict-expanded-horiz-left");
-    this.el.removeClass("ch-dict-expanded-details");
-    const side = this.el.querySelector(".ch-dict-side-panel");
-    if (side) {
-      side.remove();
-    }
     this.isVisible = false;
     this.isPinned = false;
     this.hasCustomPosition = false;
@@ -675,63 +666,6 @@ export class DictTooltip {
       });
     }
 
-    // Action Row under translation: subtle spacer on left, "⋯" (2 Examples Toggle) on right
-    const bottomRow = mainCard.createDiv({ cls: "ch-dict-bottom-row" });
-    bottomRow.createDiv({ cls: "ch-dict-bottom-spacer" });
-
-    // Side-by-side horizontal expansion state (cleanly opens examples panel on the right)
-    let sidePanel: HTMLElement | null = null;
-    let originalLeftBeforeShift: number | null = null;
-
-    const expandBtn = bottomRow.createEl("button", {
-      cls: "ch-dict-details-btn",
-      text: "⋯",
-      attr: {
-        title: "2 примера предложений / 2 context examples",
-        "aria-label": "Примеры",
-      },
-    });
-
-    expandBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (sidePanel) {
-        // Collapse horizontal side panel
-        if (originalLeftBeforeShift !== null) {
-          this.el.style.left = `${Math.round(originalLeftBeforeShift)}px`;
-          originalLeftBeforeShift = null;
-        }
-        sidePanel.remove();
-        sidePanel = null;
-        expandBtn.removeClass("is-active");
-        this.el.removeClass("ch-dict-expanded-examples");
-        return;
-      }
-
-      // Open side panel cleanly on the right
-      expandBtn.addClass("is-active");
-      this.el.addClass("ch-dict-expanded-examples");
-
-      const baseWidth = settings.popoverWidth || 330;
-      const sidePanelWidth = 370;
-      const extraMarginPadding = 14 + 28; // margin-left 14px + tooltip padding (14 + 14)
-      const totalExpandedWidth = baseWidth + sidePanelWidth + extraMarginPadding;
-
-      const curLeft = parseFloat(this.el.style.left) || this.el.getBoundingClientRect().left;
-      const winW = globalThis.innerWidth;
-
-      // If opening on the right would exceed screen boundary, smoothly shift left
-      if (curLeft + totalExpandedWidth > winW - 16) {
-        originalLeftBeforeShift = curLeft;
-        const safeLeft = Math.max(16, winW - totalExpandedWidth - 16);
-        this.el.style.left = `${Math.round(safeLeft)}px`;
-      } else {
-        originalLeftBeforeShift = null;
-      }
-
-      sidePanel = this.el.createDiv({ cls: "ch-dict-side-panel" });
-      this.renderTwoExamplesIntoSidePanel(sidePanel, match, settings);
-    });
-
     // 4. Character Breakdown (for compound words >= 2 chars)
     if (settings.showCharacterBreakdown) {
       const chars = Array.from(match.word).filter((c) => /\p{Script=Han}/u.test(c));
@@ -925,129 +859,6 @@ export class DictTooltip {
           }
         }).catch(() => {});
       }
-    }
-  }
-
-  /**
-   * Renders exactly 2 small authentic example sentences into the horizontal side panel
-   */
-  private renderTwoExamplesIntoSidePanel(
-    panel: HTMLElement,
-    match: MatchResult,
-    settings: ChineseDictSettings
-  ): void {
-    panel.empty();
-    const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
-
-    const header = panel.createDiv({ cls: "ch-dict-side-header" });
-    header.createSpan({
-      cls: "ch-dict-side-title",
-      text: `例句 ${t("tooltip.examples") || (isRu ? "Примеры" : "Examples")}`,
-    });
-
-    const exContainer = panel.createDiv({ cls: "ch-dict-side-ex-list" });
-    const localExamples = getExampleSentences(match.word);
-
-    const getSentencePinyin = (chinese: string, rawPinyin?: string): string => {
-      if (rawPinyin && rawPinyin.trim().length > 0) {
-        return formatPinyinSentence(rawPinyin);
-      }
-      if (!chinese) return "";
-      const dict = this.plugin?.dictionary;
-      if (!dict) return "";
-
-      const chars = Array.from(chinese.trim());
-      const parts: string[] = [];
-      for (let i = 0; i < chars.length; ) {
-        let matched = false;
-        for (let len = Math.min(4, chars.length - i); len >= 1; len--) {
-          const slice = chars.slice(i, i + len).join("");
-          const entries = dict.get(slice);
-          if (entries && entries[0]?.pinyin) {
-            parts.push(formatPinyin(entries[0].pinyin, true));
-            i += len;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) {
-          parts.push(chars[i]);
-          i++;
-        }
-      }
-      const rawAssembled = parts.join(" ")
-        .replace(/\s+([，。！？,.!?:;”’"')\]\}])/g, "$1")
-        .replace(/([“‘(\[\{])\s+/g, "$1")
-        .trim();
-      return formatPinyinSentence(rawAssembled);
-    };
-
-    const renderTwo = (sentences: ExampleSentence[]) => {
-      exContainer.empty();
-      const two = sentences.slice(0, 2);
-      two.forEach((ex) => {
-        const row = exContainer.createDiv({ cls: "ch-dict-side-ex-item" });
-        const zhRow = row.createDiv({ cls: "ch-dict-side-ex-zh-row" });
-
-        const zhSpan = zhRow.createSpan({
-          cls: "ch-dict-side-ex-zh",
-          text: ex.chinese,
-          attr: { title: t("tooltip.listen_example") || "Нажмите, чтобы прослушать пример" },
-        });
-        zhSpan.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.playSpeech(ex.chinese, settings);
-        });
-
-        const exAudioBtn = zhRow.createEl("button", {
-          cls: "ch-dict-side-ex-audio-btn",
-          text: "🔊",
-          attr: { title: "Прослушать / Listen" },
-        });
-        exAudioBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          this.playSpeech(ex.chinese, settings);
-        });
-
-        const pyText = getSentencePinyin(ex.chinese, ex.pinyin);
-        if (pyText) {
-          row.createDiv({ cls: "ch-dict-side-ex-py", text: pyText });
-        }
-        const translationText = (isRu && ex.russian) ? ex.russian : (ex.english || ex.russian || "");
-        if (translationText) {
-          row.createDiv({ cls: "ch-dict-side-ex-tr", text: translationText });
-        }
-      });
-    };
-
-    if (localExamples && localExamples.length > 0) {
-      renderTwo(localExamples);
-    } else {
-      const loadingEl = exContainer.createDiv({
-        cls: "ch-dict-side-loading",
-        text: t("tooltip.examples_loading") || "Поиск примеров...",
-      });
-
-      const wordAtFetch = match.word;
-      const targetLang = isRu ? "rus" : "eng";
-      fetchDynamicExamples(match.word, targetLang).then((fetched) => {
-        if (!this.isVisible || this.currentWord !== wordAtFetch || !panel.isConnected) {
-          return;
-        }
-        loadingEl.remove();
-        if (fetched && fetched.length > 0) {
-          renderTwo(fetched);
-        } else {
-          exContainer.createDiv({
-            cls: "ch-dict-side-empty",
-            text: t("tooltip.examples_empty") || "Примеры не найдены",
-          });
-        }
-      }).catch(() => {
-        if (panel.isConnected) {
-          loadingEl.setText(t("tooltip.examples_error") || "Ошибка загрузки примеров");
-        }
-      });
     }
   }
 

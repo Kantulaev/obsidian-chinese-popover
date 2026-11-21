@@ -5,6 +5,11 @@
     "strict": true,
     "noImplicitOverride": false
   },
+  "lint": {
+    "rules": {
+      "exclude": ["no-window", "no-window-prefix"]
+    }
+  },
   "imports": {
     "obsidian": "npm:obsidian@^1.7.0",
     "@codemirror/view": "npm:@codemirror/view@^6.0.0",

@@ -31,7 +31,7 @@ export const SUPPORTED_LANGUAGES: LanguageMeta[] = [
  * Automatically detects the current Obsidian application locale.
  */
 export function detectObsidianLocale(): SupportedLanguage {
-  const momentLocale = (globalThis as unknown as { moment?: { locale?: () => string } }).moment?.locale?.() || "";
+  const momentLocale = (window as unknown as { moment?: { locale?: () => string } }).moment?.locale?.() || "";
   const navLang = (typeof navigator !== "undefined" ? navigator.language : "").toLowerCase();
   const raw = (momentLocale || navLang || "en").toLowerCase();
 

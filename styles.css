@@ -2028,10 +2028,10 @@ rt {
 }
 
 body.ch-dict-is-dragging,
-.ch-dict-tooltip.ch-dict-is-dragging {
+body .ch-dict-tooltip.ch-dict-is-dragging {
   cursor: grabbing;
   user-select: none;
-  transition: none !important;
+  transition: none;
 }
 
 /* Resizable Popover */

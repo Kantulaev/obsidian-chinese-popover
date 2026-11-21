@@ -1370,13 +1370,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             cls: "mod-cta ch-dict-pack-btn",
             text: t("settings.dict_activate"),
           });
-          activateBtn.addEventListener("click", async () => {
-            this.plugin.settings.activeDictPack = pack.id;
-            this.plugin.settings.translationLanguage = pack.id;
-            await this.plugin.saveSettings();
-            await this.plugin.dictionary.loadPack(pack.id);
-            new Notice(`${t("notices.dict_activated")} ${pack.flag} ${pack.nativeName}`);
-            await this.renderDictPacksCards(containerEl);
+          activateBtn.addEventListener("click", () => {
+            void (async () => {
+              this.plugin.settings.activeDictPack = pack.id;
+              this.plugin.settings.translationLanguage = pack.id;
+              await this.plugin.saveSettings();
+              await this.plugin.dictionary.loadPack(pack.id);
+              new Notice(`${t("notices.dict_activated")} ${pack.flag} ${pack.nativeName}`);
+              await this.renderDictPacksCards(containerEl);
+            })();
           });
         }
 
@@ -1384,41 +1386,45 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
           text: t("settings.dict_delete"),
         });
-        deleteBtn.addEventListener("click", async () => {
-          const ok = await this.plugin.dictionary.deletePack(pack.id);
-          if (ok) {
-            if (this.plugin.settings.activeDictPack === pack.id) {
-              this.plugin.settings.activeDictPack = "en";
-              this.plugin.settings.translationLanguage = "en";
-              await this.plugin.saveSettings();
+        deleteBtn.addEventListener("click", () => {
+          void (async () => {
+            const ok = await this.plugin.dictionary.deletePack(pack.id);
+            if (ok) {
+              if (this.plugin.settings.activeDictPack === pack.id) {
+                this.plugin.settings.activeDictPack = "en";
+                this.plugin.settings.translationLanguage = "en";
+                await this.plugin.saveSettings();
+              }
+              await this.renderDictPacksCards(containerEl);
             }
-            await this.renderDictPacksCards(containerEl);
-          }
+          })();
         });
       } else {
         const downloadBtn = actions.createEl("button", {
           cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
           text: `📥 ${t("settings.dict_download")}`,
         });
-        downloadBtn.addEventListener("click", async () => {
-          downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
-          downloadBtn.setAttribute("disabled", "true");
-          const ok = await this.plugin.dictionary.downloadPack(pack.id);
-          if (ok) {
-            if (!this.plugin.settings.installedDictPacks) {
-              this.plugin.settings.installedDictPacks = ["en"];
+        downloadBtn.addEventListener("click", () => {
+          void (async () => {
+            downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
+            downloadBtn.setAttribute("disabled", "true");
+            const ok = await this.plugin.dictionary.downloadPack(pack.id);
+            if (ok) {
+              if (!this.plugin.settings.installedDictPacks) {
+                this.plugin.settings.installedDictPacks = ["en"];
+              }
+              if (!this.plugin.settings.installedDictPacks.includes(pack.id)) {
+                this.plugin.settings.installedDictPacks.push(pack.id);
+              }
+              this.plugin.settings.activeDictPack = pack.id;
+              this.plugin.settings.translationLanguage = pack.id;
+              await this.plugin.saveSettings();
+              await this.renderDictPacksCards(containerEl);
+            } else {
+              downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
+              downloadBtn.removeAttribute("disabled");
             }
-            if (!this.plugin.settings.installedDictPacks.includes(pack.id)) {
-              this.plugin.settings.installedDictPacks.push(pack.id);
-            }
-            this.plugin.settings.activeDictPack = pack.id;
-            this.plugin.settings.translationLanguage = pack.id;
-            await this.plugin.saveSettings();
-            await this.renderDictPacksCards(containerEl);
-          } else {
-            downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
-            downloadBtn.removeAttribute("disabled");
-          }
+          })();
         });
       }
     }
@@ -1448,27 +1454,31 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
         text: t("settings.dict_delete"),
       });
-      deleteBtn.addEventListener("click", async () => {
-        const ok = await this.plugin.dictionary.deleteChengyu();
-        if (ok) {
-          await this.renderDictPacksCards(containerEl);
-        }
+      deleteBtn.addEventListener("click", () => {
+        void (async () => {
+          const ok = await this.plugin.dictionary.deleteChengyu();
+          if (ok) {
+            await this.renderDictPacksCards(containerEl);
+          }
+        })();
       });
     } else {
       const downloadBtn = cActions.createEl("button", {
         cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
         text: `📥 ${t("settings.dict_download")}`,
       });
-      downloadBtn.addEventListener("click", async () => {
-        downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
-        downloadBtn.setAttribute("disabled", "true");
-        const ok = await this.plugin.dictionary.downloadChengyu();
-        if (ok) {
-          await this.renderDictPacksCards(containerEl);
-        } else {
-          downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
-          downloadBtn.removeAttribute("disabled");
-        }
+      downloadBtn.addEventListener("click", () => {
+        void (async () => {
+          downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
+          downloadBtn.setAttribute("disabled", "true");
+          const ok = await this.plugin.dictionary.downloadChengyu();
+          if (ok) {
+            await this.renderDictPacksCards(containerEl);
+          } else {
+            downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
+            downloadBtn.removeAttribute("disabled");
+          }
+        })();
       });
     }
   }

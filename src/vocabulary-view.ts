@@ -206,7 +206,7 @@ export class ChineseVocabularyView extends ItemView {
         i.setTitle("📺 YouTube (EN): @ChineseWithKantulaev")
           .setIcon("play-circle")
           .onClick(() => {
-            globalThis.open("https://www.youtube.com/@ChineseWithKantulaev", "_blank");
+            window.open("https://www.youtube.com/@ChineseWithKantulaev", "_blank");
           })
       );
 
@@ -214,7 +214,7 @@ export class ChineseVocabularyView extends ItemView {
         i.setTitle("📺 YouTube (RU): @kantulaevCN")
           .setIcon("play-circle")
           .onClick(() => {
-            globalThis.open("https://www.youtube.com/@kantulaevCN", "_blank");
+            window.open("https://www.youtube.com/@kantulaevCN", "_blank");
           })
       );
 
@@ -544,7 +544,7 @@ export class ChineseVocabularyView extends ItemView {
       const clipText = `${item.word}${item.traditional ? ` (${item.traditional})` : ""} [${item.pinyin}${item.jyutping ? ` / 粵 ${item.jyutping}` : ""}] - ${item.definitions.join("; ")}`;
       navigator.clipboard.writeText(clipText).then(() => {
         copyBtn.setText("✓");
-        globalThis.setTimeout(() => copyBtn.setText("📋"), 1500);
+        window.setTimeout(() => copyBtn.setText("📋"), 1500);
         new Notice(`Скопировано: ${item.word}`);
       }).catch(() => {
         new Notice(`Не удалось скопировать в буфер обмена`);
@@ -817,8 +817,8 @@ export class ChineseVocabularyView extends ItemView {
         ],
         length: Array.from(item.word).length,
       };
-      const x = globalThis.innerWidth / 2;
-      const y = globalThis.innerHeight / 2 - 80;
+      const x = (this.containerEl.win || window).innerWidth / 2;
+      const y = (this.containerEl.win || window).innerHeight / 2 - 80;
       this.plugin.tooltip.show(match, x, y, this.plugin.settings);
     });
 

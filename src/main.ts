@@ -66,7 +66,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // Schedule lazy background download of default English CC-CEDICT pack after layout is fully ready
     this.app.workspace.onLayoutReady(() => {
-      globalThis.setTimeout(() => {
+      window.setTimeout(() => {
         this.dictionary.ensureDefaultEnglishDictPack().catch(() => {});
       }, 5000);
     });
@@ -757,17 +757,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     // 4. Default fallback: window margins
+    const win = (typeof activeWindow !== "undefined" && activeWindow) ? activeWindow : window;
     return {
       left: 10,
-      right: globalThis.innerWidth - 10,
+      right: win.innerWidth - 10,
       top: 10,
-      bottom: globalThis.innerHeight - 10,
+      bottom: win.innerHeight - 10,
     };
   }
 
   private getSizerInnerBounds(sizer: HTMLElement): ContentBounds {
     const rect = sizer.getBoundingClientRect();
-    const style = globalThis.getComputedStyle(sizer);
+    const style = (sizer.win || window).getComputedStyle(sizer);
     const padLeft = parseFloat(style.paddingLeft) || 0;
     const padRight = parseFloat(style.paddingRight) || 0;
     return {
@@ -926,7 +927,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     if (!selectedText) {
-      const domSel = globalThis.getSelection();
+      const domSel = (view.dom.win || window).getSelection();
       const domText = domSel ? domSel.toString().trim() : "";
       if (domText && this.dictionary.isChinese(domText)) {
         selectedText = domText;
@@ -1083,7 +1084,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const resolvedBounds = bounds || this.getContentBounds(container, undefined);
 
     // 1. Act on Obsidian / browser internal selection if present
-    const selection = globalThis.getSelection();
+    const selection = (container.win || window).getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (selectedText && this.dictionary.isChinese(selectedText)) {
       const directEntries = this.dictionary.getOrSynthesize(selectedText);
@@ -1157,7 +1158,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       );
       if (cantoMatch && cantoMatch.start !== undefined && cantoMatch.end !== undefined) {
         try {
-          const sel = globalThis.getSelection();
+          const sel = (textNode.parentElement?.win || window).getSelection();
           if (sel) {
             const wordRange = document.createRange();
             wordRange.setStart(textNode, cantoMatch.start);
@@ -1214,7 +1215,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.lastHoverCoords = { x, y };
     this.cancelHoverLookup();
 
-    this.hoverTimeout = globalThis.setTimeout(() => {
+    this.hoverTimeout = window.setTimeout(() => {
       this.hoverTimeout = null;
       if (!this.lastHoverCoords) return;
       if (!this.settings.enabled || !this.dictionary.isReady()) return;
@@ -1242,7 +1243,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
   private cancelHoverLookup(): void {
     if (this.hoverTimeout !== null) {
-      globalThis.clearTimeout(this.hoverTimeout);
+      window.clearTimeout(this.hoverTimeout);
       this.hoverTimeout = null;
     }
   }
@@ -1264,9 +1265,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
       return;
     }
 
+    const win = (typeof activeWindow !== "undefined" && activeWindow) ? activeWindow : window;
     const selection = editor.getSelection().trim();
-    let clientX = globalThis.innerWidth / 2;
-    let clientY = globalThis.innerHeight / 2;
+    let clientX = win.innerWidth / 2;
+    let clientY = win.innerHeight / 2;
 
     const cmEditor = editor as CodeMirrorEditor;
     const cm = cmEditor.cm;
@@ -1345,7 +1347,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * Look up selected text in Reading View
    */
   public lookupAtReadingView(): void {
-    const selection = globalThis.getSelection();
+    const win = (typeof activeWindow !== "undefined" && activeWindow) ? activeWindow : window;
+    const selection = win.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (!selectedText || !this.dictionary.isChinese(selectedText)) {
       new Notice("Выделите китайское слово для поиска / Select Chinese word to look up", 2000);
@@ -1354,8 +1357,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const directEntries = this.dictionary.get(selectedText);
     if (directEntries && directEntries.length > 0) {
-      let clientX = globalThis.innerWidth / 2;
-      let clientY = globalThis.innerHeight / 2;
+      let clientX = win.innerWidth / 2;
+      let clientY = win.innerHeight / 2;
 
       if (selection && selection.rangeCount > 0) {
         const rect = selection.getRangeAt(0).getBoundingClientRect();

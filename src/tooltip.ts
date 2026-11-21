@@ -243,8 +243,9 @@ export class DictTooltip {
       this.currentAudio.pause();
       this.currentAudio = null;
     }
-    if (globalThis.speechSynthesis) {
-      globalThis.speechSynthesis.cancel();
+    const win = this.el.win || window;
+    if (win.speechSynthesis) {
+      win.speechSynthesis.cancel();
     }
     this.el.querySelector(".ch-audio-playing")?.removeClass("ch-audio-playing");
 
@@ -480,7 +481,7 @@ export class DictTooltip {
         void (async () => {
           if (this.plugin?.vocabulary) {
             starBtn.addClass("ch-star-bouncing");
-            globalThis.setTimeout(() => starBtn.removeClass("ch-star-bouncing"), 450);
+            window.setTimeout(() => starBtn.removeClass("ch-star-bouncing"), 450);
             const nowStarred = await this.plugin.vocabulary.toggleWord(match, contextSentence);
             starBtn.setText(nowStarred ? "⭐" : "☆");
             if (nowStarred) {
@@ -870,11 +871,12 @@ export class DictTooltip {
   public adjustPopoverBoundsAfterExpand(): void {
     if (!this.isVisible) return;
 
-    globalThis.requestAnimationFrame(() => {
+    const win = this.el.win || window;
+    win.requestAnimationFrame(() => {
       if (!this.isVisible || !this.el.isConnected) return;
       const rect = this.el.getBoundingClientRect();
-      const winW = globalThis.innerWidth;
-      const winH = globalThis.innerHeight;
+      const winW = win.innerWidth;
+      const winH = win.innerHeight;
       const padding = 12;
 
       let currentTop = rect.top;
@@ -916,8 +918,9 @@ export class DictTooltip {
       this.currentAudio.pause();
       this.currentAudio = null;
     }
-    if (globalThis.speechSynthesis) {
-      globalThis.speechSynthesis.cancel();
+    const win = this.el.win || window;
+    if (win.speechSynthesis) {
+      win.speechSynthesis.cancel();
     }
     this.el.querySelector(".ch-audio-playing")?.removeClass("ch-audio-playing");
 
@@ -972,7 +975,8 @@ export class DictTooltip {
     langCode: string,
     speed: number
   ): void {
-    if (!globalThis.speechSynthesis) return;
+    const win = this.el.win || window;
+    if (!win.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = langCode;
     utterance.rate = speed;
@@ -988,7 +992,7 @@ export class DictTooltip {
     utterance.onerror = stopAudioAnim;
 
     if (langCode === "zh-HK") {
-      const voices = globalThis.speechSynthesis.getVoices();
+      const voices = win.speechSynthesis.getVoices();
       const cantoneseVoice = voices.find(
         (v) =>
           v.lang === "zh-HK" ||
@@ -1002,7 +1006,7 @@ export class DictTooltip {
       }
     }
 
-    globalThis.speechSynthesis.speak(utterance);
+    win.speechSynthesis.speak(utterance);
   }
 
   /**
@@ -1020,7 +1024,8 @@ export class DictTooltip {
     if (sizer instanceof HTMLElement) {
       const rect = sizer.getBoundingClientRect();
       if (rect.width > 100) {
-        const style = globalThis.getComputedStyle(sizer);
+        const win = sizer.win || window;
+        const style = win.getComputedStyle(sizer);
         const padLeft = parseFloat(style.paddingLeft) || 0;
         const padRight = parseFloat(style.paddingRight) || 0;
         return {
@@ -1072,8 +1077,9 @@ export class DictTooltip {
     const padding = 10;
     const offsetDistance = 14;
 
-    const windowWidth = globalThis.innerWidth;
-    const windowHeight = globalThis.innerHeight;
+    const win = this.el.win || window;
+    const windowWidth = win.innerWidth;
+    const windowHeight = win.innerHeight;
 
     // If caller didn't pass bounds, or passed full-screen bounds, auto-detect readable bounds
     if (!bounds || bounds.right - bounds.left >= windowWidth - 40) {
@@ -1145,8 +1151,9 @@ export class DictTooltip {
       this.currentAudio.pause();
       this.currentAudio = null;
     }
-    if (globalThis.speechSynthesis) {
-      globalThis.speechSynthesis.cancel();
+    const win = this.el.win || window;
+    if (win.speechSynthesis) {
+      win.speechSynthesis.cancel();
     }
     if (this.el && this.el.parentNode) {
       this.el.parentNode.removeChild(this.el);
@@ -1164,6 +1171,8 @@ export class DictTooltip {
         return;
       }
 
+      const win = this.el.win || window;
+
       this.isDragging = true;
       this.dragStartX = e.clientX;
       this.dragStartY = e.clientY;
@@ -1179,8 +1188,8 @@ export class DictTooltip {
         const dx = moveEv.clientX - this.dragStartX;
         const dy = moveEv.clientY - this.dragStartY;
 
-        const maxLeft = Math.max(10, globalThis.innerWidth - this.el.offsetWidth - 10);
-        const maxTop = Math.max(10, globalThis.innerHeight - this.el.offsetHeight - 10);
+        const maxLeft = Math.max(10, win.innerWidth - this.el.offsetWidth - 10);
+        const maxTop = Math.max(10, win.innerHeight - this.el.offsetHeight - 10);
 
         const nextLeft = Math.max(10, Math.min(maxLeft, this.dragInitialLeft + dx));
         const nextTop = Math.max(10, Math.min(maxTop, this.dragInitialTop + dy));
@@ -1195,15 +1204,15 @@ export class DictTooltip {
       const onPointerUp = () => {
         this.isDragging = false;
         this.el.removeClass("ch-dict-is-dragging");
-        globalThis.removeEventListener("pointermove", onPointerMove);
-        globalThis.removeEventListener("pointerup", onPointerUp);
+        win.removeEventListener("pointermove", onPointerMove);
+        win.removeEventListener("pointerup", onPointerUp);
         this.cleanupActiveDrag = null;
       };
 
       this.cleanupActiveDrag = onPointerUp;
 
-      globalThis.addEventListener("pointermove", onPointerMove);
-      globalThis.addEventListener("pointerup", onPointerUp);
+      win.addEventListener("pointermove", onPointerMove);
+      win.addEventListener("pointerup", onPointerUp);
     });
   }
 }

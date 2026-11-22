@@ -10,7 +10,7 @@ import { addNoteToAnki } from "./anki.ts";
 import { groupDefinitionsByPos } from "./pos.ts";
 import { getRawDefinitionsList } from "./russian-dict.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
-import { getCharacterComponents, getCharacterRadical } from "./radicals.ts";
+import { getCharacterComponents, getCharacterRadical, getRadicalMeaning } from "./radicals.ts";
 import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
 import { t, getActiveLanguage } from "./i18n/index.ts";
 
@@ -680,6 +680,9 @@ export class DictTooltip {
         let activeChar: string | null = null;
         let decompDrawer: HTMLElement | null = null;
         const chipElements = new Map<string, HTMLElement>();
+        const targetLang = !settings.translationLanguage || settings.translationLanguage === "auto"
+          ? getActiveLanguage()
+          : (settings.translationLanguage === "both" ? getActiveLanguage() : settings.translationLanguage);
 
         const renderDecompDrawer = (targetChar: string) => {
           if (decompDrawer) {
@@ -711,11 +714,10 @@ export class DictTooltip {
           const py = charEntries && charEntries[0] ? formatPinyin(charEntries[0].pinyin, true) : "";
           const jp = charEntries && charEntries[0]?.jyutping;
           const phon = isCantonese && jp ? jp : py;
-          const isRu = settings.translationLanguage !== "en";
-          const def = charEntries ? this.formatConciseDefinitions(charEntries, 2, targetChar, settings.translationLanguage || "en") : "";
+          const def = charEntries ? this.formatConciseDefinitions(charEntries, 2, targetChar, targetLang) : "";
 
           const radInfo = getCharacterRadical(targetChar);
-          const comps = getCharacterComponents(targetChar);
+          const comps = getCharacterComponents(targetChar, targetLang);
 
           decompDrawer = this.el.createDiv({ cls: "ch-dict-decomp-drawer" });
           decompRow.after(decompDrawer);
@@ -748,7 +750,7 @@ export class DictTooltip {
           const detail = decompDrawer.createDiv({ cls: "ch-dict-decomp-drawer-detail" });
 
           if (radInfo) {
-            const radMeaning = isRu ? radInfo.meaningRu : radInfo.meaningEn;
+            const radMeaning = getRadicalMeaning(radInfo, targetLang);
             const radLine = detail.createDiv({ cls: "ch-dict-decomp-detail-line" });
             radLine.createSpan({
               cls: "ch-dict-decomp-detail-label",
@@ -785,15 +787,14 @@ export class DictTooltip {
               charEntries,
               1,
               char,
-              settings.translationLanguage || "en"
+              targetLang
             );
 
             const radInfo = getCharacterRadical(char);
-            const comps = getCharacterComponents(char);
+            const comps = getCharacterComponents(char, targetLang);
             let tooltipText = `${char} [${py}${jp ? ` / ${jp}` : ""}] ${def}`;
             if (radInfo) {
-              const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
-              const radMeaning = isRu ? radInfo.meaningRu : radInfo.meaningEn;
+              const radMeaning = getRadicalMeaning(radInfo, targetLang);
               tooltipText += `\n${t("tooltip.radical")} #${radInfo.number}: ${radInfo.radical} (${radInfo.pinyin}, ${radMeaning})`;
             }
             if (comps && comps.length > 0) {
@@ -814,10 +815,11 @@ export class DictTooltip {
             chip.createSpan({ cls: "ch-dict-decomp-phon", text: phon });
             chip.createSpan({ cls: "ch-dict-decomp-def", text: def });
             if (radInfo && settings.showRadicals) {
+              const radMeaning = getRadicalMeaning(radInfo, targetLang);
               chip.createSpan({
                 cls: "ch-dict-decomp-rad",
                 text: radInfo.radical,
-                attr: { title: `${t("tooltip.radical")} ${radInfo.radical} (${radInfo.meaningRu})` },
+                attr: { title: `${t("tooltip.radical")} ${radInfo.radical} (${radMeaning})` },
               });
             }
 

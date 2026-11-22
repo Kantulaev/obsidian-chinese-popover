@@ -1,6 +1,6 @@
 {
   "name": "chinese-popover-dict",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "Double-click Apple Liquid Glass Chinese popover dictionary with refined Pinyin, Jyutping, parts-of-speech definitions, character radical anatomy, 20-language offline dictionaries, flashcards & personal vocabulary notebook.",
   "main": "main.js",
   "scripts": {

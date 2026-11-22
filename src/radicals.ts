@@ -2,6 +2,8 @@
  * Complete 214 Kangxi Radicals (康熙部首 1 to 214) & Character Etymology Components
  */
 
+import { RADICAL_MULTILANG } from "./radicals-data.ts";
+
 export interface RadicalInfo {
   number: number;      // 1 to 214
   radical: string;     // e.g. "人" or "亻"
@@ -415,6 +417,294 @@ const CHAR_COMPONENTS: Record<string, string[]> = {
   "望": ["亡 (утрата)", "月 (луна)", "壬 (стоять) — вглядываться вдаль на полную луну, надеяться"],
 };
 
+const CHAR_COMPONENTS_EN: Record<string, string[]> = {
+  "学": ["冖 (cover/school)", "子 (child) — learning under the guidance of a teacher"],
+  "习": ["羽 (wings) — young bird flapping wings, practicing"],
+  "好": ["女 (woman)", "子 (child) — mother and child, harmony and goodness"],
+  "明": ["日 (sun)", "月 (moon) — two luminaries produce bright light"],
+  "休": ["亻 (person)", "木 (tree) — resting against a tree"],
+  "林": ["木 (tree)", "木 (tree) — grove / woods"],
+  "森": ["木 (tree)", "木 (tree)", "木 (tree) — dense forest"],
+  "从": ["人 (person)", "人 (person) — one follows another, follow"],
+  "众": ["人 (person)", "人 (person)", "人 (person) — crowd / multitude"],
+  "信": ["亻 (person)", "言 (words) — true to a person's words, trust"],
+  "看": ["手 (hand)", "目 (eye) — hand shielding eye to look into distance"],
+  "男": ["田 (field)", "力 (strength) — person working strength in the field, man"],
+  "家": ["宀 (roof)", "豕 (pig) — livestock under roof, home / family"],
+  "安": ["宀 (roof)", "女 (woman) — woman protected under roof, peace / safety"],
+  "字": ["宀 (roof)", "子 (child) — birth of characters under a roof, character"],
+  "朋": ["月 (cowrie shells)", "月 (cowrie shells) — strings of precious shells, peers / friends"],
+  "友": ["又 (hand)", "又 (hand) — two hands clasped in handshake, friend"],
+  "电": ["日/申 (lightning)", "乚 (flash tail) — celestial flash, electricity"],
+  "脑": ["月/肉 (body)", "𡿨 (curves)", "匕 — thinking organ in head, brain"],
+  "话": ["讠 (speech)", "舌 (tongue) — words rolling off the tongue, spoken words"],
+  "语": ["讠 (speech)", "五 (five)", "口 (mouth) — giving voice to thought, language"],
+  "汉": ["氵 (river)", "又 (hand) — sacred Hanshui river, giving name to Han people"],
+  "中": ["丨 (arrow)", "口 (target) — arrow right through target center, center"],
+  "国": ["囗 (enclosure)", "玉 (jade) — defended borders guarding precious jade, country"],
+  "喜": ["壴 (drum)", "口 (mouth) — singing and rejoicing to the drum beat, joyful"],
+  "欢": ["又 (hand)", "欠 (open mouth) — joyous shout of jubilation, delight"],
+  "作": ["亻 (person)", "乍 (start) — person setting to work, to make/do"],
+  "工": ["ancient carpenter's square / ruler — labor, craftsmanship"],
+  "现": ["王/玉 (jade)", "见 (see) — inner jade brilliance becoming visible, to appear/now"],
+  "吃": ["口 (mouth)", "乞 (beg/receive) — taking sustenance into the mouth, to eat"],
+  "喝": ["口 (mouth)", "曷 (imploring) — quenching thirst, to drink"],
+  "睡": ["目 (eye)", "垂 (droop) — heavy eyelids drooping, to sleep"],
+  "觉": ["𦥑 (hands)", "冖 (cover)", "见 (see) — suddenly waking up to realize, to feel"],
+  "时": ["日 (sun)", "寸 (measure) — measuring the sun's passage, time"],
+  "间": ["门 (gate)", "日 (sun) — sunbeam between gate leaves, space/interval"],
+  "问": ["门 (gate)", "口 (mouth) — asking at the gate, to ask"],
+  "闻": ["门 (gate)", "耳 (ear) — listening at the door, to hear/news"],
+  "闪": ["门 (gate)", "人 (person) — person flashing through the doorway, to flash"],
+  "闷": ["门 (gate)", "心 (heart) — heart shut tight behind doors, depressed/stuffy"],
+  "钱": ["钅 (metal)", "戋 (small) — metal coins, money"],
+  "买": ["乛 (net)", "头 (coin) — collecting goods, to buy"],
+  "卖": ["十 (surplus)", "买 (buy) — parting with excess, to sell"],
+  "车": ["ancient top-down view of a wheeled cart / chariot"],
+  "机": ["木 (wood)", "几 (support) — wooden loom / mechanism, machine"],
+  "飞": ["wings and feathers of a bird in swift flight, to fly"],
+  "运": ["辶 (movement)", "云 (clouds) — moving continuously like floating clouds, to move/transport"],
+  "动": ["云 (clouds)", "力 (force) — moving power, motion"],
+  "谢": ["讠 (words)", "身 (body)", "寸 (bow) — humble words of gratitude accompanied by a bow, to thank"],
+  "认": ["讠 (words)", "刃 (blade) — sharp recognition of words, to recognize"],
+  "识": ["讠 (words)", "只 (mark) — knowing signs and words, knowledge"],
+  "想": ["相 (mutual)", "心 (heart) — contemplating in one's heart, to think/miss"],
+  "思": ["田 (brain/field)", "心 (heart) — working of mind and heart, thought"],
+  "爱": ["爫 (claws/hands)", "冖 (cover)", "心 (heart)", "夂 (slowly) — tenderly holding from the bottom of one's heart, love"],
+  "站": ["立 (stand)", "占 (position) — taking up a standing position, station/to stand"],
+  "校": ["木 (wood)", "交 (interchange) — place of meeting and exchange of knowledge, school"],
+  "院": ["阝 (wall/hill)", "完 (complete) — enclosed compound, courtyard/institution"],
+  "医": ["匚 (tool chest)", "矢 (arrows) — healing arts, extracting arrows, medicine"],
+  "起": ["走 (walk)", "己 (self) — rising onto one's own feet, to get up"],
+  "跑": ["足 (foot)", "包 (wrap) — swiftly racing on feet, to run"],
+  "冷": ["冫 (ice)", "令 (command) — biting frost taking command, cold"],
+  "热": ["执 (grasp)", "灬 (fire) — blazing fire held in hand, hot"],
+  "茶": ["艹 (grass)", "人 (person)", "木 (tree) — leaves of the bush granting vitality, tea"],
+  "饭": ["饣 (food)", "反 (turn) — prepared meal, cooked rice"],
+  "伴": ["亻 (person)", "半 (half) — other half, companion"],
+  "体": ["亻 (person)", "本 (root) — bodily foundation of a person, body"],
+  "生": ["shoot breaking through soil — life, birth"],
+  "老": ["venerable elder with long hair and staff — old, aged"],
+  "师": ["banner of the troop leader — teacher, master"],
+  "见": ["eye with human legs — to see, meet"],
+  "再": ["second time, again, once more"],
+  "天": ["human figure with outstretched arms beneath heaven — sky, day"],
+  "昨": ["日 (sun)", "乍 (past) — yesterday's sun, yesterday"],
+  "今": ["gathering into this single moment — present, now"],
+  "年": ["sheaf of ripened harvest, annual cycle — year"],
+  "东": ["sun rising through tree branches — east"],
+  "西": ["bird nest at sunset — west"],
+  "果": ["tree bearing round succulent fruit — fruit, result"],
+  "水": ["flowing streams of a river, water"],
+  "苹": ["艹 (grass)", "平 (level/peaceful) — apple"],
+  "帮": ["巾 (cloth)", "邦 (nation) — support, to help"],
+  "助": ["力 (strength)", "且 (altar) — joining forces for a noble cause, assistance"],
+  "准": ["冫 (ice)", "隹 (bird) — accurate alignment, preparation"],
+  "备": ["夂 (step)", "田 (field) — readiness for action, reserve"],
+  "已": ["completed cycle, already"],
+  "经": ["纟 (thread)", "巠 (loom warp) — path, warp thread, to pass through"],
+  "唱": ["口 (mouth)", "昌 (bright) — resonant bright singing, to sing"],
+  "歌": ["哥 (melody)", "欠 (open mouth) — song"],
+  "跳": ["足 (foot)", "兆 (quick stride) — to leap, jump"],
+  "舞": ["dancer with flowing sleeves — dance"],
+  "游": ["氵 (water)", "斿 (banner) — swimming / floating in water"],
+  "泳": ["氵 (water)", "永 (eternal flow) — to swim"],
+  "便": ["亻 (person)", "更 (change) — convenient, easy"],
+  "宜": ["宀 (roof)", "且 (altar) — fitting, proper"],
+  "漂": ["氵 (water)", "票 (float) — pristine and fresh, floating/beautiful"],
+  "亮": ["亠 (top)", "口 (light)", "儿 (person) — brilliant radiant glow, bright"],
+  "得": ["彳 (step)", "旦 (dawn)", "寸 (obtain) — to acquire, gain"],
+  "知": ["矢 (arrow)", "口 (mouth) — swift word striking the mark, knowledge"],
+  "道": ["辶 (path)", "首 (head) — path of wisdom, way / doctrine"],
+  "懂": ["忄 (heart/mind)", "重 (deep) — deep comprehension of the essence, to understand"],
+  "白": ["clear beam of morning light, white / clear"],
+  "希": ["巾 (cloth)", "爻 (pattern) — rare embroidered weave, hope"],
+  "望": ["亡 (perish)", "月 (moon)", "壬 (stand) — gazing into the distance at the full moon, hoping"],
+};
+
+const CHAR_COMPONENTS_ZH: Record<string, string[]> = {
+  "学": ["冖 (秃宝盖)", "子 (孩子) — 良师引导下的求学启蒙"],
+  "习": ["羽 (鸟翼) — 幼鸟振翅练习，温习操练"],
+  "好": ["女 (女子)", "子 (孩子) — 母子相亲，和睦美好"],
+  "明": ["日 (太阳)", "月 (月亮) — 日月齐辉，光明澄澈"],
+  "休": ["亻 (人)", "木 (树木) — 人倚树木，停歇歇息"],
+  "林": ["木 (树木)", "木 (树木) — 双木成林"],
+  "森": ["木 (树木)", "木 (树木)", "木 (树木) — 三木成森，幽深茂密"],
+  "从": ["人 (人)", "人 (人) — 二人相随，跟随顺从"],
+  "众": ["人 (人)", "人 (人)", "人 (人) — 三人成众，众多人群"],
+  "信": ["亻 (人)", "言 (言语) — 人言有信，诚信守诺"],
+  "看": ["手 (手)", "目 (眼睛) — 手搭凉棚远眺，凝神细看"],
+  "男": ["田 (田地)", "力 (力气) — 耕作田野之劳力，男子汉"],
+  "家": ["宀 (房屋)", "豕 (猪) — 屋下有圈养牲畜，家园家庭"],
+  "安": ["宀 (房屋)", "女 (女子) — 屋中有女居，平安宁静"],
+  "字": ["宀 (房屋)", "子 (孩子) — 门下滋生繁衍，文字符号"],
+  "朋": ["月 (贝币)", "月 (贝币) — 珍贵贝串，同道同门好友"],
+  "友": ["又 (手)", "又 (手) — 两手相握，朋友之谊"],
+  "电": ["日/申 (雷电)", "乚 (电芒) — 天空闪电光芒，电能"],
+  "脑": ["月/肉 (身体)", "𡿨 (沟回)", "匕 — 首中思维之官，大脑"],
+  "话": ["讠 (言语)", "舌 (舌头) — 舌尖吐纳之言，说话言语"],
+  "语": ["讠 (言语)", "五 (五方)", "口 (口中) — 吐纳于口之深意，语言"],
+  "汉": ["氵 (水流)", "又 (手) — 汉水发源之地，汉族汉字"],
+  "中": ["丨 (箭矢)", "口 (箭靶) — 矢中靶心，正中居中"],
+  "国": ["囗 (疆界)", "玉 (美玉) — 城垣守护珍宝，国家领土"],
+  "喜": ["壴 (喜鼓)", "口 (欢唱) — 击鼓欢歌，喜悦欢腾"],
+  "欢": ["又 (双手)", "欠 (张口) — 欢声雀跃，开怀欢乐"],
+  "作": ["亻 (人)", "乍 (起始) — 人起而行之，制作劳作"],
+  "工": ["古代匠人曲尺 — 工艺劳动，规矩手艺"],
+  "现": ["王/玉 (美玉)", "见 (显现) — 玉石光华显露，显现当下"],
+  "吃": ["口 (嘴巴)", "乞 (祈求/纳受) — 口纳食物，进食吃喝"],
+  "喝": ["口 (嘴巴)", "曷 (呼求) — 口干急饮，畅饮喝水"],
+  "睡": ["目 (眼眸)", "垂 (低垂) — 倦眼低垂，入眠安睡"],
+  "觉": ["𦥑 (双手)", "冖 (遮蔽)", "见 (洞见) — 揭开遮蔽猛然看见，觉醒领会"],
+  "时": ["日 (日头)", "寸 (刻度) — 测定日规推移，时光时刻"],
+  "间": ["门 (门扉)", "日 (阳光) — 门扉中透入日光，缝隙间隔"],
+  "问": ["门 (门扉)", "口 (询问) — 登门叩问，请教询问"],
+  "闻": ["门 (门扉)", "耳 (耳朵) — 倚门倾听，聆听传闻"],
+  "闪": ["门 (门扉)", "人 (人影) — 人影门前掠过，闪现闪烁"],
+  "闷": ["门 (门扉)", "心 (心灵) — 封闭于门内之心，苦闷郁结"],
+  "钱": ["钅 (金属)", "戋 (细微) — 铸造之金属钱币，金钱财富"],
+  "买": ["乛 (网罗)", "头 (财货) — 网罗货物，购置买入"],
+  "卖": ["十 (出货)", "买 (买入) — 溢出售让，贩卖出售"],
+  "车": ["古代独辕两轮战车之俯视图，车辆"],
+  "机": ["木 (木构)", "几 (机巧) — 木制织机巧构，机械机运"],
+  "飞": ["展翅翱翔之羽翼飞鸟，飞翔飞逝"],
+  "运": ["辶 (行进)", "云 (流云) — 如流云般迁徙流转，运转运送"],
+  "动": ["云 (动云)", "力 (动力) — 汇聚力量移转，行动动弹"],
+  "谢": ["讠 (言语)", "身 (躬身)", "寸 (分寸) — 躬身致辞以表敬意，感谢致谢"],
+  "认": ["讠 (言语)", "刃 (利刃) — 辨别如刃之精准，认识辨认"],
+  "识": ["讠 (言语)", "只 (记识) — 辨记言词符号，见识知识"],
+  "想": ["相 (观相)", "心 (心思) — 心映万象思量，思念想念"],
+  "思": ["田 (脑髓)", "心 (心神) — 运筹心智，沉思思绪"],
+  "爱": ["爫 (双手)", "冖 (珍惜)", "心 (衷心)", "夂 (徐行) — 捧心慢护之真挚情感，珍爱仁爱"],
+  "站": ["立 (直立)", "占 (位置) — 稳立于地占定席位，站立车站"],
+  "校": ["木 (梁柱)", "交 (交融) — 师生交流学问之所，学堂学校"],
+  "院": ["阝 (垣墙)", "完 (完整) — 庭垣围合之规整处所，庭院学院"],
+  "医": ["匚 (盛器)", "矢 (矢箭) — 拔箭施治活人之术，医学医者"],
+  "起": ["走 (迈步)", "己 (自身) — 振作己身迈步前行，起床起始"],
+  "跑": ["足 (双足)", "包 (裹挟) — 迈开双足风驰电掣，奔跑跃进"],
+  "冷": ["冫 (寒冰)", "令 (号令) — 严霜降临寒意逼人，寒冷冷清"],
+  "热": ["执 (手持)", "灬 (烈焰) — 手执烈火炽盛熏灼，炎热温热"],
+  "茶": ["艹 (草木)", "人 (人饮)", "木 (木本) — 人在草木之间舒展神思，清茗茶道"],
+  "饭": ["饣 (饮食)", "反 (反转) — 烹熟转生为熟之谷物，米饭饭食"],
+  "伴": ["亻 (人类)", "半 (半边) — 人之另一半辅佐相依，伴侣同伴"],
+  "体": ["亻 (人身)", "本 (根本) — 人之根本形质骨架，身体体魄"],
+  "生": ["破土萌发之青苗，生命诞生"],
+  "老": ["须发斑白拄杖老者，年长长寿"],
+  "师": ["军阵前引领之旌旗，导师恩师"],
+  "见": ["睁目之人形远望，看见接见"],
+  "再": ["重重叠叠更进一步，再次重演"],
+  "天": ["顶天立地张臂大汉顶上蒼穹，天空天际"],
+  "昨": ["日 (红日)", "乍 (初去) — 刚过去之白昼，昨日往昔"],
+  "今": ["汇聚于此刻当下，如今现今"],
+  "年": ["谷熟成熟丰收一轮，岁月光阴"],
+  "东": ["旭日自扶桑林木间升起之方，东方晨曦"],
+  "西": ["落日时分归鸟栖于巢木之方，西方落日"],
+  "果": ["枝头结出圆硕果实，成果果实"],
+  "水": ["奔流不息之山川清溪，水流滋养"],
+  "苹": ["艹 (草木)", "平 (平和) — 平安吉祥之嘉果，苹果"],
+  "帮": ["巾 (辅佐)", "邦 (邦国) — 辅翼家邦相扶相携，协助帮助"],
+  "助": ["力 (出力)", "且 (助佑) — 汇聚众人力气成事，赞助协助"],
+  "准": ["冫 (平准)", "隹 (仪鸟) — 水平齐准预作谋划，准备标准"],
+  "备": ["夂 (戒备)", "田 (器用) — 有备无患准备就绪，预备设备"],
+  "已": ["回转完满之终局，已然完成"],
+  "经": ["纟 (经纬)", "巠 (直水) — 织锦之纵线大纲，经典经历"],
+  "唱": ["口 (放声)", "昌 (通畅) — 朗朗高歌亮畅声调，歌唱吟唱"],
+  "歌": ["哥 (吟咏)", "欠 (呼气) — 吐纳声律悠扬成曲，歌曲赞歌"],
+  "跳": ["足 (步履)", "兆 (迅疾) — 腾挪起伏迅跃凌空，起跳跳跃"],
+  "舞": ["长袖舒展旋转之舞者，舞蹈起舞"],
+  "游": ["氵 (碧波)", "斿 (游戈) — 随波荡漾巡历远方，畅游旅行"],
+  "泳": ["氵 (清流)", "永 (源长) — 随流水浮波前行，游泳潜泳"],
+  "便": ["亻 (人体)", "更 (通畅) — 顺畅适宜安便便利，简便便宜"],
+  "宜": ["宀 (高堂)", "且 (案几) — 宾主适得其所宜然，合宜适宜"],
+  "漂": ["氵 (清波)", "票 (轻扬) — 浮水生姿轻盈秀美，漂浮漂亮"],
+  "亮": ["亠 (高远)", "口 (明晰)", "儿 (俊采) — 朗照高远璀璨生辉，明亮光亮"],
+  "得": ["彳 (行步)", "旦 (明晓)", "寸 (执守) — 身体力行收获成果，获得得到"],
+  "知": ["矢 (利矢)", "口 (言语) — 语中要害如矢中的，知晓知识"],
+  "道": ["辶 (大道)", "首 (头领) — 智者引领之正途大道，道路道法"],
+  "懂": ["忄 (心智)", "重 (深沉) — 心入深处豁然领悟，懂得懂悟"],
+  "白": ["初升清晓之一束白光，皎洁纯白"],
+  "希": ["巾 (锦罗)", "爻 (织纹) — 稀罕精致之锦绣华纹，希望希冀"],
+  "望": ["亡 (怅惘)", "月 (明月)", "壬 (登高) — 登高翘首遥望满月，盼望眺望"],
+};
+
+function normalizeLangCode(lang?: string): string {
+  if (!lang || lang === "auto") return "en";
+  const l = lang.toLowerCase();
+  if (l === "zh-tw" || l === "zh-hk" || l.includes("hant")) return "zh-TW";
+  if (l.startsWith("zh")) return "zh-CN";
+  return lang;
+}
+
+export function getRadicalMeaning(
+  rad: RadicalInfo | number,
+  lang: string = "en"
+): string {
+  const num = typeof rad === "number" ? rad : rad.number;
+  const normalizedLang = normalizeLangCode(lang);
+  const mult = RADICAL_MULTILANG[num];
+  if (mult && mult[normalizedLang]) {
+    return mult[normalizedLang];
+  }
+  if (typeof rad === "object") {
+    if (normalizedLang === "ru") return rad.meaningRu;
+    if (normalizedLang === "en") return rad.meaningEn;
+  }
+  return mult?.["en"] || (typeof rad === "object" ? rad.meaningEn : KANGXI_RADICALS[num]?.meaningEn || "");
+}
+
+export function formatBasicRadicalDesc(
+  radNum: number,
+  radical: string,
+  meaning: string,
+  strokeCount: number,
+  lang: string = "en"
+): string {
+  const l = normalizeLangCode(lang);
+  switch (l) {
+    case "ru":
+      return `Базовый неделимый иероглиф-ключ #${radNum} «${radical}» («${meaning}», ${strokeCount} черт)`;
+    case "de":
+      return `Grundlegendes Kangxi-Radikal #${radNum} «${radical}» („${meaning}“, ${strokeCount} Striche)`;
+    case "fr":
+      return `Radical de base de Kangxi #${radNum} « ${radical} » (« ${meaning} », ${strokeCount} traits)`;
+    case "es":
+      return `Radical básico de Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} trazos)`;
+    case "ja":
+      return `基本康熙部首 #${radNum}「${radical}」（${meaning}、${strokeCount}画）`;
+    case "ko":
+      return `기본 강희자전 부수 #${radNum} '${radical}' (${meaning}, ${strokeCount}획)`;
+    case "vi":
+      return `Bộ thủ Khang Hy cơ bản #${radNum} «${radical}» («${meaning}», ${strokeCount} nét)`;
+    case "it":
+      return `Radicale base di Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} tratti)`;
+    case "pt":
+      return `Radical básico de Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} traços)`;
+    case "id":
+      return `Radikal dasar Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} guratan)`;
+    case "th":
+      return `หมวดนำคังซีพื้นฐาน #${radNum} «${radical}» («${meaning}», ${strokeCount} ขีด)`;
+    case "ar":
+      return `الجذر الأساسي لكانغ شي #${radNum} «${radical}» («${meaning}»، ${strokeCount} ضربات)`;
+    case "tr":
+      return `Temel Kangxi kökü #${radNum} «${radical}» («${meaning}», ${strokeCount} çizgi)`;
+    case "pl":
+      return `Podstawowy pierwiastek Kangxi #${radNum} «${radical}» („${meaning}”, ${strokeCount} kresek)`;
+    case "nl":
+      return `Basis Kangxi-radicaal #${radNum} «${radical}» («${meaning}», ${strokeCount} strepen)`;
+    case "uk":
+      return `Базовий неподільний ієрогліф-ключ #${radNum} «${radical}» («${meaning}», ${strokeCount} рис)`;
+    case "hi":
+      return `मूल कांग्शी मूलक #${radNum} «${radical}» («${meaning}», ${strokeCount} स्ट्रोक)`;
+    case "zh-CN":
+      return `基本康熙部首 #${radNum} “${radical}”（${meaning}，${strokeCount}画）`;
+    case "zh-TW":
+      return `基本康熙部首 #${radNum} 「${radical}」（${meaning}，${strokeCount}畫）`;
+    case "en":
+    default:
+      return `Basic Kangxi radical #${radNum} «${radical}» («${meaning}», ${strokeCount} strokes)`;
+  }
+}
+
 export function getCharacterRadical(char: string): RadicalInfo | null {
   if (!char) return null;
   const c = Array.from(char)[0];
@@ -425,17 +715,30 @@ export function getCharacterRadical(char: string): RadicalInfo | null {
   return null;
 }
 
-export function getCharacterComponents(char: string): string[] | null {
+export function getCharacterComponents(char: string, lang: string = "en"): string[] | null {
   if (!char) return null;
   const c = Array.from(char)[0];
+  const l = normalizeLangCode(lang);
+
+  if (l === "ru" && CHAR_COMPONENTS[c]) {
+    return CHAR_COMPONENTS[c];
+  }
+  if ((l === "zh-CN" || l === "zh-TW") && CHAR_COMPONENTS_ZH[c]) {
+    return CHAR_COMPONENTS_ZH[c];
+  }
+  if (l !== "ru" && CHAR_COMPONENTS_EN[c]) {
+    return CHAR_COMPONENTS_EN[c];
+  }
   if (CHAR_COMPONENTS[c]) {
     return CHAR_COMPONENTS[c];
   }
+
   const radNum = RADICAL_CHAR_MAP[c];
   if (radNum && KANGXI_RADICALS[radNum]) {
     const info = KANGXI_RADICALS[radNum];
+    const meaning = getRadicalMeaning(info, lang);
     return [
-      `Базовый неделимый иероглиф-ключ #${radNum} («${info.meaningRu}», ${info.strokeCount} черт)`,
+      formatBasicRadicalDesc(radNum, info.radical, meaning, info.strokeCount, lang),
     ];
   }
   return null;

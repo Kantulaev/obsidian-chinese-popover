@@ -283,14 +283,14 @@
     <rect width="370" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#38bdf8" stroke-width="1.2" />
     <circle cx="22" cy="21" r="10" fill="rgba(56, 189, 248, 0.2)" />
     <text x="15" y="26" class="font-sans" font-size="12">🌏</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">20-Language Dictionaries &amp; Audio</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">20 Languages &amp; Reverse Lookup</text>
   </g>
 
-  <!-- Pill 3: Bottom Left - Parts of Speech & Mini HSK -->
+  <!-- Pill 3: Bottom Left - Parts of Speech & Kangxi Radicals -->
   <g transform="translate(60, 620)" filter="url(#pill-glow)">
     <rect width="330" height="42" rx="12" fill="rgba(18, 25, 42, 0.95)" stroke="#10b981" stroke-width="1.2" />
     <circle cx="22" cy="21" r="10" fill="rgba(16, 185, 129, 0.2)" />
-    <text x="16" y="26" class="font-sans" font-size="12">📚</text>
-    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Parts of Speech &amp; Discreet Mini HSK</text>
+    <text x="16" y="26" class="font-sans" font-size="12">🧩</text>
+    <text x="38" y="26" class="font-sans" font-size="12.5" font-weight="700" fill="#f8fafc">Parts of Speech &amp; 214 Radicals</text>
   </g>
 </svg>

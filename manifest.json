@@ -3,7 +3,7 @@
   "name": "Chinese Popover Dictionary",
   "version": "1.9.4",
   "minAppVersion": "1.5.0",
-  "description": "Double-click Apple Liquid Glass Chinese popover dictionary with refined Pinyin, Jyutping, parts-of-speech definitions, character radical anatomy, 20-language offline dictionaries, flashcards & personal vocabulary notebook.",
+  "description": "Instant Apple Liquid Glass Chinese dictionary for Obsidian. Features Mandarin Pinyin, Cantonese Jyutping, 214 Kangxi radicals anatomy, 20-language reverse lookup, and spaced repetition vocabulary book.",
   "author": "Kantulaev",
   "authorUrl": "https://www.youtube.com/@ChineseWithKantulaev",
   "isDesktopOnly": false

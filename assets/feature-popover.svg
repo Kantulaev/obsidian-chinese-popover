@@ -56,7 +56,7 @@
     <rect width="240" height="26" rx="6" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1" />
     <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#38bdf8" letter-spacing="0.8">APPLE LIQUID GLASS POPOVER</text>
     <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Minimalist Apple Liquid Glass Popover</text>
-    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Refined typography (13px pinyin, 16px translation), parts of speech, discreet mini HSK, and character radical anatomy.</text>
+    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Balanced typography (13px pinyin, 16px translation), dual Mandarin/Cantonese audio, and 214 Kangxi radicals anatomy.</text>
   </g>
 
   <!-- ================= LEFT FEATURE CALLOUT CARDS ================= -->
@@ -224,7 +224,7 @@
     <g transform="translate(20, 26)" class="font-sans" font-size="12" font-weight="600" fill="#94a3b8">
       <text x="0" y="0">⭐ <tspan fill="#f8fafc">1-Click Star to Markdown Vault Notebook</tspan></text>
       <text x="270" y="0">🗃️ <tspan fill="#f8fafc">AnkiConnect Sync &amp; Pleco Export</tspan></text>
-      <text x="540" y="0">🌏 <tspan fill="#f8fafc">20 Offline Language Dictionaries</tspan></text>
+      <text x="540" y="0">🔄 <tspan fill="#f8fafc">20-Language Reverse Lookup</tspan></text>
       <text x="760" y="0">📜 <tspan fill="#f8fafc">Chengyu Fables</tspan></text>
     </g>
   </g>

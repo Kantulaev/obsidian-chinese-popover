@@ -44,8 +44,8 @@
   <g transform="translate(60, 42)">
     <rect width="176" height="26" rx="6" fill="rgba(244, 63, 94, 0.12)" stroke="rgba(244, 63, 94, 0.3)" stroke-width="1" />
     <text x="10" y="17" class="font-sans" font-size="11" font-weight="700" fill="#f43f5e" letter-spacing="1">ADVANCED STUDY TOOLS</text>
-    <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Stroke Order, HSK Text Analyzer &amp; Word Notes</text>
-    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Animated Mizige calligraphy grids, whole-vault vocabulary statistics, Chengyu fables, and printable worksheets.</text>
+    <text x="0" y="54" class="font-sans" font-size="24" font-weight="800" fill="#f8fafc">Stroke Order, HSK Analyzer &amp; Reverse Lookup</text>
+    <text x="0" y="74" class="font-sans" font-size="13" fill="#94a3b8">Animated Mizige calligraphy grids, text difficulty metrics, 20-language reverse lookup, and worksheets.</text>
   </g>
 
   <!-- ================= GRID OF 3 SUITE PANELS ================= -->
@@ -156,23 +156,23 @@
     </g>
   </g>
 
-  <!-- PANEL 3: ATOMIC WORD NOTES, CHENGYU & WORKSHEETS -->
+  <!-- PANEL 3: REVERSE LOOKUP, CHENGYU & WORKSHEETS -->
   <g transform="translate(660, 136)" filter="url(#tools-shadow)">
     <rect width="280" height="380" rx="16" fill="url(#tools-card-glass)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.2" />
     <rect x="1" y="1" width="278" height="44" rx="15" fill="url(#tools-specular)" pointer-events="none" />
 
     <!-- Header -->
     <g transform="translate(18, 16)">
-      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">📝 Notes &amp; Worksheets</text>
-      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Zettelkasten, fables, PDF sheets</text>
+      <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">🔄 Reverse &amp; Worksheets</text>
+      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Reverse search, fables, worksheets</text>
     </g>
 
-    <!-- Item 1: Atomic Word Note -->
+    <!-- Item 1: 20-Language Reverse Lookup -->
     <g transform="translate(18, 68)">
-      <rect width="244" height="82" rx="10" fill="rgba(168, 85, 247, 0.12)" stroke="rgba(168, 85, 247, 0.3)" stroke-width="1" />
-      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#c084fc">📝 Atomic Word Notes</text>
-      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">1-click creation in <tspan fill="#e2e8f0">Chinese/Words/</tspan></text>
-      <text x="12" y="62" class="font-sans" font-size="11" fill="#94a3b8">YAML, tags, pinyin, context &amp; links.</text>
+      <rect width="244" height="82" rx="10" fill="rgba(56, 189, 248, 0.12)" stroke="rgba(56, 189, 248, 0.3)" stroke-width="1" />
+      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#38bdf8">🔄 20-Lang Reverse Lookup</text>
+      <text x="12" y="44" class="font-sans" font-size="11" fill="#94a3b8">Sub-ms reverse lookup for 20 languages:</text>
+      <text x="12" y="62" class="font-sans" font-size="11" fill="#e2e8f0">EN, RU, ES, FR, DE, JA, KO &amp; more!</text>
     </g>
 
     <!-- Item 2: Chengyu Origin Story -->

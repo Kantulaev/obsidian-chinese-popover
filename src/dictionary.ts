@@ -1,6 +1,7 @@
 import { Notice, requestUrl } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import {
+  DICT_PACKS,
   isDictPackInstalled,
   downloadDictPack,
   deleteDictPack,
@@ -689,6 +690,9 @@ export class DictionaryManager {
         await this.loadPack(activePack);
       }
 
+      // Preload all installed offline packs for multi-language reverse lookup
+      await this.loadAllInstalledPacks();
+
       // Preload chengyu stories pack if installed on disk
       await loadChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
     } catch (err) {
@@ -791,9 +795,23 @@ export class DictionaryManager {
     const data = await loadDictPackData(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
     if (data) {
       this.loadedPacks.set(packId, data);
+      reverseDictionary.indexPack(packId, data);
       return true;
     }
     return false;
+  }
+
+  /**
+   * Automatically preloads all offline dictionary packs present in the vault.
+   */
+  async loadAllInstalledPacks(): Promise<void> {
+    for (const pack of DICT_PACKS) {
+      if (pack.id === "en") continue;
+      const isInstalled = await isDictPackInstalled(this.plugin.app.vault.adapter, this.getPluginDir(), pack.id);
+      if (isInstalled) {
+        await this.loadPack(pack.id);
+      }
+    }
   }
 
   async isChengyuInstalled(): Promise<boolean> {
@@ -846,9 +864,12 @@ export class DictionaryManager {
 
   ensureReverseIndexReady(): void {
     reverseDictionary.ensureReady(this.data);
+    for (const [langId, packData] of this.loadedPacks.entries()) {
+      reverseDictionary.indexPack(langId, packData);
+    }
   }
 
-  lookupReverse(query: string, preferredLang: string = "en"): MatchResult | null {
+  lookupReverse(query: string, preferredLang: string = "auto"): MatchResult | null {
     const rev = reverseDictionary.lookup(query, this.data, preferredLang);
     if (!rev) return null;
     const entries = this.getOrSynthesize(rev.primaryWord) || this.get(rev.primaryWord);

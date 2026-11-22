@@ -1,5 +1,5 @@
 /**
- * Reverse Dictionary Engine (English / Russian / Foreign Words -> Chinese)
+ * Reverse Dictionary Engine (Multi-Language: EN, RU, DE, FR, ES, JA, KO, VI, IT, PT, etc. -> Chinese)
  * Allows users to learn in reverse: clicking or selecting any foreign word
  * reveals its Chinese counterpart with Pinyin, audio, stroke order & character breakdown.
  */
@@ -7,6 +7,7 @@
 import type { DictionaryData } from "./dictionary.ts";
 import { getHskLevel } from "./hsk.ts";
 import { RUSSIAN_TRANSLATIONS } from "./russian-dict.ts";
+import { MULTILANG_CORE_VOCAB } from "./multilang-data.ts";
 
 export interface ReverseLookupResult {
   query: string;
@@ -16,25 +17,63 @@ export interface ReverseLookupResult {
 }
 
 export class ReverseDictionaryEngine {
-  private enIndex = new Map<string, string[]>();
-  private ruIndex = new Map<string, string[]>();
+  private langIndexes = new Map<string, Map<string, string[]>>();
   private isEnReady = false;
   private isRuReady = false;
+  private isMultiCoreReady = false;
   private isBuilding = false;
 
+  public getOrCreateIndex(lang: string): Map<string, string[]> {
+    let map = this.langIndexes.get(lang);
+    if (!map) {
+      map = new Map<string, string[]>();
+      this.langIndexes.set(lang, map);
+    }
+    return map;
+  }
+
   /**
-   * Initializes the reverse index from CC-CEDICT and Russian definitions.
+   * Initializes the reverse index from CC-CEDICT, Russian and multi-language core vocabulary.
    * Runs lazily so it never affects plugin startup time.
    */
   public ensureReady(dictData: DictionaryData): void {
-    if ((this.isEnReady && this.isRuReady) || this.isBuilding) return;
+    if ((this.isEnReady && this.isRuReady && this.isMultiCoreReady) || this.isBuilding) return;
     this.isBuilding = true;
 
     try {
       this.buildEnIndex(dictData);
       this.buildRuIndex();
+      this.buildMultiLangCoreIndex();
     } finally {
       this.isBuilding = false;
+    }
+  }
+
+  /**
+   * Dynamically indexes any downloaded full dictionary pack (HanDeDict, CFDICT, etc.)
+   */
+  public indexPack(langId: string, packData: Record<string, string[]>): void {
+    const idx = this.getOrCreateIndex(langId);
+    for (const [chWord, defs] of Object.entries(packData)) {
+      if (!defs || !Array.isArray(defs)) continue;
+      for (const def of defs) {
+        const parts = def.split(/[,;/]/);
+        for (const rawP of parts) {
+          let s = rawP.trim().toLowerCase();
+          s = s.replace(/[?!.,;:'"()[\]{}]/g, "").trim();
+          if (!s || s.length > 50) continue;
+          if (s.length === 1 && !/[\p{L}]/u.test(s)) continue;
+
+          let list = idx.get(s);
+          if (!list) {
+            list = [];
+            idx.set(s, list);
+          }
+          if (!list.includes(chWord) && list.length < 35) {
+            list.push(chWord);
+          }
+        }
+      }
     }
   }
 
@@ -43,6 +82,7 @@ export class ReverseDictionaryEngine {
    */
   private buildEnIndex(dictData: DictionaryData): void {
     if (this.isEnReady) return;
+    const idx = this.getOrCreateIndex("en");
 
     for (const [chWord, entries] of Object.entries(dictData)) {
       if (!entries) continue;
@@ -63,10 +103,10 @@ export class ReverseDictionaryEngine {
             }
 
             for (const cand of candidates) {
-              let list = this.enIndex.get(cand);
+              let list = idx.get(cand);
               if (!list) {
                 list = [];
-                this.enIndex.set(cand, list);
+                idx.set(cand, list);
               }
               if (!list.includes(chWord) && list.length < 35) {
                 list.push(chWord);
@@ -84,6 +124,7 @@ export class ReverseDictionaryEngine {
    */
   private buildRuIndex(): void {
     if (this.isRuReady) return;
+    const idx = this.getOrCreateIndex("ru");
 
     for (const [chWord, ruDefs] of Object.entries(RUSSIAN_TRANSLATIONS)) {
       for (const def of ruDefs) {
@@ -94,10 +135,10 @@ export class ReverseDictionaryEngine {
           if (!s || s.length > 40) continue;
           if (s.length === 1 && !/[\p{L}]/u.test(s)) continue;
 
-          let list = this.ruIndex.get(s);
+          let list = idx.get(s);
           if (!list) {
             list = [];
-            this.ruIndex.set(s, list);
+            idx.set(s, list);
           }
           if (!list.includes(chWord) && list.length < 35) {
             list.push(chWord);
@@ -106,6 +147,65 @@ export class ReverseDictionaryEngine {
       }
     }
     this.isRuReady = true;
+  }
+
+  /**
+   * Builds inverted index from multi-language core vocabulary (20 languages)
+   */
+  private buildMultiLangCoreIndex(): void {
+    if (this.isMultiCoreReady) return;
+
+    for (const [chWord, langMap] of Object.entries(MULTILANG_CORE_VOCAB)) {
+      for (const [langId, defs] of Object.entries(langMap)) {
+        if (!defs || !Array.isArray(defs)) continue;
+        const idx = this.getOrCreateIndex(langId);
+
+        for (const def of defs) {
+          const parts = def.split(/[,;/]/);
+          for (const rawP of parts) {
+            let s = rawP.trim().toLowerCase();
+            s = s.replace(/[?!.,;:'"()[\]{}]/g, "").trim();
+            if (!s || s.length > 50) continue;
+            if (s.length === 1 && !/[\p{L}]/u.test(s)) continue;
+
+            let list = idx.get(s);
+            if (!list) {
+              list = [];
+              idx.set(s, list);
+            }
+            if (!list.includes(chWord) && list.length < 35) {
+              list.push(chWord);
+            }
+          }
+        }
+      }
+    }
+    this.isMultiCoreReady = true;
+  }
+
+  /**
+   * Detects the script of a foreign word for smart automatic language matching
+   */
+  public detectScript(q: string): string | null {
+    if (/[\u0600-\u06ff]/u.test(q)) return "ar"; // Arabic
+    if (/[\u0e00-\u0e7f]/u.test(q)) return "th"; // Thai
+    if (/[\u0900-\u097f]/u.test(q)) return "hi"; // Devanagari (Hindi)
+    if (/[\u3040-\u30ff]/u.test(q)) return "ja"; // Japanese Kana
+    if (/[\uac00-\ud7af]/u.test(q)) return "ko"; // Korean Hangul
+    if (/[а-яё]/i.test(q)) return "ru"; // Cyrillic
+    if (/[\u0400-\u04ff]/u.test(q)) return "uk"; // Ukrainian Cyrillic
+    return null;
+  }
+
+  /**
+   * Multi-language inflection lemmatization
+   */
+  private lemmatize(w: string, lang: string): string[] {
+    if (lang === "en") return this.lemmatizeEn(w);
+    if (lang === "ru" || lang === "uk") return this.lemmatizeRu(w);
+    if (lang === "de") return this.lemmatizeDe(w);
+    if (["fr", "es", "it", "pt"].includes(lang)) return this.lemmatizeRomance(w);
+    return [w];
   }
 
   /**
@@ -139,7 +239,6 @@ export class ReverseDictionaryEngine {
     if (w.endsWith("ing") && w.length > 4) {
       forms.push(w.slice(0, -3));
       forms.push(w.slice(0, -3) + "e");
-      // Double consonant (e.g. running -> run)
       if (w.length > 5 && w[w.length - 4] === w[w.length - 5]) {
         forms.push(w.slice(0, -4));
       }
@@ -164,7 +263,7 @@ export class ReverseDictionaryEngine {
   }
 
   /**
-   * Russian inflection lemmatization (cases, plurals, adjectives)
+   * Russian inflection lemmatization (cases, plurals, irregulars)
    */
   private lemmatizeRu(w: string): string[] {
     const forms: string[] = [w];
@@ -203,12 +302,40 @@ export class ReverseDictionaryEngine {
   }
 
   /**
+   * German inflection lemmatization (plurals, verb endings)
+   */
+  private lemmatizeDe(w: string): string[] {
+    const forms = [w];
+    if (w.endsWith("en") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.endsWith("e") && w.length > 3) forms.push(w.slice(0, -1));
+    if (w.endsWith("er") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.endsWith("es") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.endsWith("st") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.endsWith("te") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.startsWith("ge") && w.length > 5) forms.push(w.slice(2));
+    return Array.from(new Set(forms));
+  }
+
+  /**
+   * Romance languages inflection lemmatization (French, Spanish, Italian, Portuguese)
+   */
+  private lemmatizeRomance(w: string): string[] {
+    const forms = [w];
+    const strippedArticle = w.replace(/^(le|la|les|un|une|des|l'|d'|el|los|las|il|lo|gli|i|o|a|os|as)\s+/i, "");
+    if (strippedArticle !== w) forms.push(strippedArticle);
+    if (w.endsWith("s") && w.length > 3) forms.push(w.slice(0, -1));
+    if (w.endsWith("es") && w.length > 4) forms.push(w.slice(0, -2));
+    if (w.endsWith("i") && w.length > 3) forms.push(w.slice(0, -1));
+    return Array.from(new Set(forms));
+  }
+
+  /**
    * Main reverse lookup entrypoint: finds Chinese translations for an English or foreign word.
    */
   public lookup(
     query: string,
     dictData: DictionaryData,
-    preferredLang: string = "en"
+    preferredLang: string = "auto"
   ): ReverseLookupResult | null {
     if (!query) return null;
     const cleanQ = query.trim().toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
@@ -217,34 +344,44 @@ export class ReverseDictionaryEngine {
 
     this.ensureReady(dictData);
 
-    const isCyrillic = /[а-яё]/i.test(cleanQ);
-    let matchedWords: string[] = [];
-    let matchedKey = cleanQ;
+    const detected = this.detectScript(cleanQ);
+    const searchLangs: string[] = [];
 
-    if (isCyrillic || preferredLang === "ru") {
-      // 1. Search Russian index
-      const ruForms = this.lemmatizeRu(cleanQ);
-      for (const form of ruForms) {
-        const list = this.ruIndex.get(form);
-        if (list && list.length > 0) {
-          matchedWords = list;
-          matchedKey = form;
-          break;
-        }
+    if (preferredLang && preferredLang !== "auto") {
+      searchLangs.push(preferredLang);
+      if (detected && detected !== preferredLang) {
+        searchLangs.push(detected);
+      }
+      if (preferredLang !== "en") {
+        searchLangs.push("en");
+      }
+    } else {
+      // Auto mode:
+      if (detected) {
+        searchLangs.push(detected);
+        if (detected === "ru") searchLangs.push("uk");
+      } else {
+        // Latin script: search western language indices in relevance order, then en
+        searchLangs.push("de", "fr", "es", "it", "pt", "id", "nl", "pl", "tr", "vi", "en");
       }
     }
 
-    // 2. If no Russian match or preferred language is English/auto, search English index
-    if (matchedWords.length === 0 && (!isCyrillic || preferredLang !== "ru")) {
-      const enForms = this.lemmatizeEn(cleanQ);
-      for (const form of enForms) {
-        const list = this.enIndex.get(form);
+    let matchedWords: string[] = [];
+    let matchedKey = cleanQ;
+
+    for (const lang of searchLangs) {
+      const idx = this.langIndexes.get(lang);
+      if (!idx) continue;
+      const forms = this.lemmatize(cleanQ, lang);
+      for (const form of forms) {
+        const list = idx.get(form);
         if (list && list.length > 0) {
           matchedWords = list;
           matchedKey = form;
           break;
         }
       }
+      if (matchedWords.length > 0) break;
     }
 
     if (matchedWords.length === 0) {

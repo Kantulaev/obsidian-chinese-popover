@@ -150,7 +150,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
 
   maxWordLength: 12,
   enableReverseLookup: false,
-  reverseLookupLanguage: "en",
+  reverseLookupLanguage: "auto",
 
   vocabularyFilePath: "Chinese Vocabulary.md",
   autoSaveContextSentence: true,
@@ -1055,18 +1055,18 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Язык обратного поиска / Reverse Lookup Language")
-      .setDesc("Основной язык для обратного поиска слов (по умолчанию английский).")
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("en", "English (по умолчанию)")
-          .addOption("ru", "Русский (БКРС)")
-          .addOption("auto", "Автоопределение / Auto (En / Ru)")
-          .setValue(this.plugin.settings.reverseLookupLanguage || "en")
-          .onChange(async (value) => {
-            this.plugin.settings.reverseLookupLanguage = value;
-            await this.plugin.saveSettings();
-          })
-      );
+      .setDesc("Основной язык для обратного поиска слов (по умолчанию: автоопределение всех 20 языков мира).")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("auto", "🌐 Автоопределение всех языков (Auto-detect)");
+        for (const pack of DICT_PACKS) {
+          dropdown.addOption(pack.id, `${pack.flag} ${pack.name} (${pack.nativeName})`);
+        }
+        dropdown.setValue(this.plugin.settings.reverseLookupLanguage || "auto");
+        dropdown.onChange(async (value) => {
+          this.plugin.settings.reverseLookupLanguage = value;
+          await this.plugin.saveSettings();
+        });
+      });
 
     // ==========================================
     // 6. ЛИЧНЫЙ СЛОВАРИК

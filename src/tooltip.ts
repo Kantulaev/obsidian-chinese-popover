@@ -21,6 +21,13 @@ export interface ContentBounds {
   bottom?: number;
 }
 
+export interface TargetRect {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
 export class DictTooltip {
   private el: HTMLElement;
   private isVisible: boolean = false;
@@ -34,6 +41,7 @@ export class DictTooltip {
   private currentWord: string | null = null;
   private currentMatch: MatchResult | null = null;
   private currentContextSentence: string | undefined = undefined;
+  private currentTargetRect?: TargetRect;
   private currentAudio: HTMLAudioElement | null = null;
   private cleanupActiveDrag: (() => void) | null = null;
   private plugin: ChineseHoverDictPlugin | null = null;
@@ -47,7 +55,29 @@ export class DictTooltip {
       e.stopPropagation();
     });
 
+    this.el.addEventListener("mouseenter", () => {
+      this.plugin?.cancelHoverHide();
+      this.plugin?.cancelHoverLookup();
+    });
+
+    this.el.addEventListener("mouseleave", () => {
+      if (
+        this.plugin &&
+        (this.plugin.settings.readerMode ||
+          this.plugin.settings.triggerMode === "hover" ||
+          this.plugin.settings.triggerMode === "hover_modifier") &&
+        this.isVisible &&
+        !this.isPinned
+      ) {
+        this.plugin.scheduleHoverHide(300);
+      }
+    });
+
     document.body.appendChild(this.el);
+  }
+
+  getElement(): HTMLElement {
+    return this.el;
   }
 
   setPlugin(plugin: ChineseHoverDictPlugin): void {
@@ -195,11 +225,13 @@ export class DictTooltip {
     y: number,
     settings: ChineseDictSettings,
     bounds?: ContentBounds,
-    contextSentence?: string
+    contextSentence?: string,
+    targetRect?: TargetRect
   ): void {
     this.currentMatch = match;
     this.currentWord = match.word;
     this.currentContextSentence = contextSentence;
+    this.currentTargetRect = targetRect;
 
     // Record in Recent Lookups History
     if (this.plugin?.history) {
@@ -209,7 +241,7 @@ export class DictTooltip {
 
     this.applyDynamicStyles(settings);
     this.render(match, settings, contextSentence);
-    this.position(x, y, settings, bounds);
+    this.position(x, y, settings, bounds, targetRect);
 
     // Make visible and interactive via CSS class
     this.el.addClass("ch-dict-visible");
@@ -1112,20 +1144,24 @@ export class DictTooltip {
     x: number,
     y: number,
     settings: ChineseDictSettings,
-    bounds?: ContentBounds
+    bounds?: ContentBounds,
+    targetRect?: TargetRect
   ): void {
     if (this.hasCustomPosition && this.isPinned) {
       return;
     }
 
     const width = settings.popoverWidth || 330;
-    const height = settings.popoverHeight || 165;
     const padding = 10;
-    const offsetDistance = 14;
+    const offsetDistance = 10;
 
     const win = this.el.win || window;
     const windowWidth = win.innerWidth;
     const windowHeight = win.innerHeight;
+
+    // Rendered height check (use actual element height once rendered, with fallback)
+    const renderedHeight = this.el.offsetHeight;
+    const height = renderedHeight > 40 ? renderedHeight : (settings.popoverHeight || 165);
 
     // If caller didn't pass bounds, or passed full-screen bounds, auto-detect readable bounds
     if (!bounds || bounds.right - bounds.left >= windowWidth - 40) {
@@ -1135,8 +1171,15 @@ export class DictTooltip {
       }
     }
 
-    // Start centered horizontally on cursor x
-    let left = x - width / 2;
+    // Determine reference anchor points:
+    // If targetRect is provided, center horizontally on the target word
+    // and vertically use targetRect.bottom (below) or targetRect.top (above).
+    const anchorX = targetRect ? (targetRect.left + targetRect.right) / 2 : x;
+    const anchorBottom = targetRect ? targetRect.bottom : y;
+    const anchorTop = targetRect ? targetRect.top : y;
+
+    // Start centered horizontally on anchorX
+    let left = anchorX - width / 2;
 
     // Strictly enforce bounds within the Obsidian readable text column
     if (bounds) {
@@ -1170,13 +1213,19 @@ export class DictTooltip {
       left = padding;
     }
 
-    // Vertical placement: default below cursor, flip above if overflowing bottom
-    let top = y + offsetDistance;
+    // Vertical placement:
+    // Primary: strictly below the character glyphs (anchorBottom + offsetDistance).
+    // Regardless of font size or heading level, anchorBottom is below the character box!
+    let top = anchorBottom + offsetDistance;
+
+    // If overflowing viewport bottom, flip strictly above the character
     if (top + height + padding > windowHeight) {
-      top = y - height - offsetDistance;
-    }
-    if (top < padding) {
-      top = padding;
+      const flippedTop = anchorTop - height - offsetDistance;
+      if (flippedTop >= padding) {
+        top = flippedTop;
+      } else {
+        top = Math.max(padding, windowHeight - height - padding);
+      }
     }
 
     this.el.setCssStyles({

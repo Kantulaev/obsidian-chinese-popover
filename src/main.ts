@@ -9,7 +9,7 @@ import {
   ModifierKey,
   PhoneticDisplay,
 } from "./settings.ts";
-import { ContentBounds, DictTooltip } from "./tooltip.ts";
+import { ContentBounds, DictTooltip, TargetRect } from "./tooltip.ts";
 import { VocabularyManager } from "./vocabulary.ts";
 import {
   ChineseVocabularyView,
@@ -44,6 +44,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
   tooltip!: DictTooltip;
 
   private hoverTimeout: number | null = null;
+  private hoverHideTimeout: number | null = null;
   private lastHoverCoords: { x: number; y: number } | null = null;
   private readerStatusBarItem: HTMLElement | null = null;
 
@@ -130,6 +131,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
       "mousemove",
       this.handleReadingViewMouseMove.bind(this)
     );
+
+    // Dismiss popover when mouse leaves the document window (in hover or reader modes)
+    this.registerDomEvent(document, "mouseleave", () => {
+      this.cancelHoverLookup();
+      if (
+        this.settings.readerMode ||
+        this.settings.triggerMode === "hover" ||
+        this.settings.triggerMode === "hover_modifier"
+      ) {
+        this.scheduleHoverHide(200);
+      }
+    });
 
     // Dismiss popover on click outside ONLY when popover is actually open AND not pinned
     this.registerDomEvent(document, "mousedown", (event: MouseEvent) => {
@@ -636,6 +649,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
   override onunload(): void {
     this.cancelHoverLookup();
+    this.cancelHoverHide();
     if (this.tooltip) {
       this.tooltip.destroy();
     }
@@ -856,13 +870,20 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
           const target = event.target as HTMLElement | null;
           const bounds = this.getContentBounds(target, view);
-          this.handleEditorLookup(event.clientX, event.clientY, view, bounds);
+          this.handleEditorLookup(event.clientX, event.clientY, view, bounds, false);
         },
         mousemove: (event: MouseEvent, view: EditorView) => {
           if (!this.settings.enabled) return;
           const mode = this.settings.triggerMode;
           const isReader = this.settings.readerMode;
           if (mode !== "hover" && mode !== "hover_modifier" && !isReader) return;
+
+          const target = event.target as HTMLElement | null;
+          if (target?.closest(".ch-dict-tooltip")) {
+            this.cancelHoverLookup();
+            this.cancelHoverHide();
+            return;
+          }
 
           if (mode === "hover_modifier" && !isReader) {
             if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
@@ -871,7 +892,6 @@ export default class ChineseHoverDictPlugin extends Plugin {
             }
           }
 
-          const target = event.target as HTMLElement | null;
           this.scheduleHoverLookup(
             event.clientX,
             event.clientY,
@@ -882,9 +902,87 @@ export default class ChineseHoverDictPlugin extends Plugin {
         },
         mouseleave: () => {
           this.cancelHoverLookup();
+          if (
+            this.settings.readerMode ||
+            this.settings.triggerMode === "hover" ||
+            this.settings.triggerMode === "hover_modifier"
+          ) {
+            this.scheduleHoverHide(200);
+          }
         },
       }),
     ];
+  }
+
+  /**
+   * Calculates the exact bounding rectangle for a text range in CodeMirror
+   */
+  private getEditorTargetRect(
+    view: EditorView,
+    from: number,
+    to: number
+  ): TargetRect | undefined {
+    try {
+      const startCoords = view.coordsAtPos(from);
+      const endCoords = view.coordsAtPos(to, -1) || view.coordsAtPos(to);
+      if (!startCoords || !endCoords) {
+        const single = startCoords || endCoords;
+        return single
+          ? {
+              left: single.left,
+              right: single.right,
+              top: single.top,
+              bottom: single.bottom,
+            }
+          : undefined;
+      }
+
+      // Check for multiline wrap: if from and to are on different lines
+      if (Math.abs(startCoords.top - endCoords.top) > 10) {
+        return {
+          left: startCoords.left,
+          right: startCoords.right + 20,
+          top: startCoords.top,
+          bottom: startCoords.bottom,
+        };
+      }
+
+      return {
+        left: Math.min(startCoords.left, endCoords.left),
+        right: Math.max(startCoords.right, endCoords.right),
+        top: Math.min(startCoords.top, endCoords.top),
+        bottom: Math.max(startCoords.bottom, endCoords.bottom),
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Calculates the exact bounding rectangle for a text node range in Reading View
+   */
+  private getReadingViewTargetRect(
+    textNode: Node,
+    start: number,
+    end: number
+  ): TargetRect | undefined {
+    try {
+      const range = document.createRange();
+      range.setStart(textNode, start);
+      range.setEnd(textNode, end);
+      const rect = range.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return undefined;
   }
 
   /**
@@ -894,15 +992,39 @@ export default class ChineseHoverDictPlugin extends Plugin {
     clientX: number,
     clientY: number,
     view: EditorView,
-    bounds?: ContentBounds
+    bounds?: ContentBounds,
+    isHover: boolean = false
   ): void {
     if (!this.dictionary.isReady()) {
-      new Notice("Dictionary is still loading, please wait a moment...", 2000);
+      if (!isHover) {
+        new Notice("Dictionary is still loading, please wait a moment...", 2000);
+      }
       return;
     }
 
+    // If mouse is inside tooltip, do not trigger and cancel hide
+    if (this.tooltip.getIsOpen()) {
+      const tooltipEl = this.tooltip.getElement();
+      const rect = tooltipEl.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        this.cancelHoverLookup();
+        this.cancelHoverHide();
+        return;
+      }
+    }
+
     const pos = view.posAtCoords({ x: clientX, y: clientY });
-    if (pos === null) return;
+    if (pos === null) {
+      if (isHover && this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+        this.scheduleHoverHide();
+      }
+      return;
+    }
 
     const line = view.state.doc.lineAt(pos);
     const lineText = line.text;
@@ -942,7 +1064,35 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // If lineMatch is a longer, complete dictionary entry enclosing or extending the selection (e.g. 活到老，学到老)
     if (lineMatch && (!selectedText || (lineMatch.length > Array.from(selectedText).length && lineMatch.word.includes(selectedText)))) {
+      const matchStart = line.from + (lineMatch.start ?? lineOffset);
+      const matchEnd = line.from + (lineMatch.end ?? (lineOffset + lineMatch.length));
+      const targetRect = this.getEditorTargetRect(view, matchStart, matchEnd);
+
+      if (isHover && targetRect) {
+        const HORIZONTAL_MARGIN = 16;
+        const VERTICAL_MARGIN = 10;
+        const isOverWord =
+          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
+          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
+          clientY >= targetRect.top - VERTICAL_MARGIN &&
+          clientY <= targetRect.bottom + VERTICAL_MARGIN;
+
+        if (!isOverWord) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+      }
+
+      if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === lineMatch.word) {
+        this.cancelHoverHide();
+        return;
+      }
+
+      this.cancelHoverHide();
       if (
+        !isHover &&
         selStart !== undefined &&
         lineMatch.start !== undefined &&
         lineMatch.end !== undefined &&
@@ -963,14 +1113,42 @@ export default class ChineseHoverDictPlugin extends Plugin {
         clientY,
         this.settings,
         resolvedBounds,
-        context
+        context,
+        targetRect
       );
       return;
     }
 
     if (selectedText && this.dictionary.isChinese(selectedText)) {
+      const wordFrom = selStart ?? pos;
+      const wordTo = selEnd ?? (pos + Array.from(selectedText).length);
+      const targetRect = this.getEditorTargetRect(view, wordFrom, wordTo);
+
+      if (isHover && targetRect) {
+        const HORIZONTAL_MARGIN = 16;
+        const VERTICAL_MARGIN = 10;
+        const isOverWord =
+          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
+          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
+          clientY >= targetRect.top - VERTICAL_MARGIN &&
+          clientY <= targetRect.bottom + VERTICAL_MARGIN;
+
+        if (!isOverWord) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+      }
+
+      if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === selectedText) {
+        this.cancelHoverHide();
+        return;
+      }
+
       const directEntries = this.dictionary.getOrSynthesize(selectedText);
       if (directEntries && directEntries.length > 0) {
+        this.cancelHoverHide();
         this.tooltip.show(
           {
             word: selectedText,
@@ -983,7 +1161,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientY,
           this.settings,
           resolvedBounds,
-          context
+          context,
+          targetRect
         );
         return;
       }
@@ -993,6 +1172,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.settings.maxWordLength || 12
       );
       if (match) {
+        this.cancelHoverHide();
         this.tooltip.show(
           {
             word: match.word,
@@ -1005,20 +1185,26 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientY,
           this.settings,
           resolvedBounds,
-          context
+          context,
+          targetRect
         );
         return;
       }
     } else if (selectedText && this.settings.enableReverseLookup) {
+      const wordFrom = selStart ?? pos;
+      const wordTo = selEnd ?? (pos + selectedText.length);
+      const targetRect = this.getEditorTargetRect(view, wordFrom, wordTo);
       const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
       if (rev) {
+        this.cancelHoverHide();
         this.tooltip.show(
           { ...rev, start: selStart, end: selEnd },
           clientX,
           clientY,
           this.settings,
           resolvedBounds,
-          context
+          context,
+          targetRect
         );
         return;
       }
@@ -1032,9 +1218,34 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
-      const absStart = match.start !== undefined ? line.from + match.start : undefined;
-      const absEnd = match.end !== undefined ? line.from + match.end : undefined;
-      if (absStart !== undefined && absEnd !== undefined) {
+      const absStart = match.start !== undefined ? line.from + match.start : (line.from + lineOffset);
+      const absEnd = match.end !== undefined ? line.from + match.end : (absStart + match.length);
+      const targetRect = this.getEditorTargetRect(view, absStart, absEnd);
+
+      if (isHover && targetRect) {
+        const HORIZONTAL_MARGIN = 16;
+        const VERTICAL_MARGIN = 10;
+        const isOverWord =
+          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
+          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
+          clientY >= targetRect.top - VERTICAL_MARGIN &&
+          clientY <= targetRect.bottom + VERTICAL_MARGIN;
+
+        if (!isOverWord) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+      }
+
+      if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === match.word) {
+        this.cancelHoverHide();
+        return;
+      }
+
+      this.cancelHoverHide();
+      if (!isHover && absStart !== undefined && absEnd !== undefined) {
         // Synchronize editor selection to match the dictionary word exactly on double-click
         view.dispatch({
           selection: { anchor: absStart, head: absEnd },
@@ -1046,23 +1257,34 @@ export default class ChineseHoverDictPlugin extends Plugin {
         clientY,
         this.settings,
         resolvedBounds,
-        context
+        context,
+        targetRect
       );
+      return;
     } else if (this.settings.enableReverseLookup) {
       const foreignWord = this.extractForeignWordAtOffset(lineText, lineOffset);
       if (foreignWord) {
+        const targetRect = this.getEditorTargetRect(view, pos, pos + foreignWord.length);
         const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
         if (rev) {
+          this.cancelHoverHide();
           this.tooltip.show(
             rev,
             clientX,
             clientY,
             this.settings,
             resolvedBounds,
-            context
+            context,
+            targetRect
           );
+          return;
         }
       }
+    }
+
+    // No word matched at coordinates
+    if (isHover && this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+      this.scheduleHoverHide();
     }
   }
 
@@ -1086,7 +1308,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (!(container instanceof HTMLElement)) return;
 
     const bounds = this.getContentBounds(target, undefined);
-    this.handleReadingViewLookup(event.clientX, event.clientY, container, bounds, event);
+    this.handleReadingViewLookup(event.clientX, event.clientY, container, bounds, event, false);
   }
 
   /**
@@ -1101,6 +1323,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const target = event.target as HTMLElement | null;
     if (!target) return;
     if (target.closest(".cm-editor") || target.closest(".ch-dict-tooltip")) {
+      this.cancelHoverLookup();
+      this.cancelHoverHide();
       return;
     }
 
@@ -1136,11 +1360,30 @@ export default class ChineseHoverDictPlugin extends Plugin {
     clientY: number,
     container: HTMLElement,
     bounds?: ContentBounds,
-    event?: MouseEvent
+    event?: MouseEvent,
+    isHover: boolean = false
   ): void {
     if (!this.dictionary.isReady()) {
-      new Notice("Dictionary is still loading, please wait a moment...", 2000);
+      if (!isHover) {
+        new Notice("Dictionary is still loading, please wait a moment...", 2000);
+      }
       return;
+    }
+
+    // If mouse is inside tooltip, do not trigger and cancel hide
+    if (this.tooltip.getIsOpen()) {
+      const tooltipEl = this.tooltip.getElement();
+      const rect = tooltipEl.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        this.cancelHoverLookup();
+        this.cancelHoverHide();
+        return;
+      }
     }
 
     const resolvedBounds = bounds || this.getContentBounds(container, undefined);
@@ -1148,7 +1391,46 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // 1. Act on Obsidian / browser internal selection if present
     const selection = (container.win || window).getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
+    let selTargetRect: TargetRect | undefined = undefined;
+    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+      try {
+        const r = selection.getRangeAt(0).getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          selTargetRect = {
+            left: r.left,
+            right: r.right,
+            top: r.top,
+            bottom: r.bottom,
+          };
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (selectedText && this.dictionary.isChinese(selectedText)) {
+      if (isHover && selTargetRect) {
+        const HORIZONTAL_MARGIN = 16;
+        const VERTICAL_MARGIN = 10;
+        const isOverWord =
+          clientX >= selTargetRect.left - HORIZONTAL_MARGIN &&
+          clientX <= selTargetRect.right + HORIZONTAL_MARGIN &&
+          clientY >= selTargetRect.top - VERTICAL_MARGIN &&
+          clientY <= selTargetRect.bottom + VERTICAL_MARGIN;
+
+        if (!isOverWord) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+      }
+
+      if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === selectedText) {
+        this.cancelHoverHide();
+        return;
+      }
+
       // Check if selectedText is part of a longer idiom/proverb in the surrounding text node
       const parentText = selection?.anchorNode?.textContent || "";
       if (parentText && parentText.length > selectedText.length) {
@@ -1159,12 +1441,15 @@ export default class ChineseHoverDictPlugin extends Plugin {
           Math.max(this.settings.maxWordLength || 12, 12)
         );
         if (lineMatch && lineMatch.length > Array.from(selectedText).length && lineMatch.word.includes(selectedText)) {
+          this.cancelHoverHide();
           this.tooltip.show(
             lineMatch,
             clientX,
             clientY,
             this.settings,
-            resolvedBounds
+            resolvedBounds,
+            undefined,
+            selTargetRect
           );
           return;
         }
@@ -1172,6 +1457,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
       const directEntries = this.dictionary.getOrSynthesize(selectedText);
       if (directEntries && directEntries.length > 0) {
+        this.cancelHoverHide();
         this.tooltip.show(
           {
             word: selectedText,
@@ -1181,7 +1467,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientX,
           clientY,
           this.settings,
-          resolvedBounds
+          resolvedBounds,
+          undefined,
+          selTargetRect
         );
         return;
       }
@@ -1191,6 +1479,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.settings.maxWordLength || 12
       );
       if (match) {
+        this.cancelHoverHide();
         this.tooltip.show(
           {
             word: match.word,
@@ -1200,19 +1489,24 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientX,
           clientY,
           this.settings,
-          resolvedBounds
+          resolvedBounds,
+          undefined,
+          selTargetRect
         );
         return;
       }
     } else if (selectedText && this.settings.enableReverseLookup) {
       const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
       if (rev) {
+        this.cancelHoverHide();
         this.tooltip.show(
           rev,
           clientX,
           clientY,
           this.settings,
-          resolvedBounds
+          resolvedBounds,
+          undefined,
+          selTargetRect
         );
         return;
       }
@@ -1237,6 +1531,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
       !range.startContainer ||
       range.startContainer.nodeType !== Node.TEXT_NODE
     ) {
+      if (isHover && this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+        this.scheduleHoverHide();
+      }
       return;
     }
 
@@ -1252,6 +1549,30 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.settings.maxWordLength
       );
       if (cantoMatch && cantoMatch.start !== undefined && cantoMatch.end !== undefined) {
+        const targetRect = this.getReadingViewTargetRect(textNode, cantoMatch.start, cantoMatch.end);
+
+        if (isHover && targetRect) {
+          const HORIZONTAL_MARGIN = 16;
+          const VERTICAL_MARGIN = 10;
+          const isOverWord =
+            clientX >= targetRect.left - HORIZONTAL_MARGIN &&
+            clientX <= targetRect.right + HORIZONTAL_MARGIN &&
+            clientY >= targetRect.top - VERTICAL_MARGIN &&
+            clientY <= targetRect.bottom + VERTICAL_MARGIN;
+
+          if (!isOverWord) {
+            if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+              this.scheduleHoverHide();
+            }
+            return;
+          }
+        }
+
+        if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === cantoMatch.word) {
+          this.cancelHoverHide();
+          return;
+        }
+
         try {
           const sel = (textNode.parentElement?.win || window).getSelection();
           if (sel) {
@@ -1270,7 +1591,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
         const context = this.settings.autoSaveContextSentence
           ? this.extractContextSentence(fullText, offset)
           : undefined;
-        this.tooltip.show(cantoMatch, clientX, clientY, this.settings, resolvedBounds, context);
+        this.cancelHoverHide();
+        this.tooltip.show(cantoMatch, clientX, clientY, this.settings, resolvedBounds, context, targetRect);
         return;
       }
     }
@@ -1282,28 +1604,65 @@ export default class ChineseHoverDictPlugin extends Plugin {
     );
 
     if (match) {
+      const wordStart = match.start ?? offset;
+      const wordEnd = match.end ?? (offset + match.length);
+      const targetRect = this.getReadingViewTargetRect(textNode, wordStart, wordEnd);
+
+      if (isHover && targetRect) {
+        const HORIZONTAL_MARGIN = 16;
+        const VERTICAL_MARGIN = 10;
+        const isOverWord =
+          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
+          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
+          clientY >= targetRect.top - VERTICAL_MARGIN &&
+          clientY <= targetRect.bottom + VERTICAL_MARGIN;
+
+        if (!isOverWord) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+      }
+
+      if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === match.word) {
+        this.cancelHoverHide();
+        return;
+      }
+
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(fullText, offset)
         : undefined;
-      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
+      this.cancelHoverHide();
+      this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context, targetRect);
+      return;
     } else if (this.settings.enableReverseLookup) {
       const foreignWord = this.extractForeignWordAtOffset(fullText, offset);
       if (foreignWord) {
+        const targetRect = this.getReadingViewTargetRect(textNode, offset, offset + foreignWord.length);
         const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
         if (rev) {
           const context = this.settings.autoSaveContextSentence
             ? this.extractContextSentence(fullText, offset)
             : undefined;
+          this.cancelHoverHide();
           this.tooltip.show(
             rev,
             clientX,
             clientY,
             this.settings,
             resolvedBounds,
-            context
+            context,
+            targetRect
           );
+          return;
         }
       }
+    }
+
+    // No word matched at coordinates
+    if (isHover && this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+      this.scheduleHoverHide();
     }
   }
 
@@ -1341,20 +1700,40 @@ export default class ChineseHoverDictPlugin extends Plugin {
           this.lastHoverCoords.x,
           this.lastHoverCoords.y,
           view,
-          bounds
+          bounds,
+          true
         );
       } else if (containerEl) {
         this.handleReadingViewLookup(
           this.lastHoverCoords.x,
           this.lastHoverCoords.y,
           containerEl,
-          bounds
+          bounds,
+          undefined,
+          true
         );
       }
     }, this.settings.hoverDelayMs || 300);
   }
 
-  private cancelHoverLookup(): void {
+  public scheduleHoverHide(delayMs: number = 250): void {
+    if (this.hoverHideTimeout !== null) return;
+    this.hoverHideTimeout = window.setTimeout(() => {
+      this.hoverHideTimeout = null;
+      if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+        this.tooltip.hide();
+      }
+    }, delayMs);
+  }
+
+  public cancelHoverHide(): void {
+    if (this.hoverHideTimeout !== null) {
+      window.clearTimeout(this.hoverHideTimeout);
+      this.hoverHideTimeout = null;
+    }
+  }
+
+  public cancelHoverLookup(): void {
     if (this.hoverTimeout !== null) {
       window.clearTimeout(this.hoverTimeout);
       this.hoverTimeout = null;
@@ -1385,18 +1764,31 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const cmEditor = editor as CodeMirrorEditor;
     const cm = cmEditor.cm;
+    let targetRect: TargetRect | undefined = undefined;
     if (cm) {
       const head = cm.state.selection.main.head;
       const coords = cm.coordsAtPos(head);
       if (coords) {
         clientX = coords.left;
         clientY = coords.bottom;
+        targetRect = {
+          left: coords.left,
+          right: coords.right,
+          top: coords.top,
+          bottom: coords.bottom,
+        };
       }
     } else if (typeof cmEditor.cursorCoords === "function") {
       const coords = cmEditor.cursorCoords(true, "window");
       if (coords) {
         clientX = coords.left;
         clientY = coords.bottom;
+        targetRect = {
+          left: coords.left,
+          right: coords.right,
+          top: coords.top,
+          bottom: coords.bottom,
+        };
       }
     }
 
@@ -1410,7 +1802,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientX,
           clientY,
           this.settings,
-          bounds
+          bounds,
+          undefined,
+          targetRect
         );
         return;
       }
@@ -1421,7 +1815,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientX,
           clientY,
           this.settings,
-          bounds
+          bounds,
+          undefined,
+          targetRect
         );
         return;
       }
@@ -1433,7 +1829,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
           clientX,
           clientY,
           this.settings,
-          bounds
+          bounds,
+          undefined,
+          targetRect
         );
         return;
       }
@@ -1462,7 +1860,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const context = this.settings.autoSaveContextSentence
         ? this.extractContextSentence(lineText, cursor.ch)
         : undefined;
-      this.tooltip.show(match, clientX, clientY, this.settings, bounds, context);
+      this.tooltip.show(match, clientX, clientY, this.settings, bounds, context, targetRect);
     } else if (this.settings.enableReverseLookup) {
       const foreignWord = this.extractForeignWordAtOffset(lineText, cursor.ch);
       if (foreignWord) {
@@ -1477,7 +1875,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
             clientY,
             this.settings,
             bounds,
-            context
+            context,
+            targetRect
           );
           return;
         }

@@ -1,7 +1,7 @@
 {
   "name": "chinese-popover-dict",
-  "version": "1.9.5",
-  "description": "Instant Apple Liquid Glass Chinese dictionary for Obsidian. Features Mandarin Pinyin, Cantonese Jyutping, 214 Kangxi radicals anatomy, 20-language reverse lookup, and spaced repetition vocabulary book.",
+  "version": "1.9.6",
+  "description": "Instant Apple Liquid Glass Chinese popover dictionary. Features Mandarin Pinyin, Cantonese Jyutping, 214 Kangxi radicals anatomy, 20-language reverse lookup, and spaced repetition vocabulary book.",
   "main": "main.js",
   "scripts": {
     "dev": "deno run -A build.ts",

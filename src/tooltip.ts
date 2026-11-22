@@ -115,10 +115,15 @@ export class DictTooltip {
           .replace(/\[[^\]]+\]/g, "")
           .trim();
         if (!clean) continue;
-        const parts = clean
-          .split(/[,;/]/)
-          .map((p) => p.trim())
-          .filter((p) => p.length > 0);
+        let parts: string[];
+        if (clean.includes("•") || clean.includes("+") || clean.includes("(idiom") || clean.includes("(clause") || clean.includes("—")) {
+          parts = clean.split(";").map((p) => p.trim()).filter((p) => p.length > 0);
+        } else {
+          parts = clean
+            .split(/[,;/]/)
+            .map((p) => p.trim())
+            .filter((p) => p.length > 0);
+        }
         for (const part of parts) {
           const lower = part.toLowerCase();
           if (!words.some((w) => w.toLowerCase() === lower)) {

@@ -915,6 +915,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // 1. Act on Obsidian's internal selection:
     // If double-click or drag-selection highlighted text (e.g. 2-character word or 4-character chengyu),
     // look it up directly with full compound synthesis so selection and popup match 100%!
+    const lineMatch = this.dictionary.findWordAtOffset(
+      lineText,
+      lineOffset,
+      Math.max(this.settings.maxWordLength || 12, 12)
+    );
+
     let selectedText = "";
     let selStart: number | undefined = undefined;
     let selEnd: number | undefined = undefined;
@@ -932,6 +938,34 @@ export default class ChineseHoverDictPlugin extends Plugin {
       if (domText && this.dictionary.isChinese(domText)) {
         selectedText = domText;
       }
+    }
+
+    // If lineMatch is a longer, complete dictionary entry enclosing or extending the selection (e.g. 活到老，学到老)
+    if (lineMatch && (!selectedText || (lineMatch.length > Array.from(selectedText).length && lineMatch.word.includes(selectedText)))) {
+      if (
+        selStart !== undefined &&
+        lineMatch.start !== undefined &&
+        lineMatch.end !== undefined &&
+        line.from + lineMatch.start <= selStart &&
+        line.from + lineMatch.end >= (selEnd ?? selStart)
+      ) {
+        try {
+          view.dispatch({
+            selection: { anchor: line.from + lineMatch.start, head: line.from + lineMatch.end },
+          });
+        } catch {
+          // ignore selection update error
+        }
+      }
+      this.tooltip.show(
+        lineMatch,
+        clientX,
+        clientY,
+        this.settings,
+        resolvedBounds,
+        context
+      );
+      return;
     }
 
     if (selectedText && this.dictionary.isChinese(selectedText)) {
@@ -956,7 +990,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
       const match = this.dictionary.findLongestMatch(
         selectedText,
-        this.settings.maxWordLength
+        this.settings.maxWordLength || 12
       );
       if (match) {
         this.tooltip.show(
@@ -1087,6 +1121,27 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const selection = (container.win || window).getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
     if (selectedText && this.dictionary.isChinese(selectedText)) {
+      // Check if selectedText is part of a longer idiom/proverb in the surrounding text node
+      const parentText = selection?.anchorNode?.textContent || "";
+      if (parentText && parentText.length > selectedText.length) {
+        const anchorOffset = selection?.anchorOffset || 0;
+        const lineMatch = this.dictionary.findWordAtOffset(
+          parentText,
+          anchorOffset,
+          Math.max(this.settings.maxWordLength || 12, 12)
+        );
+        if (lineMatch && lineMatch.length > Array.from(selectedText).length && lineMatch.word.includes(selectedText)) {
+          this.tooltip.show(
+            lineMatch,
+            clientX,
+            clientY,
+            this.settings,
+            resolvedBounds
+          );
+          return;
+        }
+      }
+
       const directEntries = this.dictionary.getOrSynthesize(selectedText);
       if (directEntries && directEntries.length > 0) {
         this.tooltip.show(
@@ -1105,7 +1160,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
       const match = this.dictionary.findLongestMatch(
         selectedText,
-        this.settings.maxWordLength
+        this.settings.maxWordLength || 12
       );
       if (match) {
         this.tooltip.show(

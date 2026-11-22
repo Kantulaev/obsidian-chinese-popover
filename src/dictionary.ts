@@ -601,10 +601,14 @@ export class DictionaryManager {
   private isLoaded: boolean = false;
   private plugin: ChineseHoverDictPlugin;
 
+  public normalizedMap: Map<string, string> = new Map();
+  public idiomClauseIndex: Map<string, { parentKey: string; clauseIndex: number; totalClauses: number }> = new Map();
+
   constructor(plugin: ChineseHoverDictPlugin) {
     this.plugin = plugin;
     this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
     sortAllDictionaryEntriesInPlace(this.data);
+    this.buildIndexes();
     this.isLoaded = false;
   }
 
@@ -614,6 +618,43 @@ export class DictionaryManager {
 
   getData(): DictionaryData {
     return this.data;
+  }
+
+  /**
+   * Builds normalized punctuation index and idiom clause lookup tables
+   * for instant multi-word and proverb search without performance impact.
+   */
+  public buildIndexes(): void {
+    this.normalizedMap.clear();
+    this.idiomClauseIndex.clear();
+
+    const keys = Object.keys(this.data);
+    for (let k = 0; k < keys.length; k++) {
+      const key = keys[k];
+
+      // 1. Normalized map for phrases/proverbs with commas, middle dots, or spaces
+      const norm = key.replace(/[，, ·、\s]/g, "");
+      if (norm !== key && !this.data[norm]) {
+        this.normalizedMap.set(norm, key);
+      }
+
+      // 2. Idiom clause index (e.g. "活到老" / "学到老" in "活到老，学到老")
+      if (key.includes("，") || key.includes(",")) {
+        const parts = key.split(/[，,]/).map((p) => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            if (part.length >= 2 && !this.data[part]) {
+              const existing = this.idiomClauseIndex.get(part);
+              const isSimp = this.data[key]?.[0]?.simplified === key;
+              if (!existing || isSimp) {
+                this.idiomClauseIndex.set(part, { parentKey: key, clauseIndex: i, totalClauses: parts.length });
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -629,11 +670,13 @@ export class DictionaryManager {
         const rawContent = await adapter.read(dictPath);
         this.data = Object.assign({}, JSON.parse(rawContent) as DictionaryData, CANTONESE_CORE_DICT);
         sortAllDictionaryEntriesInPlace(this.data);
+        this.buildIndexes();
         this.isLoaded = true;
       } else {
         // If local file is not present, use built-in core vocabulary first
         this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
         sortAllDictionaryEntriesInPlace(this.data);
+        this.buildIndexes();
         this.isLoaded = true;
       }
 
@@ -649,6 +692,7 @@ export class DictionaryManager {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
       sortAllDictionaryEntriesInPlace(this.data);
+      this.buildIndexes();
       this.isLoaded = true;
     }
   }
@@ -1023,7 +1067,7 @@ export class DictionaryManager {
   findWordAtOffset(
     fullText: string,
     offset: number,
-    maxLen: number = 6
+    maxLen: number = 12
   ): MatchResult | null {
     if (!this.isLoaded || !fullText || offset < 0 || offset >= fullText.length) {
       return null;
@@ -1049,7 +1093,7 @@ export class DictionaryManager {
     let bestEnd = -1;
     const minStart = Math.max(0, offset - maxLen * 2);
 
-    // 1. Longest match search in dictionary (CEDICT + Cantonese Lexicon)
+    // 1. Longest match search in dictionary (CEDICT + Cantonese Lexicon + Normalized proverbs)
     for (let start = minStart; start <= offset; start++) {
       if (start > 0 && fullText.charCodeAt(start) >= 0xdc00 && fullText.charCodeAt(start) <= 0xdfff) {
         continue;
@@ -1062,7 +1106,19 @@ export class DictionaryManager {
         }
         if (offset >= start && offset < end) {
           const candidate = fullText.slice(start, end);
-          const entries = this.data[candidate];
+          let entries = this.data[candidate];
+          if (!entries || entries.length === 0) {
+            const normKey = this.normalizedMap.get(candidate);
+            if (normKey) {
+              entries = this.data[normKey];
+            }
+          }
+          if (!entries || entries.length === 0) {
+            const clause = this.findIdiomClauseMatch(candidate);
+            if (clause && clause.length > 0) {
+              entries = clause;
+            }
+          }
           if (entries && entries.length > 0) {
             const charCount = Array.from(candidate).length;
             if (charCount <= maxLen) {
@@ -1300,9 +1356,25 @@ export class DictionaryManager {
   /**
    * Direct lookup for an exact word.
    * If `preferredPinyin` is passed, the matching entry is prioritized first.
+   * Also checks normalized punctuation variants (e.g. without Chinese commas).
    */
   get(word: string, preferredPinyin?: string): DictEntry[] | undefined {
-    const entries = this.data[word];
+    if (!word) return undefined;
+    let entries = this.data[word];
+    if (!entries || entries.length === 0) {
+      const normKey = this.normalizedMap.get(word);
+      if (normKey) {
+        entries = this.data[normKey];
+      }
+    }
+    if ((!entries || entries.length === 0) && /[，, ·、\s]/.test(word)) {
+      const clean = word.replace(/[，, ·、\s]/g, "");
+      if (this.data[clean]) {
+        entries = this.data[clean];
+      } else if (this.normalizedMap.has(clean)) {
+        entries = this.data[this.normalizedMap.get(clean)!];
+      }
+    }
     if (!entries || entries.length === 0) return undefined;
     if (preferredPinyin) {
       return sortEntriesByPinyinFrequency(word, entries, preferredPinyin);
@@ -1327,9 +1399,160 @@ export class DictionaryManager {
   }
 
   /**
+   * Matches whether the given word is a clause of a multi-clause proverb/idiom
+   * (e.g. "活到老" or "学到老" from "活到老，学到老", "始于足下" from "千里之行，始于足下").
+   * Synthesizes authentic clause pinyin, jyutping and idiom context definitions.
+   */
+  findIdiomClauseMatch(word: string): DictEntry[] | undefined {
+    if (!word || word.length < 2) return undefined;
+    const clean = word.trim();
+    const clauseInfo = this.idiomClauseIndex.get(clean);
+    if (!clauseInfo) return undefined;
+
+    const parentEntries = this.data[clauseInfo.parentKey];
+    if (!parentEntries || parentEntries.length === 0) return undefined;
+    const parent = parentEntries[0];
+
+    const parts = clauseInfo.parentKey.split(/[，,]/).map((p) => p.trim()).filter(Boolean);
+    const idx = clauseInfo.clauseIndex;
+
+    // Extract clause-specific pinyin from parent pinyin
+    let clausePinyin = "";
+    if (parent.pinyin) {
+      const pinyinParts = parent.pinyin.split(/[,，]/).map((p) => p.trim());
+      if (pinyinParts.length === parts.length) {
+        clausePinyin = pinyinParts[idx];
+      }
+    }
+    if (!clausePinyin) {
+      const chars = Array.from(clean);
+      clausePinyin = chars.map((c) => this.data[c]?.[0]?.pinyin || "").filter(Boolean).join(" ");
+    }
+
+    // Extract clause-specific jyutping from parent jyutping
+    let clauseJyut = "";
+    if (parent.jyutping) {
+      const jyutParts = parent.jyutping.split(/[,，]/).map((p) => p.trim());
+      if (jyutParts.length === parts.length) {
+        clauseJyut = jyutParts[idx];
+      }
+    }
+
+    let trad = clean;
+    if (parent.traditional) {
+      const tradParts = parent.traditional.split(/[，,]/).map((p) => p.trim());
+      if (tradParts.length === parts.length) {
+        trad = tradParts[idx];
+      }
+    }
+
+    const idiomDef = parent.definitions?.[0] || "";
+    const defs: string[] = [];
+    if (idiomDef) {
+      defs.push(`${idiomDef} (idiom: ${clauseInfo.parentKey})`);
+    }
+
+    return [
+      {
+        simplified: clean,
+        traditional: trad,
+        pinyin: clausePinyin,
+        jyutping: clauseJyut || undefined,
+        definitions: defs.length > 0 ? defs : (parent.definitions || []),
+      },
+    ];
+  }
+
+  /**
+   * Segments a phrase into multi-character dictionary words using forward maximum matching.
+   */
+  segmentToWords(phrase: string): { word: string; entry: DictEntry | null }[] {
+    const segments: { word: string; entry: DictEntry | null }[] = [];
+    let i = 0;
+    while (i < phrase.length) {
+      let matched: { word: string; entry: DictEntry | null } | null = null;
+      for (let len = Math.min(8, phrase.length - i); len >= 2; len--) {
+        const sub = phrase.slice(i, i + len);
+        const entries = this.get(sub);
+        if (entries && entries.length > 0) {
+          matched = { word: sub, entry: entries[0] };
+          i += len;
+          break;
+        }
+      }
+      if (!matched) {
+        const ch = phrase[i];
+        matched = { word: ch, entry: this.get(ch)?.[0] || null };
+        i++;
+      }
+      segments.push(matched);
+    }
+    return segments;
+  }
+
+  /**
+   * Synthesizes a natural, coherent definition for multi-word phrases and expressions
+   * (e.g. "非常好吃", "学中文", "今天天气很好", "不客气").
+   */
+  synthesizeMultiWordPhrase(phrase: string): DictEntry[] | undefined {
+    const segs = this.segmentToWords(phrase);
+    if (segs.length <= 1) return undefined;
+    if (segs.every((s) => s.word.length === 1 && !s.entry)) return undefined;
+
+    const pinyins: string[] = [];
+    const jyuts: string[] = [];
+    const trads: string[] = [];
+    const glosses: string[] = [];
+    const breakdownParts: string[] = [];
+
+    for (const s of segs) {
+      trads.push(s.entry?.traditional || s.word);
+      if (s.entry?.pinyin) pinyins.push(s.entry.pinyin);
+      if (s.entry?.jyutping) jyuts.push(s.entry.jyutping);
+      const topDef = s.entry?.definitions?.[0]?.replace(/\(CL:[^)]+\)/g, "").trim() || s.word;
+      const cleanDef = topDef.split(/[,;/]/)[0].trim();
+      glosses.push(cleanDef);
+      breakdownParts.push(`${s.word} (${cleanDef})`);
+    }
+
+    // Synthesize coherent phrase translation
+    let mainGloss = "";
+    if (segs.length === 2) {
+      const w1 = segs[0].word;
+      const d1 = glosses[0];
+      const d2 = glosses[1];
+      if (["非常", "很", "特别", "十分", "真", "最", "太"].includes(w1)) {
+        mainGloss = `${d1} ${d2}`;
+      } else if (["学", "看", "吃", "去", "做", "听", "读", "写"].includes(w1)) {
+        mainGloss = `to ${d1.replace(/^to\s+/i, "")} ${d2}`;
+      } else if (["不", "没", "别"].includes(w1)) {
+        mainGloss = `not ${d2}`;
+      } else {
+        mainGloss = `${d1} ${d2}`;
+      }
+    } else {
+      mainGloss = glosses.join(" ");
+    }
+
+    const defs: string[] = [];
+    if (mainGloss) defs.push(mainGloss);
+    defs.push(breakdownParts.join(" + "));
+
+    return [
+      {
+        simplified: phrase,
+        traditional: trads.join(""),
+        pinyin: pinyins.join(" "),
+        jyutping: jyuts.length === segs.length ? jyuts.join(" ") : undefined,
+        definitions: defs,
+      },
+    ];
+  }
+
+  /**
    * Retrieves dictionary entries for a word or synthesizes compound definitions
-   * for multi-character selections (e.g. 2-character words, verb-complements, number-measure words).
-   * Ensures double-click selections never truncate to only the first character!
+   * for multi-character selections (proverbs, clauses, multi-word phrases, verb-complements).
+   * Ensures selections never truncate or show meaningless character lists!
    */
   getOrSynthesize(word: string): DictEntry[] | undefined {
     if (!word) return undefined;
@@ -1338,22 +1561,35 @@ export class DictionaryManager {
       return exact;
     }
 
+    // 1. Check if word is a clause of a compound idiom / proverb (e.g. "活到老", "学到老", "始于足下")
+    const idiomClause = this.findIdiomClauseMatch(word);
+    if (idiomClause && idiomClause.length > 0) {
+      return idiomClause;
+    }
+
     const chars = Array.from(word);
-    if (chars.length < 2 || chars.length > 6) {
+    if (chars.length < 2 || chars.length > 16) {
       return undefined;
     }
 
-    if (!chars.every((c) => this.isChinese(c))) {
+    if (!chars.every((c) => this.isChinese(c) || /[，, ·、\s]/.test(c))) {
       return undefined;
     }
 
-    // Try finding sub-word components (e.g. for a 2-character word: char 0 and char 1)
+    // 2. Multi-word phrase segmentation and synthesis (e.g. "非常好吃", "学中文")
+    const phraseSynthesis = this.synthesizeMultiWordPhrase(word);
+    if (phraseSynthesis && phraseSynthesis.length > 0) {
+      return phraseSynthesis;
+    }
+
+    // 3. Fallback: longest match in word
+    const longest = this.findLongestMatch(word, 8);
+    if (longest && longest.entries.length > 0) {
+      return longest.entries;
+    }
+
+    // 4. Fallback: character-by-character
     const charEntries = chars.map((c) => this.get(c)?.[0]);
-    if (charEntries.some((e) => !e)) {
-      const longest = this.findLongestMatch(word, 6);
-      return longest ? longest.entries : undefined;
-    }
-
     const pinyins: string[] = [];
     const jyutpings: string[] = [];
     const trads: string[] = [];
@@ -1361,15 +1597,19 @@ export class DictionaryManager {
 
     for (let i = 0; i < chars.length; i++) {
       const ch = chars[i];
-      const entry = charEntries[i]!;
-      trads.push(entry.traditional || ch);
-      if (entry.pinyin) pinyins.push(entry.pinyin);
-      if (entry.jyutping) jyutpings.push(entry.jyutping);
-      const topDefs = (entry.definitions || [])
-        .slice(0, 2)
-        .map((d) => d.replace(/\(CL:[^)]+\)/g, "").trim())
-        .filter(Boolean);
-      defParts.push(`${ch}: ${topDefs.join(", ") || "—"}`);
+      const entry = charEntries[i];
+      if (entry) {
+        trads.push(entry.traditional || ch);
+        if (entry.pinyin) pinyins.push(entry.pinyin);
+        if (entry.jyutping) jyutpings.push(entry.jyutping);
+        const topDefs = (entry.definitions || [])
+          .slice(0, 2)
+          .map((d) => d.replace(/\(CL:[^)]+\)/g, "").trim())
+          .filter(Boolean);
+        defParts.push(`${ch}: ${topDefs.join(", ") || "—"}`);
+      } else {
+        trads.push(ch);
+      }
     }
 
     const synthesized: DictEntry = {

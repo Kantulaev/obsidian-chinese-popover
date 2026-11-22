@@ -146,7 +146,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   fontSizePinyin: 13,
   fontSizeTranslation: 16,
 
-  maxWordLength: 6,
+  maxWordLength: 12,
 
   vocabularyFilePath: "Chinese Vocabulary.md",
   autoSaveContextSentence: true,
@@ -1023,10 +1023,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Максимальная длина слова / Max Word Length")
-      .setDesc("Максимальное количество символов для поиска составных идиом (чэнъюй) и фраз (по умолчанию 6).")
+      .setDesc("Максимальное количество символов для поиска составных идиом (чэнъюй), пословиц и длинных фраз (по умолчанию 12).")
       .addSlider((slider) =>
         slider
-          .setLimits(2, 10, 1)
+          .setLimits(2, 16, 1)
           .setValue(this.plugin.settings.maxWordLength)
           .onChange(async (value) => {
             this.plugin.settings.maxWordLength = value;

@@ -18,6 +18,7 @@ import {
   sortAllDictionaryEntriesInPlace,
   sortEntriesByPinyinFrequency,
 } from "./pinyin-frequency.ts";
+import { reverseDictionary } from "./reverse-dict.ts";
 
 export interface DictEntry {
   simplified?: string;
@@ -33,6 +34,8 @@ export interface MatchResult {
   length: number;
   start?: number;
   end?: number;
+  reverseQuery?: string;
+  reverseMatches?: string[];
 }
 
 export type DictionaryData = Record<string, DictEntry[]>;
@@ -839,6 +842,24 @@ export class DictionaryManager {
 
   isReady(): boolean {
     return this.isLoaded;
+  }
+
+  ensureReverseIndexReady(): void {
+    reverseDictionary.ensureReady(this.data);
+  }
+
+  lookupReverse(query: string, preferredLang: string = "en"): MatchResult | null {
+    const rev = reverseDictionary.lookup(query, this.data, preferredLang);
+    if (!rev) return null;
+    const entries = this.getOrSynthesize(rev.primaryWord) || this.get(rev.primaryWord);
+    if (!entries || entries.length === 0) return null;
+    return {
+      word: rev.primaryWord,
+      entries,
+      length: Array.from(rev.primaryWord).length,
+      reverseQuery: query,
+      reverseMatches: rev.allWords,
+    };
   }
 
   /**

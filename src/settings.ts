@@ -56,6 +56,8 @@ export interface ChineseDictSettings {
 
   // Dictionary Lookup
   maxWordLength: number;
+  enableReverseLookup: boolean;
+  reverseLookupLanguage: string;
 
   // Personal Vocabulary Notebook
   vocabularyFilePath: string;
@@ -147,6 +149,8 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   fontSizeTranslation: 16,
 
   maxWordLength: 12,
+  enableReverseLookup: false,
+  reverseLookupLanguage: "en",
 
   vocabularyFilePath: "Chinese Vocabulary.md",
   autoSaveContextSentence: true,
@@ -1030,6 +1034,36 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.maxWordLength)
           .onChange(async (value) => {
             this.plugin.settings.maxWordLength = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("🔄 Обратный режим (перевод на китайский) / Reverse Lookup")
+      .setDesc("Позволяет учить язык в обратную сторону: при нажатии на слово на английском (или русском) всплывающее окно показывает его перевод на китайский с пиньинем, озвучкой и карточкой.")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableReverseLookup)
+          .onChange(async (value) => {
+            this.plugin.settings.enableReverseLookup = value;
+            await this.plugin.saveSettings();
+            if (value) {
+              this.plugin.dictionary.ensureReverseIndexReady();
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Язык обратного поиска / Reverse Lookup Language")
+      .setDesc("Основной язык для обратного поиска слов (по умолчанию английский).")
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("en", "English (по умолчанию)")
+          .addOption("ru", "Русский (БКРС)")
+          .addOption("auto", "Автоопределение / Auto (En / Ru)")
+          .setValue(this.plugin.settings.reverseLookupLanguage || "en")
+          .onChange(async (value) => {
+            this.plugin.settings.reverseLookupLanguage = value;
             await this.plugin.saveSettings();
           })
       );

@@ -397,6 +397,45 @@ export class DictTooltip {
     grabber.setAttribute("title", "Потяните, чтобы переместить карточку / Drag to move");
     this.setupDraggable(grabber, settings);
 
+    // Reverse dictionary banner & alternative candidate chips
+    if (match.reverseQuery) {
+      const revBar = mainCard.createDiv({ cls: "ch-dict-reverse-bar" });
+      const revTag = revBar.createSpan({ cls: "ch-dict-reverse-tag" });
+      revTag.setText(`🔄 ${match.reverseQuery}`);
+
+      if (match.reverseMatches && match.reverseMatches.length > 1) {
+        const revChips = revBar.createDiv({ cls: "ch-dict-reverse-chips" });
+        const alternatives = match.reverseMatches.slice(0, 8);
+        for (const altWord of alternatives) {
+          const isCurrent = altWord === match.word;
+          const chip = revChips.createEl("button", {
+            cls: `ch-dict-reverse-chip ${isCurrent ? "is-active" : ""}`,
+            text: altWord,
+            attr: {
+              type: "button",
+              title: isCurrent ? altWord : `Переключить на "${altWord}"`,
+            },
+          });
+          if (!isCurrent) {
+            chip.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const altEntries = this.plugin?.dictionary?.getOrSynthesize(altWord) || this.plugin?.dictionary?.get(altWord);
+              if (altEntries && altEntries.length > 0) {
+                this.currentMatch = {
+                  ...match,
+                  word: altWord,
+                  entries: altEntries,
+                  length: Array.from(altWord).length,
+                };
+                this.currentWord = altWord;
+                this.render(this.currentMatch, settings, contextSentence);
+              }
+            });
+          }
+        }
+      }
+    }
+
     const isCantonese = settings.dialect === "cantonese";
 
     // 1. Top Bar: Clickable Pill with Hanzi and Action buttons

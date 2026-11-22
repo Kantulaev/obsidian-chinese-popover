@@ -1009,6 +1009,19 @@ export default class ChineseHoverDictPlugin extends Plugin {
         );
         return;
       }
+    } else if (selectedText && this.settings.enableReverseLookup) {
+      const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
+      if (rev) {
+        this.tooltip.show(
+          { ...rev, start: selStart, end: selEnd },
+          clientX,
+          clientY,
+          this.settings,
+          resolvedBounds,
+          context
+        );
+        return;
+      }
     }
 
     // 2. Fallback: if selection is empty (e.g. hover trigger), find word at pos
@@ -1035,6 +1048,21 @@ export default class ChineseHoverDictPlugin extends Plugin {
         resolvedBounds,
         context
       );
+    } else if (this.settings.enableReverseLookup) {
+      const foreignWord = this.extractForeignWordAtOffset(lineText, lineOffset);
+      if (foreignWord) {
+        const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
+        if (rev) {
+          this.tooltip.show(
+            rev,
+            clientX,
+            clientY,
+            this.settings,
+            resolvedBounds,
+            context
+          );
+        }
+      }
     }
   }
 
@@ -1176,6 +1204,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
         );
         return;
       }
+    } else if (selectedText && this.settings.enableReverseLookup) {
+      const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
+      if (rev) {
+        this.tooltip.show(
+          rev,
+          clientX,
+          clientY,
+          this.settings,
+          resolvedBounds
+        );
+        return;
+      }
     }
 
     // Determine caret position from coordinates
@@ -1246,6 +1286,24 @@ export default class ChineseHoverDictPlugin extends Plugin {
         ? this.extractContextSentence(fullText, offset)
         : undefined;
       this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context);
+    } else if (this.settings.enableReverseLookup) {
+      const foreignWord = this.extractForeignWordAtOffset(fullText, offset);
+      if (foreignWord) {
+        const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
+        if (rev) {
+          const context = this.settings.autoSaveContextSentence
+            ? this.extractContextSentence(fullText, offset)
+            : undefined;
+          this.tooltip.show(
+            rev,
+            clientX,
+            clientY,
+            this.settings,
+            resolvedBounds,
+            context
+          );
+        }
+      }
     }
   }
 
@@ -1367,6 +1425,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
         );
         return;
       }
+    } else if (selection && this.settings.enableReverseLookup) {
+      const rev = this.dictionary.lookupReverse(selection, this.settings.reverseLookupLanguage);
+      if (rev) {
+        this.tooltip.show(
+          rev,
+          clientX,
+          clientY,
+          this.settings,
+          bounds
+        );
+        return;
+      }
     }
 
     const cursor = editor.getCursor();
@@ -1393,6 +1463,26 @@ export default class ChineseHoverDictPlugin extends Plugin {
         ? this.extractContextSentence(lineText, cursor.ch)
         : undefined;
       this.tooltip.show(match, clientX, clientY, this.settings, bounds, context);
+    } else if (this.settings.enableReverseLookup) {
+      const foreignWord = this.extractForeignWordAtOffset(lineText, cursor.ch);
+      if (foreignWord) {
+        const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
+        if (rev) {
+          const context = this.settings.autoSaveContextSentence
+            ? this.extractContextSentence(lineText, cursor.ch)
+            : undefined;
+          this.tooltip.show(
+            rev,
+            clientX,
+            clientY,
+            this.settings,
+            bounds,
+            context
+          );
+          return;
+        }
+      }
+      new Notice("Иероглиф не найден под курсором / No Chinese character at cursor", 2000);
     } else {
       new Notice("Иероглиф не найден под курсором / No Chinese character at cursor", 2000);
     }
@@ -1405,33 +1495,61 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const win = (typeof activeWindow !== "undefined" && activeWindow) ? activeWindow : window;
     const selection = win.getSelection();
     const selectedText = selection ? selection.toString().trim() : "";
-    if (!selectedText || !this.dictionary.isChinese(selectedText)) {
-      new Notice("Выделите китайское слово для поиска / Select Chinese word to look up", 2000);
+    if (!selectedText) {
+      new Notice("Выделите слово для поиска / Select word to look up", 2000);
       return;
     }
 
-    const directEntries = this.dictionary.get(selectedText);
-    if (directEntries && directEntries.length > 0) {
-      let clientX = win.innerWidth / 2;
-      let clientY = win.innerHeight / 2;
+    if (this.dictionary.isChinese(selectedText)) {
+      const directEntries = this.dictionary.get(selectedText);
+      if (directEntries && directEntries.length > 0) {
+        let clientX = win.innerWidth / 2;
+        let clientY = win.innerHeight / 2;
 
-      if (selection && selection.rangeCount > 0) {
-        const rect = selection.getRangeAt(0).getBoundingClientRect();
-        clientX = rect.left + rect.width / 2;
-        clientY = rect.bottom;
+        if (selection && selection.rangeCount > 0) {
+          const rect = selection.getRangeAt(0).getBoundingClientRect();
+          clientX = rect.left + rect.width / 2;
+          clientY = rect.bottom;
+        }
+
+        const bounds = this.getContentBounds(null, undefined);
+
+        this.tooltip.show(
+          { word: selectedText, entries: directEntries, length: Array.from(selectedText).length },
+          clientX,
+          clientY,
+          this.settings,
+          bounds
+        );
+      } else {
+        new Notice(`Слово '${selectedText}' не найдено в словаре`, 2000);
       }
+    } else if (this.settings.enableReverseLookup) {
+      const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
+      if (rev) {
+        let clientX = win.innerWidth / 2;
+        let clientY = win.innerHeight / 2;
 
-      const bounds = this.getContentBounds(null, undefined);
+        if (selection && selection.rangeCount > 0) {
+          const rect = selection.getRangeAt(0).getBoundingClientRect();
+          clientX = rect.left + rect.width / 2;
+          clientY = rect.bottom;
+        }
 
-      this.tooltip.show(
-        { word: selectedText, entries: directEntries, length: Array.from(selectedText).length },
-        clientX,
-        clientY,
-        this.settings,
-        bounds
-      );
+        const bounds = this.getContentBounds(null, undefined);
+
+        this.tooltip.show(
+          rev,
+          clientX,
+          clientY,
+          this.settings,
+          bounds
+        );
+      } else {
+        new Notice(`Перевод для '${selectedText}' не найден`, 2000);
+      }
     } else {
-      new Notice(`Слово '${selectedText}' не найдено в словаре`, 2000);
+      new Notice("Выделите китайское слово для поиска / Select Chinese word to look up", 2000);
     }
   }
 
@@ -1678,6 +1796,29 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     const sentence = text.substring(start, end).trim();
     return sentence.length > 0 ? sentence : text.trim();
+  }
+
+  /**
+   * Extracts a foreign word (English, Russian, etc.) at the specified character offset
+   */
+  public extractForeignWordAtOffset(text: string, offset: number): string | null {
+    if (!text || offset < 0 || offset > text.length) return null;
+    const isWordChar = (c: string) => /[\p{L}\p{N}'\-_]/u.test(c);
+    let idx = offset;
+    if (idx >= text.length || !isWordChar(text[idx])) {
+      if (idx > 0 && isWordChar(text[idx - 1])) {
+        idx = idx - 1;
+      } else {
+        return null;
+      }
+    }
+    let start = idx;
+    while (start > 0 && isWordChar(text[start - 1])) start--;
+    let end = idx;
+    while (end < text.length && isWordChar(text[end])) end++;
+    const word = text.slice(start, end).replace(/^['\-_]+|['\-_]+$/g, "").trim();
+    if (!word || this.dictionary.isChinese(word)) return null;
+    return word;
   }
 
   /**

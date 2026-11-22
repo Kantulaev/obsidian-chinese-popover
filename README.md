@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian Version" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-1.9.2-blue.svg" alt="Version 1.9.2" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-1.9.3-blue.svg" alt="Version 1.9.3" /></a>
   <a href="https://www.youtube.com/@ChineseWithKantulaev"><img src="https://img.shields.io/badge/YouTube-@ChineseWithKantulaev-FF0000?logo=youtube&logoColor=white" alt="English YouTube Channel" /></a>
   <a href="https://www.youtube.com/@kantulaevCN"><img src="https://img.shields.io/badge/YouTube-@kantulaevCN-FF0000?logo=youtube&logoColor=white" alt="Russian YouTube Channel" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>
@@ -37,6 +37,7 @@
 * **Character Anatomy & 214 Radicals** — Click any character chip in compound words to reveal its Kangxi radical, stroke count, meaning, and etymological components (`宀 + 子`).
 * **Ancient Chengyu Stories (成语故事)** — Expandable ancient fables, literal and figurative meanings, and historical dynasty context for 4-character idioms.
 * **Multi-Language Dictionaries** — Instant offline English (CC-CEDICT) & Russian (BKRS) out-of-the-box, plus in-app 1-click download/removal of dictionary packs for the top 20 world languages.
+* **Reverse Dictionary Mode (Opt-in)** — Look up words in English or Russian to see their Chinese translation, Pinyin, audio, radicals, and alternative synonyms. Disabled by default, configurable in settings.
 
 ---
 

@@ -27,7 +27,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "122 000+",
     approxSize: "~15 MB",
     fileName: "cedict.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/cedict.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/cedict.json",
   },
   {
     id: "ru",
@@ -38,7 +38,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "120 000+",
     approxSize: "~8.5 MB",
     fileName: "dict-ru.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-ru.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ru.json",
   },
   {
     id: "de",
@@ -49,7 +49,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "150 000+",
     approxSize: "~6.2 MB",
     fileName: "dict-de.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-de.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-de.json",
   },
   {
     id: "fr",
@@ -60,7 +60,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "65 000+",
     approxSize: "~4.5 MB",
     fileName: "dict-fr.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-fr.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-fr.json",
   },
   {
     id: "es",
@@ -71,7 +71,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "50 000+",
     approxSize: "~4.0 MB",
     fileName: "dict-es.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-es.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-es.json",
   },
   {
     id: "ja",
@@ -82,7 +82,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "80 000+",
     approxSize: "~5.5 MB",
     fileName: "dict-ja.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-ja.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ja.json",
   },
   {
     id: "ko",
@@ -93,7 +93,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "60 000+",
     approxSize: "~4.2 MB",
     fileName: "dict-ko.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-ko.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ko.json",
   },
   {
     id: "vi",
@@ -104,7 +104,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "60 000+",
     approxSize: "~4.0 MB",
     fileName: "dict-vi.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-vi.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-vi.json",
   },
   {
     id: "it",
@@ -115,7 +115,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "40 000+",
     approxSize: "~3.2 MB",
     fileName: "dict-it.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-it.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-it.json",
   },
   {
     id: "pt",
@@ -126,7 +126,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "35 000+",
     approxSize: "~3.0 MB",
     fileName: "dict-pt.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-pt.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-pt.json",
   },
   {
     id: "id",
@@ -137,7 +137,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "30 000+",
     approxSize: "~2.8 MB",
     fileName: "dict-id.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-id.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-id.json",
   },
   {
     id: "th",
@@ -148,7 +148,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "30 000+",
     approxSize: "~2.8 MB",
     fileName: "dict-th.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-th.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-th.json",
   },
   {
     id: "ar",
@@ -159,7 +159,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "25 000+",
     approxSize: "~2.5 MB",
     fileName: "dict-ar.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-ar.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ar.json",
   },
   {
     id: "tr",
@@ -170,7 +170,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "25 000+",
     approxSize: "~2.5 MB",
     fileName: "dict-tr.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-tr.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-tr.json",
   },
   {
     id: "pl",
@@ -181,7 +181,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "25 000+",
     approxSize: "~2.5 MB",
     fileName: "dict-pl.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-pl.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-pl.json",
   },
   {
     id: "nl",
@@ -192,7 +192,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "25 000+",
     approxSize: "~2.5 MB",
     fileName: "dict-nl.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-nl.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-nl.json",
   },
   {
     id: "uk",
@@ -203,7 +203,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "30 000+",
     approxSize: "~2.8 MB",
     fileName: "dict-uk.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-uk.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-uk.json",
   },
   {
     id: "hi",
@@ -214,7 +214,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "20 000+",
     approxSize: "~2.2 MB",
     fileName: "dict-hi.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-hi.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-hi.json",
   },
   {
     id: "zh-CN",
@@ -225,7 +225,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "85 000+",
     approxSize: "~5.5 MB",
     fileName: "dict-zh-cn.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-zh-cn.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-zh-cn.json",
   },
   {
     id: "zh-TW",
@@ -236,7 +236,7 @@ export const DICT_PACKS: DictPackInfo[] = [
     entries: "85 000+",
     approxSize: "~5.5 MB",
     fileName: "dict-zh-tw.json",
-    downloadUrl: "https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/dict-zh-tw.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-zh-tw.json",
   },
 ];
 
@@ -1055,13 +1055,37 @@ export async function downloadDictPack(
       await adapter.mkdir(dictsFolder);
     }
 
-    const res = await requestUrl({ url: pack.downloadUrl });
+    const mirrors = [
+      pack.downloadUrl,
+      `https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/${pack.fileName}`,
+      `https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/${pack.fileName}`,
+    ];
+
+    let res: { text: string } | null = null;
+    let lastError: unknown = null;
+
+    for (const url of mirrors) {
+      try {
+        const attempt = await requestUrl({ url });
+        if (attempt && attempt.text && attempt.text.trim().startsWith("{")) {
+          res = attempt;
+          break;
+        }
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!res || !res.text) {
+      throw lastError || new Error("Failed to download dictionary pack from mirrors");
+    }
+
     await adapter.write(targetPath, res.text);
     new Notice(`Chinese Popover: Словарь ${pack.flag} ${pack.name} успешно загружен!`, 5000);
     return true;
   } catch (err) {
     console.warn(`[Chinese Dict] Failed to download pack ${packId}:`, err);
-    new Notice(`Chinese Popover: Не удалось загрузить ${pack.name}. Проверьте соединение с интернетом.`, 5000);
+    new Notice(`Chinese Popover: Не удалось загрузить ${pack.name}. Ошибка: ${(err as Error)?.message || "Сетевая ошибка"}`, 5000);
     return false;
   }
 }

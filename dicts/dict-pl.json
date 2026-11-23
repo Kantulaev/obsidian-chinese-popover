@@ -1,0 +1,199 @@
+{
+  "你好": [
+    "cześć",
+    "dzień dobry"
+  ],
+  "谢谢": [
+    "dziękuję",
+    "dzięki"
+  ],
+  "再见": [
+    "do widzenia",
+    "żegnaj"
+  ],
+  "老师": [
+    "nauczyciel"
+  ],
+  "学生": [
+    "student",
+    "uczeń"
+  ],
+  "朋友": [
+    "przyjaciel",
+    "kolega"
+  ],
+  "水": [
+    "woda"
+  ],
+  "茶": [
+    "herbata"
+  ],
+  "人": [
+    "człowiek",
+    "ludzie"
+  ],
+  "吃": [
+    "jeść"
+  ],
+  "喝": [
+    "pić"
+  ],
+  "学习": [
+    "uczyć się",
+    "studiować"
+  ],
+  "工作": [
+    "pracować",
+    "praca"
+  ],
+  "钱": [
+    "pieniądze"
+  ],
+  "时间": [
+    "czas"
+  ],
+  "爱": [
+    "kochać",
+    "miłość"
+  ],
+  "喜欢": [
+    "lubić"
+  ],
+  "大": [
+    "duży",
+    "wielki"
+  ],
+  "小": [
+    "mały"
+  ],
+  "好": [
+    "dobry",
+    "dobrze"
+  ],
+  "书": [
+    "książka"
+  ],
+  "家": [
+    "dom",
+    "rodzina"
+  ],
+  "中国": [
+    "Chiny"
+  ],
+  "去": [
+    "iść",
+    "jechać"
+  ],
+  "来": [
+    "przychodzić",
+    "przyjechać"
+  ],
+  "看": [
+    "patrzeć",
+    "widzieć",
+    "czytać"
+  ],
+  "听": [
+    "słuchać",
+    "słyszeć"
+  ],
+  "说": [
+    "mówić",
+    "powiedzieć"
+  ],
+  "做": [
+    "robić"
+  ],
+  "买": [
+    "kupować",
+    "kupić"
+  ],
+  "猫": [
+    "kot"
+  ],
+  "狗": [
+    "pies"
+  ],
+  "我": [
+    "ja",
+    "mnie"
+  ],
+  "你": [
+    "ty",
+    "ciebie"
+  ],
+  "他": [
+    "on",
+    "jego"
+  ],
+  "她": [
+    "ona",
+    "jej"
+  ],
+  "我们": [
+    "my",
+    "nas"
+  ],
+  "今天": [
+    "dzisiaj",
+    "dziś"
+  ],
+  "明天": [
+    "jutro"
+  ],
+  "昨天": [
+    "wczoraj"
+  ],
+  "一": [
+    "jeden"
+  ],
+  "二": [
+    "dwa"
+  ],
+  "三": [
+    "trzy"
+  ],
+  "四": [
+    "cztery"
+  ],
+  "五": [
+    "pięć"
+  ],
+  "六": [
+    "sześć"
+  ],
+  "七": [
+    "siedem"
+  ],
+  "八": [
+    "osiem"
+  ],
+  "九": [
+    "dziewięć"
+  ],
+  "十": [
+    "dziesięć"
+  ],
+  "百": [
+    "sto"
+  ],
+  "千": [
+    "tysiąc"
+  ],
+  "万": [
+    "dziesięć tysięcy"
+  ],
+  "多": [
+    "dużo",
+    "wiele"
+  ],
+  "少": [
+    "mało"
+  ],
+  "写": [
+    "pisać"
+  ],
+  "卖": [
+    "sprzedawać"
+  ]
+}

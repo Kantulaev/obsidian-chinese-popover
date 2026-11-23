@@ -1,0 +1,207 @@
+{
+  "你好": [
+    "hallo",
+    "guten tag"
+  ],
+  "谢谢": [
+    "danke",
+    "danken"
+  ],
+  "再见": [
+    "auf wiedersehen",
+    "tschüss"
+  ],
+  "老师": [
+    "lehrer",
+    "dozent"
+  ],
+  "学生": [
+    "student",
+    "schüler"
+  ],
+  "朋友": [
+    "freund",
+    "kamerad"
+  ],
+  "水": [
+    "wasser"
+  ],
+  "茶": [
+    "tee"
+  ],
+  "人": [
+    "mensch",
+    "person",
+    "leute"
+  ],
+  "吃": [
+    "essen",
+    "speisen"
+  ],
+  "喝": [
+    "trinken"
+  ],
+  "学习": [
+    "lernen",
+    "studieren"
+  ],
+  "工作": [
+    "arbeiten",
+    "arbeit",
+    "beruf"
+  ],
+  "钱": [
+    "geld"
+  ],
+  "时间": [
+    "zeit"
+  ],
+  "爱": [
+    "lieben",
+    "liebe"
+  ],
+  "喜欢": [
+    "mögen",
+    "gefallen"
+  ],
+  "大": [
+    "groß"
+  ],
+  "小": [
+    "klein"
+  ],
+  "好": [
+    "gut",
+    "schön"
+  ],
+  "书": [
+    "buch"
+  ],
+  "家": [
+    "zuhause",
+    "haus",
+    "familie",
+    "heim"
+  ],
+  "中国": [
+    "China"
+  ],
+  "去": [
+    "gehen",
+    "fahren"
+  ],
+  "来": [
+    "kommen"
+  ],
+  "看": [
+    "sehen",
+    "schauen",
+    "lesen"
+  ],
+  "听": [
+    "hören",
+    "zuhören"
+  ],
+  "说": [
+    "sprechen",
+    "sagen"
+  ],
+  "做": [
+    "machen",
+    "tun"
+  ],
+  "买": [
+    "kaufen"
+  ],
+  "猫": [
+    "katze"
+  ],
+  "狗": [
+    "hund"
+  ],
+  "我": [
+    "ich",
+    "mich",
+    "mir"
+  ],
+  "你": [
+    "du",
+    "dich",
+    "dir",
+    "sie"
+  ],
+  "他": [
+    "er",
+    "ihn",
+    "ihm"
+  ],
+  "她": [
+    "sie",
+    "ihr"
+  ],
+  "我们": [
+    "wir",
+    "uns"
+  ],
+  "今天": [
+    "heute"
+  ],
+  "明天": [
+    "morgen"
+  ],
+  "昨天": [
+    "gestern"
+  ],
+  "一": [
+    "eins",
+    "ein"
+  ],
+  "二": [
+    "zwei"
+  ],
+  "三": [
+    "drei"
+  ],
+  "四": [
+    "vier"
+  ],
+  "五": [
+    "fünf"
+  ],
+  "六": [
+    "sechs"
+  ],
+  "七": [
+    "sieben"
+  ],
+  "八": [
+    "acht"
+  ],
+  "九": [
+    "neun"
+  ],
+  "十": [
+    "zehn"
+  ],
+  "百": [
+    "hundert"
+  ],
+  "千": [
+    "tausend"
+  ],
+  "万": [
+    "zehntausend"
+  ],
+  "多": [
+    "viel"
+  ],
+  "少": [
+    "wenig"
+  ],
+  "写": [
+    "schreiben"
+  ],
+  "卖": [
+    "verkaufen"
+  ]
+}

@@ -224,7 +224,27 @@ export async function downloadChengyuPack(
     if (!(await adapter.exists(dictsDir))) {
       await adapter.mkdir(dictsDir);
     }
-    const res = await requestUrl({ url: CHENGYU_PACK_INFO.downloadUrl });
+    const mirrors = [
+      CHENGYU_PACK_INFO.downloadUrl,
+      `https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/${CHENGYU_PACK_INFO.fileName}`,
+      `https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/${CHENGYU_PACK_INFO.fileName}`,
+    ];
+    let res: { text: string } | null = null;
+    let lastError: unknown = null;
+    for (const url of mirrors) {
+      try {
+        const attempt = await requestUrl({ url });
+        if (attempt && attempt.text && attempt.text.trim().startsWith("{")) {
+          res = attempt;
+          break;
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    if (!res || !res.text) {
+      throw lastError || new Error("Failed to download chengyu pack from mirrors");
+    }
     await adapter.write(targetPath, res.text);
     await loadChengyuPack(adapter, pluginDir);
     const count = Object.keys(CHENGYU_DATABASE).length;
@@ -232,7 +252,7 @@ export async function downloadChengyuPack(
     return true;
   } catch (err) {
     console.warn("[Chinese Dict] Failed to download chengyu pack:", err);
-    new Notice("Chinese Popover: Не удалось загрузить словарь чэнъюй. Проверьте интернет.", 5000);
+    new Notice(`Chinese Popover: Не удалось загрузить словарь чэнъюй. Ошибка: ${(err as Error)?.message || "Сетевая ошибка"}`, 5000);
     return false;
   }
 }

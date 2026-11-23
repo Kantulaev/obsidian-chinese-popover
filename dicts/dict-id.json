@@ -1,0 +1,195 @@
+{
+  "你好": [
+    "halo",
+    "hai"
+  ],
+  "谢谢": [
+    "terima kasih"
+  ],
+  "再见": [
+    "sampai jumpa",
+    "selamat tinggal"
+  ],
+  "老师": [
+    "guru",
+    "pengajar"
+  ],
+  "学生": [
+    "murid",
+    "siswa",
+    "mahasiswa"
+  ],
+  "朋友": [
+    "teman",
+    "sahabat"
+  ],
+  "水": [
+    "air"
+  ],
+  "茶": [
+    "teh"
+  ],
+  "人": [
+    "orang",
+    "manusia"
+  ],
+  "吃": [
+    "makan"
+  ],
+  "喝": [
+    "minum"
+  ],
+  "学习": [
+    "belajar",
+    "mempelajari"
+  ],
+  "工作": [
+    "bekerja",
+    "pekerjaan"
+  ],
+  "钱": [
+    "uang"
+  ],
+  "时间": [
+    "waktu"
+  ],
+  "爱": [
+    "cinta",
+    "mencintai"
+  ],
+  "喜欢": [
+    "suka",
+    "menyukai"
+  ],
+  "大": [
+    "besar"
+  ],
+  "小": [
+    "kecil"
+  ],
+  "好": [
+    "bagus",
+    "baik"
+  ],
+  "书": [
+    "buku"
+  ],
+  "家": [
+    "rumah",
+    "keluarga"
+  ],
+  "中国": [
+    "Tiongkok",
+    "Cina"
+  ],
+  "去": [
+    "pergi"
+  ],
+  "来": [
+    "datang"
+  ],
+  "看": [
+    "melihat",
+    "menonton",
+    "membaca"
+  ],
+  "听": [
+    "mendengar",
+    "mendengarkan"
+  ],
+  "说": [
+    "berbicara",
+    "mengatakan"
+  ],
+  "做": [
+    "membuat",
+    "melakukan"
+  ],
+  "买": [
+    "membeli"
+  ],
+  "猫": [
+    "kucing"
+  ],
+  "狗": [
+    "anjing"
+  ],
+  "我": [
+    "saya",
+    "aku"
+  ],
+  "你": [
+    "kamu",
+    "anda"
+  ],
+  "他": [
+    "dia"
+  ],
+  "她": [
+    "dia (wanita)"
+  ],
+  "我们": [
+    "kami",
+    "kita"
+  ],
+  "今天": [
+    "hari ini"
+  ],
+  "明天": [
+    "besok"
+  ],
+  "昨天": [
+    "kemarin"
+  ],
+  "一": [
+    "satu"
+  ],
+  "二": [
+    "dua"
+  ],
+  "三": [
+    "tiga"
+  ],
+  "四": [
+    "empat"
+  ],
+  "五": [
+    "lima"
+  ],
+  "六": [
+    "enam"
+  ],
+  "七": [
+    "tujuh"
+  ],
+  "八": [
+    "delapan"
+  ],
+  "九": [
+    "sembilan"
+  ],
+  "十": [
+    "sepuluh"
+  ],
+  "百": [
+    "ratus"
+  ],
+  "千": [
+    "ribu"
+  ],
+  "万": [
+    "sepuluh ribu"
+  ],
+  "多": [
+    "banyak"
+  ],
+  "少": [
+    "sedikit"
+  ],
+  "写": [
+    "menulis"
+  ],
+  "卖": [
+    "menjual"
+  ]
+}

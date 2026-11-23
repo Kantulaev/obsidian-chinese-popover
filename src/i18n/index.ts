@@ -1,8 +1,10 @@
 import { LanguageMeta, SupportedLanguage } from "./types.ts";
 import { LOCALES } from "./locales.ts";
+import { SETTINGS_LOCALES } from "./settings-locales.ts";
 
 export * from "./types.ts";
 export * from "./locales.ts";
+export * from "./settings-locales.ts";
 
 export const SUPPORTED_LANGUAGES: LanguageMeta[] = [
   { code: "en", name: "English", nativeName: "English", flag: "🇬🇧" },
@@ -82,6 +84,18 @@ export function t(key: string, langOverride?: string): string {
   const lang = (langOverride && langOverride !== "auto" && langOverride in LOCALES)
     ? (langOverride as SupportedLanguage)
     : currentActiveLanguage;
+
+  // 1. Check specialized settings locales if key begins with 'settings.'
+  if (key.startsWith("settings.")) {
+    const sub = key.slice("settings.".length);
+    const val = SETTINGS_LOCALES[lang]?.[sub] ||
+      (LOCALES[lang]?.settings as Record<string, string>)?.[sub] ||
+      SETTINGS_LOCALES.en?.[sub] ||
+      (LOCALES.en?.settings as Record<string, string>)?.[sub];
+    if (typeof val === "string" && val.length > 0) {
+      return val;
+    }
+  }
 
   const bundle = LOCALES[lang] || LOCALES.en;
   const enBundle = LOCALES.en;

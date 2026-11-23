@@ -1,0 +1,197 @@
+{
+  "你好": [
+    "hallo",
+    "goedendag"
+  ],
+  "谢谢": [
+    "dank je",
+    "bedankt"
+  ],
+  "再见": [
+    "tot ziens",
+    "dag"
+  ],
+  "老师": [
+    "leraar",
+    "docent"
+  ],
+  "学生": [
+    "student",
+    "leerling"
+  ],
+  "朋友": [
+    "vriend",
+    "kameraad"
+  ],
+  "水": [
+    "water"
+  ],
+  "茶": [
+    "thee"
+  ],
+  "人": [
+    "mens",
+    "persoon"
+  ],
+  "吃": [
+    "eten"
+  ],
+  "喝": [
+    "drinken"
+  ],
+  "学习": [
+    "leren",
+    "studeren"
+  ],
+  "工作": [
+    "werken",
+    "werk"
+  ],
+  "钱": [
+    "geld"
+  ],
+  "时间": [
+    "tijd"
+  ],
+  "爱": [
+    "houden van",
+    "liefde"
+  ],
+  "喜欢": [
+    "leuk vinden"
+  ],
+  "大": [
+    "groot"
+  ],
+  "小": [
+    "klein"
+  ],
+  "好": [
+    "goed",
+    "fijn"
+  ],
+  "书": [
+    "boek"
+  ],
+  "家": [
+    "huis",
+    "familie"
+  ],
+  "中国": [
+    "China"
+  ],
+  "去": [
+    "gaan"
+  ],
+  "来": [
+    "komen"
+  ],
+  "看": [
+    "kijken",
+    "zien",
+    "lezen"
+  ],
+  "听": [
+    "luisteren",
+    "horen"
+  ],
+  "说": [
+    "spreken",
+    "zeggen"
+  ],
+  "做": [
+    "doen",
+    "maken"
+  ],
+  "买": [
+    "kopen"
+  ],
+  "猫": [
+    "kat"
+  ],
+  "狗": [
+    "hond"
+  ],
+  "我": [
+    "ik",
+    "mij"
+  ],
+  "你": [
+    "jij",
+    "je",
+    "u"
+  ],
+  "他": [
+    "hij",
+    "hem"
+  ],
+  "她": [
+    "zij",
+    "haar"
+  ],
+  "我们": [
+    "wij",
+    "we"
+  ],
+  "今天": [
+    "vandaag"
+  ],
+  "明天": [
+    "morgen"
+  ],
+  "昨天": [
+    "gisteren"
+  ],
+  "一": [
+    "een",
+    "één"
+  ],
+  "二": [
+    "twee"
+  ],
+  "三": [
+    "drie"
+  ],
+  "四": [
+    "vier"
+  ],
+  "五": [
+    "vijf"
+  ],
+  "六": [
+    "zes"
+  ],
+  "七": [
+    "zeven"
+  ],
+  "八": [
+    "acht"
+  ],
+  "九": [
+    "negen"
+  ],
+  "十": [
+    "tien"
+  ],
+  "百": [
+    "honderd"
+  ],
+  "千": [
+    "duizend"
+  ],
+  "万": [
+    "tienduizend"
+  ],
+  "多": [
+    "veel"
+  ],
+  "少": [
+    "weinig"
+  ],
+  "写": [
+    "schrijven"
+  ],
+  "卖": [
+    "verkopen"
+  ]
+}

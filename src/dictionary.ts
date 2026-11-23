@@ -724,21 +724,35 @@ export class DictionaryManager {
     const dictPath = `${this.getPluginDir()}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
 
-    const version = this.plugin.manifest.version || "1.7.3";
-    const downloadUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/${version}/cedict.json`;
-    const fallbackUrl = `https://github.com/Kantulaev/obsidian-chinese-popover/releases/download/1.7.3/cedict.json`;
+    const urls = [
+      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/cedict.json",
+      "https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/cedict.json",
+      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/cedict.json",
+    ];
 
     if (!isSilent) {
       new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
     }
 
     try {
-      let res;
-      try {
-        res = await requestUrl({ url: downloadUrl });
-      } catch {
-        res = await requestUrl({ url: fallbackUrl });
+      let res: { text: string } | null = null;
+      let lastError: unknown = null;
+      for (const url of urls) {
+        try {
+          const attempt = await requestUrl({ url });
+          if (attempt && attempt.text && attempt.text.trim().startsWith("{")) {
+            res = attempt;
+            break;
+          }
+        } catch (err) {
+          lastError = err;
+        }
       }
+
+      if (!res || !res.text) {
+        throw lastError || new Error("Failed to download cedict.json from mirrors");
+      }
+
       const text = res.text;
       await adapter.write(dictPath, text);
       this.data = Object.assign({}, JSON.parse(text) as DictionaryData, CANTONESE_CORE_DICT);
@@ -751,6 +765,9 @@ export class DictionaryManager {
       return true;
     } catch (err) {
       console.warn("[Chinese Dict] Failed to download dictionary file:", err);
+      if (!isSilent) {
+        new Notice(`Chinese Popover: Не удалось загрузить словарь. Ошибка: ${(err as Error)?.message || "Сетевая ошибка"}`, 5000);
+      }
       return false;
     }
   }

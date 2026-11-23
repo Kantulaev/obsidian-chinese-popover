@@ -1,0 +1,196 @@
+{
+  "你好": [
+    "hola",
+    "buenos días"
+  ],
+  "谢谢": [
+    "gracias",
+    "agradecer"
+  ],
+  "再见": [
+    "adiós",
+    "hasta luego"
+  ],
+  "老师": [
+    "profesor",
+    "maestro"
+  ],
+  "学生": [
+    "estudiante",
+    "alumno"
+  ],
+  "朋友": [
+    "amigo",
+    "compañero"
+  ],
+  "水": [
+    "agua"
+  ],
+  "茶": [
+    "té"
+  ],
+  "人": [
+    "persona",
+    "hombre",
+    "gente"
+  ],
+  "吃": [
+    "comer"
+  ],
+  "喝": [
+    "beber",
+    "tomar"
+  ],
+  "学习": [
+    "estudiar",
+    "aprender"
+  ],
+  "工作": [
+    "trabajar",
+    "trabajo"
+  ],
+  "钱": [
+    "dinero"
+  ],
+  "时间": [
+    "tiempo"
+  ],
+  "爱": [
+    "amar",
+    "amor"
+  ],
+  "喜欢": [
+    "gustar"
+  ],
+  "大": [
+    "grande"
+  ],
+  "小": [
+    "pequeño"
+  ],
+  "好": [
+    "bueno",
+    "bien"
+  ],
+  "书": [
+    "libro"
+  ],
+  "家": [
+    "casa",
+    "familia"
+  ],
+  "中国": [
+    "China"
+  ],
+  "去": [
+    "ir"
+  ],
+  "来": [
+    "venir",
+    "llegar"
+  ],
+  "看": [
+    "mirar",
+    "ver",
+    "leer"
+  ],
+  "听": [
+    "escuchar",
+    "oír"
+  ],
+  "说": [
+    "hablar",
+    "decir"
+  ],
+  "做": [
+    "hacer"
+  ],
+  "买": [
+    "comprar"
+  ],
+  "猫": [
+    "gato"
+  ],
+  "狗": [
+    "perro"
+  ],
+  "我": [
+    "yo",
+    "mí"
+  ],
+  "你": [
+    "tú",
+    "te",
+    "usted"
+  ],
+  "他": [
+    "él"
+  ],
+  "她": [
+    "ella"
+  ],
+  "我们": [
+    "nosotros"
+  ],
+  "今天": [
+    "hoy"
+  ],
+  "明天": [
+    "mañana"
+  ],
+  "昨天": [
+    "ayer"
+  ],
+  "一": [
+    "uno",
+    "un"
+  ],
+  "二": [
+    "dos"
+  ],
+  "三": [
+    "tres"
+  ],
+  "四": [
+    "cuatro"
+  ],
+  "五": [
+    "cinco"
+  ],
+  "六": [
+    "seis"
+  ],
+  "七": [
+    "siete"
+  ],
+  "八": [
+    "ocho"
+  ],
+  "九": [
+    "nueve"
+  ],
+  "十": [
+    "diez"
+  ],
+  "百": [
+    "cien"
+  ],
+  "千": [
+    "mil"
+  ],
+  "万": [
+    "diez mil"
+  ],
+  "多": [
+    "mucho"
+  ],
+  "少": [
+    "poco"
+  ],
+  "写": [
+    "escribir"
+  ],
+  "卖": [
+    "vender"
+  ]
+}

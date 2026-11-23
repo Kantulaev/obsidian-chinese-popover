@@ -1,0 +1,197 @@
+{
+  "你好": [
+    "ciao",
+    "buongiorno"
+  ],
+  "谢谢": [
+    "grazie",
+    "ringraziare"
+  ],
+  "再见": [
+    "arrivederci",
+    "ciao"
+  ],
+  "老师": [
+    "insegnante",
+    "professore"
+  ],
+  "学生": [
+    "studente",
+    "alunno"
+  ],
+  "朋友": [
+    "amico",
+    "compagno"
+  ],
+  "水": [
+    "acqua"
+  ],
+  "茶": [
+    "tè"
+  ],
+  "人": [
+    "persona",
+    "uomo",
+    "gente"
+  ],
+  "吃": [
+    "mangiare"
+  ],
+  "喝": [
+    "bere"
+  ],
+  "学习": [
+    "studiare",
+    "imparare"
+  ],
+  "工作": [
+    "lavorare",
+    "lavoro"
+  ],
+  "钱": [
+    "soldi",
+    "denaro"
+  ],
+  "时间": [
+    "tempo"
+  ],
+  "爱": [
+    "amare",
+    "amore"
+  ],
+  "喜欢": [
+    "piacere"
+  ],
+  "大": [
+    "grande"
+  ],
+  "小": [
+    "piccolo"
+  ],
+  "好": [
+    "buono",
+    "bene"
+  ],
+  "书": [
+    "libro"
+  ],
+  "家": [
+    "casa",
+    "famiglia"
+  ],
+  "中国": [
+    "Cina"
+  ],
+  "去": [
+    "andare"
+  ],
+  "来": [
+    "venire"
+  ],
+  "看": [
+    "guardare",
+    "vedere",
+    "leggere"
+  ],
+  "听": [
+    "ascoltare",
+    "sentire"
+  ],
+  "说": [
+    "parlare",
+    "dire"
+  ],
+  "做": [
+    "fare"
+  ],
+  "买": [
+    "comprare",
+    "acquistare"
+  ],
+  "猫": [
+    "gatto"
+  ],
+  "狗": [
+    "cane"
+  ],
+  "我": [
+    "io",
+    "me"
+  ],
+  "你": [
+    "tu",
+    "te",
+    "lei"
+  ],
+  "他": [
+    "lui",
+    "egli"
+  ],
+  "她": [
+    "lei",
+    "essa"
+  ],
+  "我们": [
+    "noi"
+  ],
+  "今天": [
+    "oggi"
+  ],
+  "明天": [
+    "domani"
+  ],
+  "昨天": [
+    "ieri"
+  ],
+  "一": [
+    "uno"
+  ],
+  "二": [
+    "due"
+  ],
+  "三": [
+    "tre"
+  ],
+  "四": [
+    "quattro"
+  ],
+  "五": [
+    "cinque"
+  ],
+  "六": [
+    "sei"
+  ],
+  "七": [
+    "sette"
+  ],
+  "八": [
+    "otto"
+  ],
+  "九": [
+    "nove"
+  ],
+  "十": [
+    "dieci"
+  ],
+  "百": [
+    "cento"
+  ],
+  "千": [
+    "mille"
+  ],
+  "万": [
+    "diecimila"
+  ],
+  "多": [
+    "molto"
+  ],
+  "少": [
+    "poco"
+  ],
+  "写": [
+    "scrivere"
+  ],
+  "卖": [
+    "vendere"
+  ]
+}

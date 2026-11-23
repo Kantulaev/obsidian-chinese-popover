@@ -223,11 +223,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     // --- QUICK HOTKEY HELPER ---
     new Setting(containerEl)
-      .setName("⌨️ Сочетания клавиш / Hotkeys")
-      .setDesc("Все ключевые действия (поиск слова под курсором, озвучка, копирование, переключение диалекта) можно назначить на любые горячие клавиши в настройках Obsidian.")
+      .setName(t("settings.hotkeys_title"))
+      .setDesc(t("settings.hotkeys_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("Открыть Hotkeys в Obsidian")
+          .setButtonText(t("settings.hotkeys_btn"))
           .setCta()
           .onClick(() => {
             try {
@@ -251,7 +251,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 0. ЯЗЫК ИНТЕРФЕЙСА И СЛОВАРИ (I18N & DICTIONARY PACKS)
     // ==========================================
     new Setting(containerEl)
-      .setName("🌐 Язык и Словари / Language & Dictionaries")
+      .setName(t("settings.lang_heading"))
       .setHeading();
 
     new Setting(containerEl)
@@ -284,12 +284,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 1. АКТИВАЦИЯ И ТРИГГЕРЫ
     // ==========================================
     new Setting(containerEl)
-      .setName("🚀 Способ активации / Activation & Triggers")
+      .setName(t("settings.activation_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Включить словарь / Enable Dictionary")
-      .setDesc("Главный переключатель работы плагина.")
+      .setName(t("settings.enable_plugin"))
+      .setDesc(t("settings.enable_plugin_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enabled)
@@ -303,14 +303,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Способ вызова окна / Trigger Mode")
-      .setDesc("Какое действие открывает всплывающее окно со словом.")
+      .setName(t("settings.trigger_mode"))
+      .setDesc(t("settings.trigger_mode_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("dblclick", "Двойной клик мыши / Double Click (по умолчанию)")
-          .addOption("hover_modifier", "Наведение с зажатой клавишей / Hover + Modifier")
-          .addOption("hover", "Наведение мыши / Hover Always")
-          .addOption("command_only", "Только горячие клавиши / Hotkeys & Commands only")
+          .addOption("dblclick", t("settings.trigger_dblclick"))
+          .addOption("hover_modifier", t("settings.trigger_hover_mod"))
+          .addOption("hover", t("settings.trigger_hover"))
+          .addOption("command_only", t("settings.trigger_command"))
           .setValue(this.plugin.settings.triggerMode)
           .onChange(async (value) => {
             this.plugin.settings.triggerMode = value as TriggerMode;
@@ -320,8 +320,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Выделять кантонские фразы / Select Cantonese Phrases")
-      .setDesc("При двойном клике автоматически выделять специфические кантонские разговорные фразы (唔該晒, 點解, 咁樣, 睇唔明, 去唔去, 食緊 и др.), которые стандартный движок Obsidian может разбивать на отдельные иероглифы. Для обычных слов и чэнъюй используется встроенное выделение Obsidian.")
+      .setName(t("settings.cantonese_phrases"))
+      .setDesc(t("settings.cantonese_phrases_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.selectCantonesePhrases ?? true)
@@ -332,8 +332,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Режим быстрого чтения / Reader Mode")
-      .setDesc("При наведении мыши на иероглифы сразу открывать подсказку без зажатия вспомогательных клавиш. Удобно для непрерывного чтения китайских текстов и статей.")
+      .setName(t("settings.reader_mode"))
+      .setDesc(t("settings.reader_mode_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.readerMode)
@@ -346,8 +346,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     if (this.plugin.settings.triggerMode === "hover_modifier") {
       new Setting(containerEl)
-        .setName("Клавиша-модификатор для наведения / Modifier Key")
-        .setDesc("Зажмите эту клавишу и наведите курсор на китайское слово.")
+        .setName(t("settings.modifier_key"))
+        .setDesc(t("settings.modifier_key_desc"))
         .addDropdown((dropdown) =>
           dropdown
             .addOption("Alt", "Alt / Option (⌥)")
@@ -364,8 +364,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     if (this.plugin.settings.triggerMode === "hover" || this.plugin.settings.triggerMode === "hover_modifier") {
       new Setting(containerEl)
-        .setName("Задержка наведения / Hover Delay")
-        .setDesc("Время удержания курсора на слове перед показом карточки (в миллисекундах).")
+        .setName(t("settings.hover_delay"))
+        .setDesc(t("settings.hover_delay_desc"))
         .addSlider((slider) =>
           slider
             .setLimits(100, 800, 50)
@@ -381,16 +381,16 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 2. ОЗВУЧКА И ПРОИЗНОШЕНИЕ
     // ==========================================
     new Setting(containerEl)
-      .setName("🗣️ Озвучка и произношение / Voice & Audio")
+      .setName(t("settings.voice_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Диалект произношения / Pronunciation Dialect")
-      .setDesc("Выберите диалект для озвучки: Путунхуа (Мандарин) по умолчанию или Гуандунхуа (Кантонский).")
+      .setName(t("settings.dialect"))
+      .setDesc(t("settings.dialect_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("mandarin", "Путунхуа / Мандарин (普通话 / zh-CN) — по умолчанию")
-          .addOption("cantonese", "Гуандунхуа / Кантонский (廣東話 / zh-yue)")
+          .addOption("mandarin", t("settings.dialect_mandarin"))
+          .addOption("cantonese", t("settings.dialect_cantonese"))
           .setValue(this.plugin.settings.dialect)
           .onChange(async (value) => {
             this.plugin.settings.dialect = value as ChineseDialect;
@@ -402,12 +402,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Движок озвучки / Audio Engine")
-      .setDesc("Google HD Neural обеспечивает естественное звучание онлайн. Web Speech API работает офлайн через систему.")
+      .setName(t("settings.audio_engine"))
+      .setDesc(t("settings.audio_engine_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("google_neural", "Google HD Neural (Онлайн, высокое качество)")
-          .addOption("web_speech", "Web Speech API (Офлайн, системный голос)")
+          .addOption("google_neural", t("settings.audio_engine_neural"))
+          .addOption("web_speech", t("settings.audio_engine_webspeech"))
           .setValue(this.plugin.settings.audioEngine)
           .onChange(async (value) => {
             this.plugin.settings.audioEngine = value as AudioEngine;
@@ -416,8 +416,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Скорость речи / Speech Speed")
-      .setDesc("Скорость воспроизведения озвучки (по умолчанию 0.8x для лучшей разборчивости тонов).")
+      .setName(t("settings.speech_speed"))
+      .setDesc(t("settings.speech_speed_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(0.5, 1.4, 0.05)
@@ -429,8 +429,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Автоматическая озвучка при открытии / Auto-play Audio")
-      .setDesc("Автоматически воспроизводить произношение сразу при открытии карточки слова.")
+      .setName(t("settings.autoplay_audio"))
+      .setDesc(t("settings.autoplay_audio_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.autoPlayAudio)
@@ -444,18 +444,18 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 3. ОТОБРАЖЕНИЕ ФОНЕТИКИ И ИЕРОГЛИФОВ
     // ==========================================
     new Setting(containerEl)
-      .setName("🀄 Фонетика и иероглифы / Phonetics & Hanzi")
+      .setName(t("settings.phonetics_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Режим отображения фонетики / Phonetics Display")
-      .setDesc("Как отображать транскрипцию в заголовке карточки. По умолчанию — только пиньинь (Путунхуа), с возможностью включить ютпинг (Кантонский).")
+      .setName(t("settings.phonetic_display"))
+      .setDesc(t("settings.phonetic_display_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("pinyin", "Только пиньинь (Pinyin only) — по умолчанию")
-          .addOption("both", "И пиньинь, и ютпинг (Pinyin / Jyutping)")
-          .addOption("jyutping", "Только ютпинг (Jyutping only)")
-          .addOption("dialect_auto", "Авто по диалекту (Путунхуа: пиньинь / Кантонский: оба)")
+          .addOption("pinyin", t("settings.phonetic_pinyin"))
+          .addOption("both", t("settings.phonetic_both"))
+          .addOption("jyutping", t("settings.phonetic_jyutping"))
+          .addOption("dialect_auto", t("settings.phonetic_auto"))
           .setValue(this.plugin.settings.phoneticDisplay)
           .onChange(async (value) => {
             this.plugin.settings.phoneticDisplay = value as PhoneticDisplay;
@@ -467,8 +467,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Диакритические знаки тонов / Accented Pinyin")
-      .setDesc("Отображать тоны в пиньине знаками над гласными (nǐ hǎo), а не цифрами (ni3 hao3).")
+      .setName(t("settings.accented_pinyin"))
+      .setDesc(t("settings.accented_pinyin_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showAccentedPinyin)
@@ -482,8 +482,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Показывать традиционные иероглифы / Show Traditional")
-      .setDesc("Отображать традиционную форму справа в том же размере (если отличается от упрощенной).")
+      .setName(t("settings.show_traditional"))
+      .setDesc(t("settings.show_traditional_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showTraditional)
@@ -497,14 +497,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Разделитель иероглифов / Traditional Separator")
-      .setDesc("Символ разделения между упрощенным и традиционным написанием.")
+      .setName(t("settings.trad_separator"))
+      .setDesc(t("settings.trad_separator_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption(" - ", "Тире: ' - ' (学 - 學)")
-          .addOption(" / ", "Слэш: ' / ' (学 / 學)")
-          .addOption(" · ", "Точка: ' · ' (学 · 學)")
-          .addOption(" () ", "В скобках: ' ( )' (学 (學))")
+          .addOption(" - ", " ' - ' (学 - 學)")
+          .addOption(" / ", " ' / ' (学 / 學)")
+          .addOption(" · ", " ' · ' (学 · 學)")
+          .addOption(" () ", " ' ( )' (学 (學))")
           .setValue(this.plugin.settings.traditionalSeparator)
           .onChange(async (value) => {
             this.plugin.settings.traditionalSeparator = value as TraditionalSeparator;
@@ -516,8 +516,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Количество слов перевода / Max Definitions")
-      .setDesc("Сколько основных значений перевода показывать в карточке (от 1 до 8, по умолчанию 6).")
+      .setName(t("settings.max_definitions"))
+      .setDesc(t("settings.max_definitions_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(1, 8, 1)
@@ -532,8 +532,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Показывать кнопки действий / Show Action Buttons")
-      .setDesc("Отображать круглые кнопки озвучки 🔊 и копирования 📋 в правом верхнем углу.")
+      .setName(t("settings.show_action_buttons"))
+      .setDesc(t("settings.show_action_buttons_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showActionButtons)
@@ -547,8 +547,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Бейдж уровня HSK / HSK Level Badge")
-      .setDesc("Отображать цветной значок официального уровня HSK (HSK 1 - 6) во всплывающей подсказке и в карточках словарика.")
+      .setName(t("settings.show_hsk"))
+      .setDesc(t("settings.show_hsk_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showHskBadge)
@@ -562,8 +562,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Разбор слова по иероглифам / Character Breakdown")
-      .setDesc("Для составных слов (от 2 иероглифов) показывать дополнительную компактную строку с переводом и транскрипцией каждого символа в отдельности.")
+      .setName(t("settings.char_breakdown"))
+      .setDesc(t("settings.char_breakdown_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showCharacterBreakdown)
@@ -596,8 +596,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Определять части речи / Detect Parts of Speech")
-      .setDesc("Показывать грамматические части речи слова (глагол, существительное, прилагательное и т.д.), включая многофункциональные слова (兼类词).")
+      .setName(t("settings.parts_of_speech"))
+      .setDesc(t("settings.parts_of_speech_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showPartOfSpeech)
@@ -611,13 +611,13 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Цветовая подсветка тонов / Tone Colors (Pleco Style)")
-      .setDesc("Окрашивать транскрипцию в цвета тонов (1-й красный, 2-й зеленый, 3-й синий, 4-й фиолетовый).")
+      .setName(t("settings.tone_colors"))
+      .setDesc(t("settings.tone_colors_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("off", "Отключить цветовую подсветку (по умолчанию)")
-          .addOption("phonetics", "В транскрипции (пиньинь / ютпинг)")
-          .addOption("all", "Везде (и в транскрипции, и в иероглифах)")
+          .addOption("off", t("settings.tone_off"))
+          .addOption("phonetics", t("settings.tone_phonetics"))
+          .addOption("all", t("settings.tone_all"))
           .setValue(this.plugin.settings.toneColoring)
           .onChange(async (value) => {
             this.plugin.settings.toneColoring = value as "off" | "phonetics" | "all";
@@ -630,8 +630,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Ключи Канси и этимология / Radicals & Etymology")
-      .setDesc("Отображать номер ключа Канси (214 ключей), значение радикала и составные компоненты иероглифа.")
+      .setName(t("settings.radicals"))
+      .setDesc(t("settings.radicals_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showRadicals)
@@ -645,8 +645,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     const chengyuSetting = new Setting(containerEl)
-      .setName("Истории и притчи чэнъюй / Chengyu Origin Stories")
-      .setDesc("Для 4-значных идиом показывать историческую притчу и аллегорический смысл выражения из словаря чэнъюй.")
+      .setName(t("settings.chengyu_stories"))
+      .setDesc(t("settings.chengyu_stories_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showChengyuStories)
@@ -663,15 +663,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       const isInstalled = await this.plugin.dictionary.isChengyuInstalled();
       chengyuSetting.addButton((btn) => {
         if (isInstalled) {
-          btn.setButtonText("✓ Словарь чэнъюй установлен").setDisabled(true);
+          btn.setButtonText(t("settings.chengyu_installed_btn")).setDisabled(true);
         } else {
-          btn.setButtonText("📥 Скачать словарь чэнъюй").setCta().onClick(async () => {
-            btn.setButtonText("⏳ Загрузка...").setDisabled(true);
+          btn.setButtonText(t("settings.chengyu_download_btn")).setCta().onClick(async () => {
+            btn.setButtonText(t("settings.chengyu_downloading_btn")).setDisabled(true);
             const ok = await this.plugin.dictionary.downloadChengyu();
             if (ok) {
-              btn.setButtonText("✓ Установлен");
+              btn.setButtonText(t("settings.chengyu_installed_btn"));
             } else {
-              btn.setButtonText("📥 Скачать словарь чэнъюй").setDisabled(false);
+              btn.setButtonText(t("settings.chengyu_download_btn")).setDisabled(false);
             }
           });
         }
@@ -679,8 +679,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     })();
 
     new Setting(containerEl)
-      .setName("Анимация порядка черт / Stroke Order Animation")
-      .setDesc("Отображать кнопку кисти 🖌️ для просмотра пошаговой каллиграфической анимации написания черт иероглифа в сетке Мицзыгэ (米字格).")
+      .setName(t("settings.stroke_order"))
+      .setDesc(t("settings.stroke_order_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showStrokeOrder)
@@ -694,8 +694,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Кнопка создания заметки слова / Show Word Note Button")
-      .setDesc("Отображать кнопку 📝 создания отдельной атомарной заметки слова (Zettelkasten) в верхнем баре карточки.")
+      .setName(t("settings.word_note_btn"))
+      .setDesc(t("settings.word_note_btn_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.showWordNotesButton)
@@ -712,21 +712,21 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 4. КИТАЙСКАЯ ТИПОГРАФИКА И ШРИФТЫ
     // ==========================================
     new Setting(containerEl)
-      .setName("🖋️ Китайская типографика и шрифты / Chinese Typography")
+      .setName(t("settings.typography_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Китайский шрифт / Chinese Font Family")
-      .setDesc("Выберите стиль китайского шрифта. Рекомендуется официальный шрифт экзамена HSK — КайТи (楷体), а также классический Мин/Сун, рубленый ХэйТи или каллиграфический ВэньКай.")
+      .setName(t("settings.font_family"))
+      .setDesc(t("settings.font_family_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("default", "По умолчанию в Obsidian / Default")
-          .addOption("kaiti", "🎯 Экзаменационный шрифт HSK — КайТи (楷体 / KaiTi)")
-          .addOption("songti", "Классический книжный Мин/Сун (宋体 / SongTi)")
-          .addOption("heiti", "Современный рубленый гротеск (黑体 / HeiTi)")
-          .addOption("fangsong", "Официально-деловой ФанСун (仿宋 / FangSong)")
-          .addOption("wenkai", "Каллиграфический экранный Сяу ВэньКай (霞鹜文楷 / LXGW WenKai)")
-          .addOption("custom", "Пользовательский шрифт / Custom Font...")
+          .addOption("default", t("settings.font_default"))
+          .addOption("kaiti", t("settings.font_kaiti"))
+          .addOption("songti", t("settings.font_songti"))
+          .addOption("heiti", t("settings.font_heiti"))
+          .addOption("fangsong", t("settings.font_fangsong"))
+          .addOption("wenkai", t("settings.font_wenkai"))
+          .addOption("custom", t("settings.font_custom"))
           .setValue(this.plugin.settings.chineseFontFamily)
           .onChange(async (value) => {
             this.plugin.settings.chineseFontFamily = value as ChineseFontPreset;
@@ -742,11 +742,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     if (this.plugin.settings.chineseFontFamily === "custom") {
       new Setting(containerEl)
-        .setName("Название пользовательского шрифта / Custom Font Name")
-        .setDesc("Введите точное имя шрифта, установленного на вашем компьютере (например: 'Source Han Serif SC', 'Noto Serif CJK SC').")
+        .setName(t("settings.custom_font_name"))
+        .setDesc(t("settings.custom_font_desc"))
         .addText((text) =>
           text
-            .setPlaceholder("Например: Source Han Serif SC")
+            .setPlaceholder("Source Han Serif SC")
             .setValue(this.plugin.settings.customChineseFont)
             .onChange(async (val) => {
               this.plugin.settings.customChineseFont = val.trim();
@@ -761,12 +761,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl)
-      .setName("Область применения шрифта / Font Scope")
-      .setDesc("Где использовать выбранный китайский шрифт: только во всплывающей подсказке и боковом словарике, либо во всем редакторе заметок Obsidian.")
+      .setName(t("settings.font_scope"))
+      .setDesc(t("settings.font_scope_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("popover_and_sidebar", "Только словарь и боковая панель / Popover & Sidebar only")
-          .addOption("entire_editor", "Весь редактор заметок Obsidian / Entire Obsidian Editor")
+          .addOption("popover_and_sidebar", t("settings.scope_popover_sidebar"))
+          .addOption("entire_editor", t("settings.scope_entire_editor"))
           .setValue(this.plugin.settings.chineseFontScope)
           .onChange(async (value) => {
             this.plugin.settings.chineseFontScope = value as ChineseFontScope;
@@ -780,21 +780,21 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     // ==========================================
-    // 4. ВНЕШНИЙ ВИД И СТИЛЬ LIQUID GLASS
+    // 5. ВНЕШНИЙ ВИД И СТИЛЬ LIQUID GLASS
     // ==========================================
     new Setting(containerEl)
-      .setName("🎨 Внешний вид и стиль Liquid Glass / Appearance")
+      .setName(t("settings.appearance_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Стиль темы / Popover Theme")
-      .setDesc("Визуальный стиль карточки словаря.")
+      .setName(t("settings.theme"))
+      .setDesc(t("settings.theme_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("auto", "Авто (соответствует теме Obsidian)")
-          .addOption("glass_dark", "Liquid Glass Dark (Глубокое матовое стекло)")
-          .addOption("glass_light", "Liquid Glass Light (Светлое матовое стекло)")
-          .addOption("solid", "Solid Minimalist (Непрозрачный без размытия)")
+          .addOption("auto", t("settings.theme_auto"))
+          .addOption("glass_dark", t("settings.theme_glass_dark"))
+          .addOption("glass_light", t("settings.theme_glass_light"))
+          .addOption("solid", t("settings.theme_solid"))
           .setValue(this.plugin.settings.theme)
           .onChange(async (value) => {
             this.plugin.settings.theme = value as PopoverTheme;
@@ -806,14 +806,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Цветовой акцент текста / Text Color Preset")
-      .setDesc("Цветовой акцент для фонетического заголовка (пиньинь / ютпинг).")
+      .setName(t("settings.text_color_preset"))
+      .setDesc(t("settings.text_color_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("white", "Чистый белый / Pure White (по умолчанию)")
-          .addOption("cyan", "Неоновый лазурный / Cyan Glow")
-          .addOption("gold", "Теплый золотой / Warm Gold")
-          .addOption("obsidian", "Цвет акцента темы Obsidian")
+          .addOption("white", t("settings.color_white"))
+          .addOption("cyan", t("settings.color_cyan"))
+          .addOption("gold", t("settings.color_gold"))
+          .addOption("obsidian", t("settings.color_obsidian"))
           .setValue(this.plugin.settings.textColorPreset)
           .onChange(async (value) => {
             this.plugin.settings.textColorPreset = value as TextColorPreset;
@@ -825,8 +825,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Ширина карточки / Popover Width")
-      .setDesc("Фиксированная ширина всплывающего окна в пикселях (по умолчанию 370px).")
+      .setName(t("settings.popover_width"))
+      .setDesc(t("settings.popover_width_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(280, 520, 10)
@@ -841,8 +841,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Высота карточки / Popover Height")
-      .setDesc("Фиксированная высота всплывающего окна в пикселях (по умолчанию 165px).")
+      .setName(t("settings.popover_height"))
+      .setDesc(t("settings.popover_height_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(130, 250, 5)
@@ -857,8 +857,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Интенсивность размытия / Blur Intensity")
-      .setDesc("Сила эффекта матового стекла backdrop-filter blur (в пикселях, по умолчанию 34px).")
+      .setName(t("settings.blur_intensity"))
+      .setDesc(t("settings.blur_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(0, 60, 2)
@@ -873,8 +873,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Размер шрифта иероглифов / Hanzi Font Size")
-      .setDesc("Размер китайских символов в верхней плашке (по умолчанию 21px).")
+      .setName(t("settings.font_size_hanzi"))
+      .setDesc(t("settings.font_size_hanzi_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(14, 32, 1)
@@ -889,8 +889,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Размер шрифта фонетики / Pinyin Font Size")
-      .setDesc("Размер пиньиня и ютпинга в центральном блоке (по умолчанию 13px).")
+      .setName(t("settings.font_size_pinyin"))
+      .setDesc(t("settings.font_size_pinyin_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(10, 24, 1)
@@ -905,8 +905,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Размер шрифта перевода / Translation Font Size")
-      .setDesc("Размер текста перевода в нижней части карточки (по умолчанию 16px).")
+      .setName(t("settings.font_size_trans"))
+      .setDesc(t("settings.font_size_trans_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(12, 24, 1)
@@ -921,15 +921,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     // ==========================================
-    // ИНТЕРАКТИВНОСТЬ И УДОБСТВО (UX)
+    // 6. ИНТЕРАКТИВНОСТЬ И УДОБСТВО (UX)
     // ==========================================
     new Setting(containerEl)
-      .setName("💡 Интерактивность и удобство / Popover UX & Interactivity")
+      .setName(t("settings.ux_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Перетаскивание карточки мышкой / Draggable Popover")
-      .setDesc("Позволяет свободно перемещать карточку словаря мышкой по экрану, если она закрывает текст заметки.")
+      .setName(t("settings.draggable"))
+      .setDesc(t("settings.draggable_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableDraggablePopover ?? true)
@@ -940,8 +940,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Изменение размера карточки / Resizable Popover")
-      .setDesc("Позволяет изменять размер карточки словаря прямо на лету мышкой за нижний правый угол.")
+      .setName(t("settings.resizable"))
+      .setDesc(t("settings.resizable_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableResizablePopover ?? true)
@@ -955,8 +955,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Быстрые клавиши при открытой карточке / One-Key Shortcuts")
-      .setDesc("Позволяет нажимать Space/R (озвучка), S (звездочка/словарь), N (заметка слова), C (копировать), P (закрепить карточку 📌), Esc (закрыть).")
+      .setName(t("settings.popover_hotkeys"))
+      .setDesc(t("settings.popover_hotkeys_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enablePopoverHotkeys ?? true)
@@ -967,15 +967,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Формат быстрого копирования / Copy Format")
-      .setDesc("Что копировать в буфер обмена по нажатию кнопки 📋 или горячей клавиши C.")
+      .setName(t("settings.copy_format"))
+      .setDesc(t("settings.copy_format_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("default", "Карточка целиком: 你好 [nǐ hǎo] hello (по умолчанию)")
-          .addOption("hanzi_only", "Только иероглифы: 你好")
-          .addOption("pinyin_only", "Иероглиф + Пиньинь: 你好 nǐ hǎo")
-          .addOption("wikilink", "Вики-ссылка Obsidian: [[你好]]")
-          .addOption("markdown_table", "Строка таблицы Markdown: | 你好 | nǐ hǎo | hello |")
+          .addOption("default", t("settings.copy_format_default"))
+          .addOption("hanzi_only", t("settings.copy_format_hanzi"))
+          .addOption("pinyin_only", t("settings.copy_format_pinyin"))
+          .addOption("wikilink", t("settings.copy_format_wikilink"))
+          .addOption("markdown_table", t("settings.copy_format_table"))
           .setValue(this.plugin.settings.copyFormat ?? "default")
           .onChange(async (value) => {
             this.plugin.settings.copyFormat = value as CopyFormat;
@@ -984,8 +984,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Лимит недавних слов / Max Recent History")
-      .setDesc("Сколько последних просмотренных слов сохранять во вкладке истории боковой панели.")
+      .setName(t("settings.recent_history_limit"))
+      .setDesc(t("settings.recent_history_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(10, 100, 5)
@@ -997,28 +997,28 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     // ==========================================
-    // 5. ПАРАМЕТРЫ СЛОВАРЯ
+    // 7. ПАРАМЕТРЫ СЛОВАРЯ
     // ==========================================
     new Setting(containerEl)
-      .setName("🔍 Параметры словаря / Dictionary")
+      .setName(t("settings.dict_db_heading"))
       .setHeading();
 
     const isFull = this.plugin.dictionary?.isFullDictionaryLoaded?.() ?? false;
     new Setting(containerEl)
-      .setName("База данных словаря / Dictionary Database")
+      .setName(t("settings.dict_db_title"))
       .setDesc(
         isFull
-          ? "✅ Полный словарь загружен и готов к работе (CC-CEDICT + 104k Jyutping)."
-          : "⚠️ Используется базовый демо-словарь. Вы можете скачать полную базу данных (42 MB) или поместить cedict.json в папку плагина."
+          ? t("settings.dict_db_ready")
+          : t("settings.dict_db_demo")
       )
       .addButton((btn) => {
-        btn.setButtonText(isFull ? "Перезагрузить словарь" : "Скачать словарь (42 MB)");
+        btn.setButtonText(isFull ? t("settings.dict_reload_btn") : t("settings.dict_download_full_btn"));
         if (!isFull) {
           btn.setCta();
         }
         btn.onClick(async () => {
           btn.setDisabled(true);
-          btn.setButtonText("Загрузка...");
+          btn.setButtonText(t("settings.dict_downloading"));
           await this.plugin.dictionary.downloadDictionary();
           btn.setDisabled(false);
           this.renderSettings();
@@ -1026,8 +1026,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Максимальная длина слова / Max Word Length")
-      .setDesc("Максимальное количество символов для поиска составных идиом (чэнъюй), пословиц и длинных фраз (по умолчанию 12).")
+      .setName(t("settings.max_word_len"))
+      .setDesc(t("settings.max_word_len_desc"))
       .addSlider((slider) =>
         slider
           .setLimits(2, 16, 1)
@@ -1039,8 +1039,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("🔄 Обратный режим (перевод на китайский) / Reverse Lookup")
-      .setDesc("Позволяет учить язык в обратную сторону: при нажатии на слово на английском (или русском) всплывающее окно показывает его перевод на китайский с пиньинем, озвучкой и карточкой.")
+      .setName(t("settings.reverse_lookup"))
+      .setDesc(t("settings.reverse_lookup_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.enableReverseLookup)
@@ -1054,10 +1054,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Язык обратного поиска / Reverse Lookup Language")
-      .setDesc("Основной язык для обратного поиска слов (по умолчанию: автоопределение всех 20 языков мира).")
+      .setName(t("settings.reverse_lang"))
+      .setDesc(t("settings.reverse_lang_desc"))
       .addDropdown((dropdown) => {
-        dropdown.addOption("auto", "🌐 Автоопределение всех языков (Auto-detect)");
+        dropdown.addOption("auto", t("settings.reverse_lang_auto"));
         for (const pack of DICT_PACKS) {
           dropdown.addOption(pack.id, `${pack.flag} ${pack.name} (${pack.nativeName})`);
         }
@@ -1069,15 +1069,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       });
 
     // ==========================================
-    // 6. ЛИЧНЫЙ СЛОВАРИК
+    // 8. ЛИЧНЫЙ СЛОВАРИК
     // ==========================================
     new Setting(containerEl)
-      .setName("📖 Личный словарик / Personal Vocabulary")
+      .setName(t("settings.vocab_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Путь к файлу словарика / Vocabulary Markdown File")
-      .setDesc("Файл в вашем хранилище, в который бессрочно сохраняются все добавленные слова.")
+      .setName(t("settings.vocab_path"))
+      .setDesc(t("settings.vocab_path_desc"))
       .addText((text) =>
         text
           .setPlaceholder("Chinese Vocabulary.md")
@@ -1091,8 +1091,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Сохранять контекстное предложение / Save Context Sentence")
-      .setDesc("Автоматически сохранять предложение, из которого вы добавили слово, для лучшего запоминания контекста.")
+      .setName(t("settings.save_context"))
+      .setDesc(t("settings.save_context_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.autoSaveContextSentence)
@@ -1103,8 +1103,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Папка заметок слов / Word Notes Folder")
-      .setDesc("Папка в хранилище для создания отдельных атомарных заметок слов по шаблону (Zettelkasten).")
+      .setName(t("settings.word_notes_folder"))
+      .setDesc(t("settings.word_notes_folder_desc"))
       .addText((text) =>
         text
           .setPlaceholder("Chinese/Words")
@@ -1116,11 +1116,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Открыть словарик в боковой панели / Open in Sidebar")
-      .setDesc("Открыть интерактивную панель словарика в правой боковой панели Obsidian.")
+      .setName(t("settings.open_sidebar"))
+      .setDesc(t("settings.open_sidebar_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("Открыть панель")
+          .setButtonText(t("settings.open_sidebar_btn"))
           .setCta()
           .onClick(() => {
             void this.plugin.activateVocabularyView();
@@ -1131,12 +1131,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 7. ИНТЕГРАЦИЯ С ANKI & PLECO
     // ==========================================
     new Setting(containerEl)
-      .setName("🗃️ Интеграция с Anki, Pleco и Прописи")
+      .setName(t("settings.anki_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Синхронизация через AnkiConnect / Enable AnkiConnect")
-      .setDesc("Прямой экспорт карточек в приложение Anki через локальный API (потребуется плагин AnkiConnect в Anki, код аддона: 2055492159).")
+      .setName(t("settings.anki_enable"))
+      .setDesc(t("settings.anki_enable_desc"))
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.anki.enabled)
@@ -1149,8 +1149,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     if (this.plugin.settings.anki.enabled) {
       new Setting(containerEl)
-        .setName("Адрес сервера AnkiConnect / Server URL")
-        .setDesc("По умолчанию: http://127.0.0.1:8765")
+        .setName(t("settings.anki_url"))
+        .setDesc("http://127.0.0.1:8765")
         .addText((text) =>
           text
             .setPlaceholder("http://127.0.0.1:8765")
@@ -1169,8 +1169,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Имя колоды в Anki / Deck Name")
-        .setDesc("Колода, в которую будут добавляться новые карточки слов.")
+        .setName(t("settings.anki_deck"))
+        .setDesc("Chinese")
         .addText((text) =>
           text
             .setPlaceholder("Chinese")
@@ -1182,8 +1182,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Авто-экспорт при сохранении / Sync on Star ⭐")
-        .setDesc("Автоматически создавать карточку в Anki в момент нажатия звёздочки во всплывающем окне.")
+        .setName(t("settings.anki_sync_star"))
+        .setDesc(t("settings.anki_sync_star_desc"))
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.ankiSyncOnStar)
@@ -1194,30 +1194,30 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         );
 
       new Setting(containerEl)
-        .setName("Проверить подключение к Anki / Test Connection")
-        .setDesc("Проверка доступности локального сервера AnkiConnect.")
+        .setName(t("settings.anki_test"))
+        .setDesc(t("settings.anki_test_desc"))
         .addButton((btn) =>
           btn
-            .setButtonText("Проверить связь")
+            .setButtonText(t("settings.anki_test_btn"))
             .onClick(async () => {
               btn.setDisabled(true);
               const ok = await checkAnkiConnect(this.plugin.settings.anki.serverUrl);
               btn.setDisabled(false);
               if (ok) {
-                new Notice("✅ Успешно! AnkiConnect активен и готов к синхронизации.", 3500);
+                new Notice("✅ AnkiConnect OK!", 3500);
               } else {
-                new Notice("❌ Не удалось связаться с AnkiConnect. Убедитесь, что Anki запущен.", 4000);
+                new Notice("❌ AnkiConnect Failed!", 4000);
               }
             })
         );
     }
 
     new Setting(containerEl)
-      .setName("Экспорт словарика в файл Anki (.tsv) / Export Offline TSV")
-      .setDesc("Скачать все слова вашего личного словарика в виде TSV файла для ручного импорта в любое приложение Anki (компьютер или телефон).")
+      .setName(t("settings.anki_export_tsv"))
+      .setDesc(t("settings.anki_export_tsv_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("📥 Скачать Anki TSV")
+          .setButtonText(t("settings.anki_export_tsv_btn"))
           .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
             if (items.length === 0) {
@@ -1235,16 +1235,16 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             });
             link.click();
             URL.revokeObjectURL(url);
-            new Notice(`Экспортировано ${items.length} слов в TSV файл!`);
+            new Notice(`Exported ${items.length} words to TSV!`);
           })
       );
 
     new Setting(containerEl)
-      .setName("Экспорт для Pleco (.txt) / Export Pleco Flashcards")
-      .setDesc("Скачать словарик в формате закладок для мобильного приложения Pleco (iOS / Android).")
+      .setName(t("settings.pleco_export"))
+      .setDesc(t("settings.pleco_export_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("📱 Экспорт в Pleco (.txt)")
+          .setButtonText(t("settings.pleco_export_btn"))
           .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
             if (items.length === 0) {
@@ -1262,16 +1262,16 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             });
             link.click();
             URL.revokeObjectURL(url);
-            new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+            new Notice(`Exported ${items.length} words for Pleco!`);
           })
       );
 
     new Setting(containerEl)
-      .setName("Генератор прописей / Print Calligraphy Worksheets")
-      .setDesc("Сгенерировать страницу прописей в традиционной сетке Мицзыгэ (米字格) для печати или тренировки на планшете.")
+      .setName(t("settings.worksheets"))
+      .setDesc(t("settings.worksheets_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("📝 Открыть прописи")
+          .setButtonText(t("settings.worksheets_btn"))
           .onClick(() => {
             const items = this.plugin.vocabulary.getItems();
             if (items.length === 0) {
@@ -1286,16 +1286,16 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     // 8. РУБИ-РАЗМЕТКА (RUBY / FURIGANA)
     // ==========================================
     new Setting(containerEl)
-      .setName("🔤 Разметка над текстом (Ruby / Furigana)")
+      .setName(t("settings.ruby_heading"))
       .setHeading();
 
     new Setting(containerEl)
-      .setName("Диалект для разметки / Ruby Dialect")
-      .setDesc("Какую транскрипцию подставлять в <ruby><rt>...</rt></ruby> командами добавления фонетики: Путунхуа (Пиньинь) или Кантонский (Ютпинг).")
+      .setName(t("settings.ruby_dialect"))
+      .setDesc(t("settings.ruby_dialect_desc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("pinyin", "Пиньинь / Pinyin (zh-CN)")
-          .addOption("jyutping", "Ютпинг / Jyutping (zh-yue)")
+          .addOption("pinyin", t("settings.ruby_pinyin"))
+          .addOption("jyutping", t("settings.ruby_jyutping"))
           .setValue(this.plugin.settings.rubyDialect)
           .onChange(async (val) => {
             this.plugin.settings.rubyDialect = val as "pinyin" | "jyutping";
@@ -1309,11 +1309,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
 
     new Setting(containerEl)
-      .setName("Сбросить настройки / Reset to Defaults")
-      .setDesc("Вернуть все параметры к первоначальным рекомендуемым настройкам.")
+      .setName(t("settings.reset_title"))
+      .setDesc(t("settings.reset_desc"))
       .addButton((btn) =>
         btn
-          .setButtonText("Сбросить всё")
+          .setButtonText(t("settings.reset_btn"))
           .setClass("mod-warning")
           .onClick(async () => {
             this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as ChineseDictSettings;
@@ -1331,12 +1331,12 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
 
     new Setting(containerEl)
-      .setName("📺 Бесплатные курсы китайского языка / Free Chinese Courses")
+      .setName(t("settings.courses_heading"))
       .setHeading();
 
     const aboutBox = containerEl.createDiv({ cls: "ch-dict-about-box" });
     aboutBox.createEl("p", {
-      text: "Создатель плагина ведет бесплатные подробные видеокурсы по изучению китайского языка (фонетика, пиньинь, тоны, разбор HSK и грамматика) на двух YouTube-каналах:",
+      text: t("settings.courses_desc"),
     });
 
     const channelRow = aboutBox.createDiv({ cls: "ch-dict-channels-row" });
@@ -1350,8 +1350,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     engCard.setAttribute("rel", "noopener noreferrer");
     engCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇬🇧" });
     const engInfo = engCard.createDiv({ cls: "ch-dict-channel-info" });
-    engInfo.createSpan({ cls: "ch-dict-channel-title", text: "@ChineseWithKantulaev (English)" });
-    engInfo.createSpan({ cls: "ch-dict-channel-sub", text: "Free structured Chinese courses from scratch" });
+    engInfo.createSpan({ cls: "ch-dict-channel-title", text: t("settings.courses_channel_eng") });
+    engInfo.createSpan({ cls: "ch-dict-channel-sub", text: t("settings.courses_channel_eng_sub") });
 
     // Russian YouTube Channel
     const ruCard = channelRow.createEl("a", {
@@ -1362,8 +1362,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     ruCard.setAttribute("rel", "noopener noreferrer");
     ruCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇷🇺" });
     const ruInfo = ruCard.createDiv({ cls: "ch-dict-channel-info" });
-    ruInfo.createSpan({ cls: "ch-dict-channel-title", text: "@kantulaevCN (Русский)" });
-    ruInfo.createSpan({ cls: "ch-dict-channel-sub", text: "Бесплатные видеоуроки китайского языка с нуля" });
+    ruInfo.createSpan({ cls: "ch-dict-channel-title", text: t("settings.courses_channel_ru") });
+    ruInfo.createSpan({ cls: "ch-dict-channel-sub", text: t("settings.courses_channel_ru_sub") });
   }
 
   private async renderDictPacksCards(containerEl: HTMLElement): Promise<void> {
@@ -1473,14 +1473,14 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     const cInfo = cLeft.createDiv({ cls: "ch-dict-pack-info" });
     const cTitleRow = cInfo.createDiv({ cls: "ch-dict-pack-title-row" });
-    cTitleRow.createSpan({ cls: "ch-dict-pack-name", text: "成语故事 (Истории и притчи чэнъюй)" });
+    cTitleRow.createSpan({ cls: "ch-dict-pack-name", text: t("settings.chengyu_pack_name") });
 
     if (isChengyuInstalled) {
       cTitleRow.createSpan({ cls: "ch-dict-pack-badge ch-dict-pack-badge-installed", text: t("settings.dict_installed") });
     }
 
     const cMeta = cInfo.createDiv({ cls: "ch-dict-pack-meta" });
-    cMeta.createSpan({ text: "1 500+ историй • ~650 КБ • Классические китайские хроники и литературные памятники" });
+    cMeta.createSpan({ text: t("settings.chengyu_pack_meta") });
 
     const cActions = cCard.createDiv({ cls: "ch-dict-pack-actions" });
     if (isChengyuInstalled) {

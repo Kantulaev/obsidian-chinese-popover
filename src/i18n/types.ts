@@ -140,6 +140,9 @@ export interface I18nBundle {
     font_size: string;
     speech_speed: string;
     theme: string;
+
+    // Additional comprehensive settings keys (supports all 20 languages)
+    [key: string]: string | undefined;
   };
   notices: {
     copied: string;

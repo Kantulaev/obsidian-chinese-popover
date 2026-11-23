@@ -1,6 +1,6 @@
 {
   "name": "chinese-popover-dict",
-  "version": "1.9.6",
+  "version": "1.9.7",
   "description": "Instant Apple Liquid Glass Chinese popover dictionary. Features Mandarin Pinyin, Cantonese Jyutping, 214 Kangxi radicals anatomy, 20-language reverse lookup, and spaced repetition vocabulary book.",
   "main": "main.js",
   "scripts": {

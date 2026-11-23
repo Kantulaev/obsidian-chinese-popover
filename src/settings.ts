@@ -103,7 +103,6 @@ export interface ChineseDictSettings {
   // Grammar & Advanced Learning
   showPartOfSpeech: boolean;
   showRadicals: boolean;
-  showChengyuStories: boolean;
 
   // Tone Coloring (Pleco style)
   toneColoring: "off" | "phonetics" | "all";
@@ -181,7 +180,6 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   translationLanguage: "auto",
   showPartOfSpeech: false,
   showRadicals: false,
-  showChengyuStories: false,
   toneColoring: "off",
   wordNotesFolder: "Chinese/Words",
 
@@ -645,40 +643,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             }
           })
       );
-
-    const chengyuSetting = new Setting(containerEl)
-      .setName(t("settings.chengyu_stories"))
-      .setDesc(t("settings.chengyu_stories_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showChengyuStories)
-          .onChange(async (value) => {
-            this.plugin.settings.showChengyuStories = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    void (async () => {
-      const isInstalled = await this.plugin.dictionary.isChengyuInstalled();
-      chengyuSetting.addButton((btn) => {
-        if (isInstalled) {
-          btn.setButtonText(t("settings.chengyu_installed_btn")).setDisabled(true);
-        } else {
-          btn.setButtonText(t("settings.chengyu_download_btn")).setCta().onClick(async () => {
-            btn.setButtonText(t("settings.chengyu_downloading_btn")).setDisabled(true);
-            const ok = await this.plugin.dictionary.downloadChengyu();
-            if (ok) {
-              btn.setButtonText(t("settings.chengyu_installed_btn"));
-            } else {
-              btn.setButtonText(t("settings.chengyu_download_btn")).setDisabled(false);
-            }
-          });
-        }
-      });
-    })();
 
     new Setting(containerEl)
       .setName(t("settings.stroke_order"))
@@ -1463,59 +1427,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           })();
         });
       }
-    }
-
-    // Chengyu Idiom Stories Pack Card
-    const isChengyuInstalled = await this.plugin.dictionary.isChengyuInstalled();
-    const cCard = containerEl.createDiv({ cls: "ch-dict-pack-card" });
-    if (isChengyuInstalled) cCard.addClass("is-installed");
-
-    const cLeft = cCard.createDiv({ cls: "ch-dict-pack-left" });
-    cLeft.createSpan({ cls: "ch-dict-pack-flag", text: "📜" });
-
-    const cInfo = cLeft.createDiv({ cls: "ch-dict-pack-info" });
-    const cTitleRow = cInfo.createDiv({ cls: "ch-dict-pack-title-row" });
-    cTitleRow.createSpan({ cls: "ch-dict-pack-name", text: t("settings.chengyu_pack_name") });
-
-    if (isChengyuInstalled) {
-      cTitleRow.createSpan({ cls: "ch-dict-pack-badge ch-dict-pack-badge-installed", text: t("settings.dict_installed") });
-    }
-
-    const cMeta = cInfo.createDiv({ cls: "ch-dict-pack-meta" });
-    cMeta.createSpan({ text: t("settings.chengyu_pack_meta") });
-
-    const cActions = cCard.createDiv({ cls: "ch-dict-pack-actions" });
-    if (isChengyuInstalled) {
-      const deleteBtn = cActions.createEl("button", {
-        cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
-        text: t("settings.dict_delete"),
-      });
-      deleteBtn.addEventListener("click", () => {
-        void (async () => {
-          const ok = await this.plugin.dictionary.deleteChengyu();
-          if (ok) {
-            await this.renderDictPacksCards(containerEl);
-          }
-        })();
-      });
-    } else {
-      const downloadBtn = cActions.createEl("button", {
-        cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
-        text: `📥 ${t("settings.dict_download")}`,
-      });
-      downloadBtn.addEventListener("click", () => {
-        void (async () => {
-          downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
-          downloadBtn.setAttribute("disabled", "true");
-          const ok = await this.plugin.dictionary.downloadChengyu();
-          if (ok) {
-            await this.renderDictPacksCards(containerEl);
-          } else {
-            downloadBtn.setText(`📥 ${t("settings.dict_download")}`);
-            downloadBtn.removeAttribute("disabled");
-          }
-        })();
-      });
     }
   }
 }

@@ -11,7 +11,6 @@ import { groupDefinitionsByPos } from "./pos.ts";
 import { getRawDefinitionsList } from "./russian-dict.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical, getRadicalMeaning } from "./radicals.ts";
-import { ChengyuStory, fetchDynamicChengyuStory, getChengyuStory } from "./chengyu.ts";
 import { t, getActiveLanguage } from "./i18n/index.ts";
 
 export interface ContentBounds {
@@ -900,43 +899,6 @@ export class DictTooltip {
             });
           }
         }
-      }
-    }
-
-    // 5. Chengyu Origin Story Drawer
-    if (settings.showChengyuStories && Array.from(match.word).length === 4) {
-      const renderChengyuDrawer = (chengyu: ChengyuStory) => {
-        if (!chengyu || mainCard.querySelector(".ch-dict-chengyu-drawer")) return;
-        const storyEl = mainCard.createDiv({ cls: "ch-dict-chengyu-drawer" });
-        const header = storyEl.createDiv({ cls: "ch-dict-drawer-header" });
-        header.createSpan({ cls: "ch-dict-drawer-tag", text: t("chengyu.title") });
-        if (chengyu.dynasty) {
-          header.createSpan({ cls: "ch-dict-drawer-dynasty", text: chengyu.dynasty });
-        }
-
-        const storyBody = storyEl.createDiv({ cls: "ch-dict-drawer-body" });
-        const isRu = (settings.translationLanguage || "auto") === "ru" || getActiveLanguage() === "ru";
-        storyBody.createDiv({
-          cls: "ch-dict-chengyu-lit",
-          text: `«${chengyu.literal}» — ${chengyu.figurative}`,
-        });
-        storyBody.createDiv({
-          cls: "ch-dict-chengyu-story",
-          text: isRu ? chengyu.storyRu : chengyu.storyEn,
-        });
-        this.adjustPopoverBoundsAfterExpand();
-      };
-
-      const localStory = getChengyuStory(match.word);
-      if (localStory) {
-        renderChengyuDrawer(localStory);
-      } else {
-        const wordAtFetch = match.word;
-        fetchDynamicChengyuStory(match.word).then((story) => {
-          if (this.isVisible && this.currentWord === wordAtFetch && story) {
-            renderChengyuDrawer(story);
-          }
-        }).catch(() => {});
       }
     }
   }

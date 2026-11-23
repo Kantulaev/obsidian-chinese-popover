@@ -89,7 +89,7 @@ export interface I18nBundle {
     idiom: string;
     other: string;
   };
-  chengyu: {
+  chengyu?: {
     title: string;
     literal: string;
     figurative: string;

@@ -25,9 +25,20 @@ export const DICT_PACKS: DictPackInfo[] = [
     flag: "🇬🇧",
     source: "CC-CEDICT Open Corpus",
     entries: "122 000+",
-    approxSize: "~15 MB",
+    approxSize: "~42.3 MB",
     fileName: "cedict.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/cedict.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/cedict.json",
+  },
+  {
+    id: "yue",
+    name: "Cantonese",
+    nativeName: "廣東話 / 粵語 (Cantonese Jyutping)",
+    flag: "🇭🇰",
+    source: "Hong Kong Cantonese Corpus & Jyutping Lexicon",
+    entries: "231 000+",
+    approxSize: "~17.3 MB",
+    fileName: "dict-yue.json",
+    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-yue.json",
   },
   {
     id: "ru",
@@ -1017,10 +1028,26 @@ export const MULTILANG_CORE_VOCAB: Record<string, Partial<Record<string, string[
  * Returns the path of a dictionary file inside the plugin folder.
  */
 export function getDictPackFilePath(pluginDir: string, fileName: string): string {
-  if (fileName === "cedict.json") {
-    return `${pluginDir}/cedict.json`;
-  }
   return `${pluginDir}/dicts/${fileName}`;
+}
+
+/**
+ * Returns the path of an existing dictionary file (checks dicts/ folder first, then root folder as fallback).
+ */
+export async function getExistingDictPackPath(
+  adapter: DataAdapter,
+  pluginDir: string,
+  fileName: string
+): Promise<string | null> {
+  const dictsPath = `${pluginDir}/dicts/${fileName}`;
+  if (await adapter.exists(dictsPath)) {
+    return dictsPath;
+  }
+  const rootPath = `${pluginDir}/${fileName}`;
+  if (await adapter.exists(rootPath)) {
+    return rootPath;
+  }
+  return null;
 }
 
 /**
@@ -1030,8 +1057,8 @@ export async function isDictPackInstalled(adapter: DataAdapter, pluginDir: strin
   const pack = DICT_PACKS.find((p) => p.id === packId);
   if (!pack) return false;
 
-  const path = getDictPackFilePath(pluginDir, pack.fileName);
-  return await adapter.exists(path);
+  const existingPath = await getExistingDictPackPath(adapter, pluginDir, pack.fileName);
+  return existingPath !== null;
 }
 
 /**
@@ -1101,10 +1128,19 @@ export async function deleteDictPack(
   const pack = DICT_PACKS.find((p) => p.id === packId);
   if (!pack) return false;
 
-  const targetPath = getDictPackFilePath(pluginDir, pack.fileName);
+  let deleted = false;
+  const dictsPath = `${pluginDir}/dicts/${pack.fileName}`;
+  const rootPath = `${pluginDir}/${pack.fileName}`;
   try {
-    if (await adapter.exists(targetPath)) {
-      await adapter.remove(targetPath);
+    if (await adapter.exists(dictsPath)) {
+      await adapter.remove(dictsPath);
+      deleted = true;
+    }
+    if (await adapter.exists(rootPath)) {
+      await adapter.remove(rootPath);
+      deleted = true;
+    }
+    if (deleted) {
       new Notice(`Chinese Popover: Словарь ${pack.flag} ${pack.name} удален с диска.`, 4000);
       return true;
     }
@@ -1126,10 +1162,10 @@ export async function loadDictPackData(
   const pack = DICT_PACKS.find((p) => p.id === packId);
   if (!pack) return null;
 
-  const targetPath = getDictPackFilePath(pluginDir, pack.fileName);
   try {
-    if (await adapter.exists(targetPath)) {
-      const content = await adapter.read(targetPath);
+    const existingPath = await getExistingDictPackPath(adapter, pluginDir, pack.fileName);
+    if (existingPath && await adapter.exists(existingPath)) {
+      const content = await adapter.read(existingPath);
       return JSON.parse(content) as Record<string, string[]>;
     }
   } catch (err) {

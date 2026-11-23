@@ -50,7 +50,7 @@ async function copyToDist() {
   const distDir = "./dist/chinese-popover-dict";
   await Deno.mkdir(distDir, { recursive: true });
 
-  const filesToCopy = ["manifest.json", "main.js", "styles.css", "cedict.json"];
+  const filesToCopy = ["manifest.json", "main.js", "styles.css"];
 
   for (const file of filesToCopy) {
     try {
@@ -79,7 +79,7 @@ async function copyToDist() {
   console.log("   - manifest.json");
   console.log("   - main.js");
   console.log("   - styles.css");
-  console.log("   - cedict.json");
+  console.log("   - dicts/*.json (all 21 offline dictionaries)");
   console.log("=================================================");
 }
 

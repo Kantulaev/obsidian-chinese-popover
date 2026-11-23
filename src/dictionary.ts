@@ -8,12 +8,6 @@ import {
   loadDictPackData,
   MULTILANG_CORE_VOCAB,
 } from "./dict-packs.ts";
-import {
-  loadChengyuPack,
-  isChengyuPackInstalled,
-  downloadChengyuPack,
-  deleteChengyuPack,
-} from "./chengyu.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
 import { getActiveLanguage } from "./i18n/index.ts";
 import {
@@ -664,12 +658,15 @@ export class DictionaryManager {
 
   /**
    * Loads dictionary data from plugin's cedict.json file, or built-in core vocabulary.
+   * Checks dicts/cedict.json first, then root cedict.json for compatibility.
    * Never freezes startup.
    */
   async load(): Promise<void> {
     try {
-      const dictPath = `${this.getPluginDir()}/cedict.json`;
       const adapter = this.plugin.app.vault.adapter;
+      const dictsPath = `${this.getPluginDir()}/dicts/cedict.json`;
+      const rootPath = `${this.getPluginDir()}/cedict.json`;
+      const dictPath = (await adapter.exists(dictsPath)) ? dictsPath : rootPath;
 
       if (await adapter.exists(dictPath)) {
         const rawContent = await adapter.read(dictPath);
@@ -701,9 +698,6 @@ export class DictionaryManager {
 
       // Preload all installed offline packs for multi-language reverse lookup
       await this.loadAllInstalledPacks();
-
-      // Preload chengyu stories pack if installed on disk
-      await loadChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
@@ -718,9 +712,10 @@ export class DictionaryManager {
    * Scheduled lazily after Obsidian is fully loaded.
    */
   async ensureDefaultEnglishDictPack(): Promise<void> {
-    const dictPath = `${this.getPluginDir()}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
-    if (await adapter.exists(dictPath)) {
+    const dictsPath = `${this.getPluginDir()}/dicts/cedict.json`;
+    const rootPath = `${this.getPluginDir()}/cedict.json`;
+    if ((await adapter.exists(dictsPath)) || (await adapter.exists(rootPath))) {
       return;
     }
     await this.downloadDictionary(true);
@@ -751,16 +746,20 @@ export class DictionaryManager {
   }
 
   /**
-   * Downloads cedict.json from GitHub release assets and caches it locally
+   * Downloads cedict.json from GitHub release assets and caches it locally in dicts/
    */
   async downloadDictionary(isSilent: boolean = false): Promise<boolean> {
-    const dictPath = `${this.getPluginDir()}/cedict.json`;
     const adapter = this.plugin.app.vault.adapter;
+    const dictsFolder = `${this.getPluginDir()}/dicts`;
+    if (!(await adapter.exists(dictsFolder))) {
+      await adapter.mkdir(dictsFolder);
+    }
+    const dictPath = `${dictsFolder}/cedict.json`;
 
     const urls = [
-      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/cedict.json",
-      "https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/cedict.json",
-      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/cedict.json",
+      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/cedict.json",
+      "https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/cedict.json",
+      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/cedict.json",
     ];
 
     if (!isSilent) {
@@ -822,10 +821,19 @@ export class DictionaryManager {
 
   async deletePack(packId: string): Promise<boolean> {
     if (packId === "en") {
-      const dictPath = `${this.getPluginDir()}/cedict.json`;
       const adapter = this.plugin.app.vault.adapter;
-      if (await adapter.exists(dictPath)) {
-        await adapter.remove(dictPath);
+      const dictsPath = `${this.getPluginDir()}/dicts/cedict.json`;
+      const rootPath = `${this.getPluginDir()}/cedict.json`;
+      let deleted = false;
+      if (await adapter.exists(dictsPath)) {
+        await adapter.remove(dictsPath);
+        deleted = true;
+      }
+      if (await adapter.exists(rootPath)) {
+        await adapter.remove(rootPath);
+        deleted = true;
+      }
+      if (deleted) {
         this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
         sortAllDictionaryEntriesInPlace(this.data);
         new Notice("Chinese Popover: Словарь CC-CEDICT удален с диска.", 4000);
@@ -862,18 +870,6 @@ export class DictionaryManager {
         await this.loadPack(pack.id);
       }
     }
-  }
-
-  async isChengyuInstalled(): Promise<boolean> {
-    return await isChengyuPackInstalled(this.plugin.app.vault.adapter, this.getPluginDir());
-  }
-
-  async downloadChengyu(): Promise<boolean> {
-    return await downloadChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
-  }
-
-  async deleteChengyu(): Promise<boolean> {
-    return await deleteChengyuPack(this.plugin.app.vault.adapter, this.getPluginDir());
   }
 
   /**

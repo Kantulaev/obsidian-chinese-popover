@@ -69,6 +69,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       window.setTimeout(() => {
         this.dictionary.ensureDefaultEnglishDictPack().catch(() => {});
+        this.dictionary.ensureActiveLanguageDictPack().catch(() => {});
       }, 5000);
     });
 

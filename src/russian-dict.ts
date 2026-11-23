@@ -440,16 +440,6 @@ export function getRawDefinitionsList(
 
   if (language === "ru") {
     if (ru && ru.length > 0) {
-      if (ru.length < maxCount && englishDefs.length > 0) {
-        const combined = [...ru];
-        for (const en of englishDefs) {
-          if (combined.length >= maxCount) break;
-          if (!combined.includes(en)) {
-            combined.push(en);
-          }
-        }
-        return combined.slice(0, maxCount);
-      }
       return ru.slice(0, maxCount);
     }
     return englishDefs.slice(0, maxCount);

@@ -267,6 +267,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           this.plugin.settings.uiLanguage = val;
           setActiveLanguage(val);
           await this.plugin.saveSettings();
+          await this.plugin.dictionary.ensureActiveLanguageDictPack();
           this.renderSettings();
         });
       });
@@ -589,6 +590,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         dropdown.onChange(async (value) => {
           this.plugin.settings.translationLanguage = value;
           await this.plugin.saveSettings();
+          await this.plugin.dictionary.ensureActiveLanguageDictPack();
           if (this.plugin.tooltip.getIsOpen()) {
             this.plugin.tooltip.refresh(this.plugin.settings);
           }

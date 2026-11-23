@@ -12,7 +12,7 @@ import { inferPartsOfSpeech, formatPosBadge } from "./pos.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
 import { createWordNote } from "./word-notes.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
-import { t } from "./i18n/index.ts";
+import { t, getActiveLanguage } from "./i18n/index.ts";
 
 export const VIEW_TYPE_CHINESE_VOCABULARY = "chinese-vocabulary-view";
 
@@ -618,15 +618,22 @@ export class ChineseVocabularyView extends ItemView {
 
     const defsList = defsContainer.createDiv({ cls: "ch-vocab-defs-list" });
     let displayDefs = item.definitions;
-    if (this.plugin.settings.translationLanguage === "ru") {
-      const ru = getRussianDefinitions(item.word);
-      if (ru && ru.length > 0) {
-        displayDefs = ru;
+    const transLang = (this.plugin.settings.translationLanguage && this.plugin.settings.translationLanguage !== "auto")
+      ? this.plugin.settings.translationLanguage
+      : getActiveLanguage();
+
+    if (transLang !== "en" && transLang !== "both") {
+      const localized = this.plugin.dictionary.getMultiLangDefs(item.word, transLang) ||
+        (transLang === "ru" ? getRussianDefinitions(item.word) : null);
+      if (localized && localized.length > 0) {
+        displayDefs = localized;
       }
-    } else if (this.plugin.settings.translationLanguage === "both") {
-      const ru = getRussianDefinitions(item.word);
-      if (ru && ru.length > 0) {
-        displayDefs = [...ru.slice(0, 2), ...item.definitions.slice(0, 2)];
+    } else if (transLang === "both") {
+      const activeL = getActiveLanguage();
+      const localized = this.plugin.dictionary.getMultiLangDefs(item.word, activeL) ||
+        (activeL === "ru" ? getRussianDefinitions(item.word) : null);
+      if (localized && localized.length > 0) {
+        displayDefs = [...localized.slice(0, 2), ...item.definitions.slice(0, 2)];
       }
     }
 

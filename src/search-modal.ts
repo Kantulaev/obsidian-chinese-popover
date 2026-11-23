@@ -5,6 +5,7 @@ import { formatPinyin } from "./pinyin.ts";
 import { getHskBadgeInfo } from "./hsk.ts";
 import { detectPinyinTone, getToneColor } from "./tones.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
+import { getActiveLanguage } from "./i18n/index.ts";
 
 export interface SearchMatchItem {
   word: string;
@@ -214,15 +215,22 @@ export class ChineseSearchModal extends SuggestModal<SearchMatchItem> {
 
     // Definition snippet
     let defSnippet = "";
-    if (this.plugin.settings.translationLanguage === "ru") {
-      const ru = getRussianDefinitions(item.word);
-      if (ru && ru.length > 0) {
-        defSnippet = ru.slice(0, 3).join("; ");
+    const transLang = (this.plugin.settings.translationLanguage && this.plugin.settings.translationLanguage !== "auto")
+      ? this.plugin.settings.translationLanguage
+      : getActiveLanguage();
+
+    if (transLang !== "en" && transLang !== "both") {
+      const localized = this.plugin.dictionary.getMultiLangDefs(item.word, transLang) ||
+        (transLang === "ru" ? getRussianDefinitions(item.word) : null);
+      if (localized && localized.length > 0) {
+        defSnippet = localized.slice(0, 3).join("; ");
       }
-    } else if (this.plugin.settings.translationLanguage === "both") {
-      const ru = getRussianDefinitions(item.word);
-      if (ru && ru.length > 0) {
-        defSnippet = `${ru.slice(0, 2).join("; ")} | ${item.entries.flatMap((e) => e.definitions).slice(0, 2).join("; ")}`;
+    } else if (transLang === "both") {
+      const activeL = getActiveLanguage();
+      const localized = this.plugin.dictionary.getMultiLangDefs(item.word, activeL) ||
+        (activeL === "ru" ? getRussianDefinitions(item.word) : null);
+      if (localized && localized.length > 0) {
+        defSnippet = `${localized.slice(0, 2).join("; ")} | ${item.entries.flatMap((e) => e.definitions).slice(0, 2).join("; ")}`;
       }
     }
     if (!defSnippet) {

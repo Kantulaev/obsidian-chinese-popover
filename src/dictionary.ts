@@ -15,6 +15,7 @@ import {
   deleteChengyuPack,
 } from "./chengyu.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
+import { getActiveLanguage } from "./i18n/index.ts";
 import {
   sortAllDictionaryEntriesInPlace,
   sortEntriesByPinyinFrequency,
@@ -690,6 +691,14 @@ export class DictionaryManager {
         await this.loadPack(activePack);
       }
 
+      // Preload active translation language pack if non-English and not yet loaded
+      const effectiveLang = (this.plugin.settings?.translationLanguage && this.plugin.settings.translationLanguage !== "auto")
+        ? this.plugin.settings.translationLanguage
+        : getActiveLanguage();
+      if (effectiveLang && effectiveLang !== "en" && effectiveLang !== "both" && !this.loadedPacks.has(effectiveLang)) {
+        await this.loadPack(effectiveLang);
+      }
+
       // Preload all installed offline packs for multi-language reverse lookup
       await this.loadAllInstalledPacks();
 
@@ -715,6 +724,30 @@ export class DictionaryManager {
       return;
     }
     await this.downloadDictionary(true);
+  }
+
+  /**
+   * Quiet background check & download for active language dictionary pack (e.g. Russian БКРС).
+   */
+  async ensureActiveLanguageDictPack(): Promise<void> {
+    const effectiveLang = (this.plugin.settings?.translationLanguage && this.plugin.settings.translationLanguage !== "auto")
+      ? this.plugin.settings.translationLanguage
+      : getActiveLanguage();
+
+    if (!effectiveLang || effectiveLang === "en" || effectiveLang === "both") {
+      return;
+    }
+
+    if (this.loadedPacks.has(effectiveLang)) {
+      return;
+    }
+
+    const isInstalled = await this.isPackInstalled(effectiveLang);
+    if (!isInstalled) {
+      await this.downloadPack(effectiveLang);
+    } else {
+      await this.loadPack(effectiveLang);
+    }
   }
 
   /**

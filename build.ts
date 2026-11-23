@@ -63,7 +63,11 @@ async function copyToDist() {
 
   try {
     await Deno.mkdir(`${distDir}/dicts`, { recursive: true });
-    await Deno.copyFile("dicts/chengyu-stories.json", `${distDir}/dicts/chengyu-stories.json`);
+    for await (const entry of Deno.readDir("dicts")) {
+      if (entry.isFile && entry.name.endsWith(".json")) {
+        await Deno.copyFile(`dicts/${entry.name}`, `${distDir}/dicts/${entry.name}`);
+      }
+    }
   } catch (_e) {
     // optional
   }

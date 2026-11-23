@@ -782,7 +782,10 @@ export class DictionaryManager {
       }
 
       if (!res || !res.text) {
-        throw lastError || new Error("Failed to download cedict.json from mirrors");
+        if (lastError instanceof Error) {
+          throw lastError;
+        }
+        throw new Error(typeof lastError === "string" ? lastError : "Failed to download cedict.json from mirrors");
       }
 
       const text = res.text;

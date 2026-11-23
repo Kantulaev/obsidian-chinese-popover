@@ -1104,7 +1104,10 @@ export async function downloadDictPack(
     }
 
     if (!res || !res.text) {
-      throw lastError || new Error("Failed to download dictionary pack from mirrors");
+      if (lastError instanceof Error) {
+        throw lastError;
+      }
+      throw new Error(typeof lastError === "string" ? lastError : "Failed to download dictionary pack from mirrors");
     }
 
     await adapter.write(targetPath, res.text);

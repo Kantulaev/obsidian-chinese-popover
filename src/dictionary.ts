@@ -883,10 +883,22 @@ export class DictionaryManager {
   getMultiLangDefs(word: string, lang: string): string[] | null {
     if (!word || !lang || lang === "en") return null;
 
-    // 1. Check loaded offline dictionary pack
-    const packDefs = this.loadedPacks.get(lang)?.[word];
-    if (packDefs && packDefs.length > 0) {
-      return packDefs;
+    // 1. Check loaded offline dictionary pack (with simplified <-> traditional fallback)
+    const pack = this.loadedPacks.get(lang);
+    if (pack) {
+      if (pack[word] && pack[word].length > 0) {
+        return pack[word];
+      }
+      // Check alternate script form (simplified <-> traditional) from CC-CEDICT entry
+      const entry = this.data[word]?.[0];
+      if (entry) {
+        if (entry.traditional && pack[entry.traditional] && pack[entry.traditional].length > 0) {
+          return pack[entry.traditional];
+        }
+        if (entry.simplified && pack[entry.simplified] && pack[entry.simplified].length > 0) {
+          return pack[entry.simplified];
+        }
+      }
     }
 
     // 2. Check Russian dictionary

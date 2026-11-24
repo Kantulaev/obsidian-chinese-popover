@@ -11,7 +11,6 @@ import {
 import { getRussianDefinitions } from "./russian-dict.ts";
 import { getActiveLanguage } from "./i18n/index.ts";
 import {
-  sortAllDictionaryEntriesInPlace,
   sortEntriesByPinyinFrequency,
 } from "./pinyin-frequency.ts";
 import { reverseDictionary } from "./reverse-dict.ts";
@@ -597,6 +596,8 @@ function getSharedZhSegmenter(): ZhSegmenterLike | null {
 export class DictionaryManager {
   private data: DictionaryData = {};
   private loadedPacks: Map<string, Record<string, string[]>> = new Map();
+  private sortedEntriesCache = new WeakSet<DictEntry[]>();
+  private hasPreloadedReversePacks: boolean = false;
   private isLoaded: boolean = false;
   private plugin: ChineseHoverDictPlugin;
 
@@ -606,7 +607,6 @@ export class DictionaryManager {
   constructor(plugin: ChineseHoverDictPlugin) {
     this.plugin = plugin;
     this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-    sortAllDictionaryEntriesInPlace(this.data);
     this.buildIndexes();
     this.isLoaded = false;
   }
@@ -631,23 +631,32 @@ export class DictionaryManager {
     for (let k = 0; k < keys.length; k++) {
       const key = keys[k];
 
-      // 1. Normalized map for phrases/proverbs with commas, middle dots, or spaces
-      const norm = key.replace(/[，, ·、\s]/g, "");
-      if (norm !== key && !this.data[norm]) {
-        this.normalizedMap.set(norm, key);
-      }
+      // Fast-path: skip regex replacement on the ~98% of keys with no punctuation/spaces
+      if (
+        key.includes("，") ||
+        key.includes(",") ||
+        key.includes(" ") ||
+        key.includes("·") ||
+        key.includes("、")
+      ) {
+        // 1. Normalized map for phrases/proverbs with commas, middle dots, or spaces
+        const norm = key.replace(/[，, ·、\s]/g, "");
+        if (norm !== key && !this.data[norm]) {
+          this.normalizedMap.set(norm, key);
+        }
 
-      // 2. Idiom clause index (e.g. "活到老" / "学到老" in "活到老，学到老")
-      if (key.includes("，") || key.includes(",")) {
-        const parts = key.split(/[，,]/).map((p) => p.trim()).filter(Boolean);
-        if (parts.length >= 2) {
-          for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            if (part.length >= 2 && !this.data[part]) {
-              const existing = this.idiomClauseIndex.get(part);
-              const isSimp = this.data[key]?.[0]?.simplified === key;
-              if (!existing || isSimp) {
-                this.idiomClauseIndex.set(part, { parentKey: key, clauseIndex: i, totalClauses: parts.length });
+        // 2. Idiom clause index (e.g. "活到老" / "学到老" in "活到老，学到老")
+        if (key.includes("，") || key.includes(",")) {
+          const parts = key.split(/[，,]/).map((p) => p.trim()).filter(Boolean);
+          if (parts.length >= 2) {
+            for (let i = 0; i < parts.length; i++) {
+              const part = parts[i];
+              if (part.length >= 2 && !this.data[part]) {
+                const existing = this.idiomClauseIndex.get(part);
+                const isSimp = this.data[key]?.[0]?.simplified === key;
+                if (!existing || isSimp) {
+                  this.idiomClauseIndex.set(part, { parentKey: key, clauseIndex: i, totalClauses: parts.length });
+                }
               }
             }
           }
@@ -671,13 +680,13 @@ export class DictionaryManager {
       if (await adapter.exists(dictPath)) {
         const rawContent = await adapter.read(dictPath);
         this.data = Object.assign({}, JSON.parse(rawContent) as DictionaryData, CANTONESE_CORE_DICT);
-        sortAllDictionaryEntriesInPlace(this.data);
+        this.sortedEntriesCache = new WeakSet<DictEntry[]>();
         this.buildIndexes();
         this.isLoaded = true;
       } else {
         // If local file is not present, use built-in core vocabulary first
         this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-        sortAllDictionaryEntriesInPlace(this.data);
+        this.sortedEntriesCache = new WeakSet<DictEntry[]>();
         this.buildIndexes();
         this.isLoaded = true;
       }
@@ -695,13 +704,10 @@ export class DictionaryManager {
       if (effectiveLang && effectiveLang !== "en" && effectiveLang !== "both" && !this.loadedPacks.has(effectiveLang)) {
         await this.loadPack(effectiveLang);
       }
-
-      // Preload all installed offline packs for multi-language reverse lookup
-      await this.loadAllInstalledPacks();
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-      sortAllDictionaryEntriesInPlace(this.data);
+      this.sortedEntriesCache = new WeakSet<DictEntry[]>();
       this.buildIndexes();
       this.isLoaded = true;
     }
@@ -791,7 +797,8 @@ export class DictionaryManager {
       const text = res.text;
       await adapter.write(dictPath, text);
       this.data = Object.assign({}, JSON.parse(text) as DictionaryData, CANTONESE_CORE_DICT);
-      sortAllDictionaryEntriesInPlace(this.data);
+      this.sortedEntriesCache = new WeakSet<DictEntry[]>();
+      this.buildIndexes();
       this.isLoaded = true;
       const count = Object.keys(this.data).length;
       if (!isSilent) {
@@ -838,7 +845,8 @@ export class DictionaryManager {
       }
       if (deleted) {
         this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
-        sortAllDictionaryEntriesInPlace(this.data);
+        this.sortedEntriesCache = new WeakSet<DictEntry[]>();
+        this.buildIndexes();
         new Notice("Chinese Popover: Словарь CC-CEDICT удален с диска.", 4000);
         return true;
       }
@@ -847,16 +855,17 @@ export class DictionaryManager {
     const ok = await deleteDictPack(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
     if (ok) {
       this.loadedPacks.delete(packId);
+      reverseDictionary.unindexPack(packId);
     }
     return ok;
   }
 
   async loadPack(packId: string): Promise<boolean> {
     if (packId === "en") return true;
+    if (this.loadedPacks.has(packId)) return true;
     const data = await loadDictPackData(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
     if (data) {
       this.loadedPacks.set(packId, data);
-      reverseDictionary.indexPack(packId, data);
       return true;
     }
     return false;
@@ -927,6 +936,14 @@ export class DictionaryManager {
     reverseDictionary.ensureReady(this.data);
     for (const [langId, packData] of this.loadedPacks.entries()) {
       reverseDictionary.indexPack(langId, packData);
+    }
+    if (!this.hasPreloadedReversePacks) {
+      this.hasPreloadedReversePacks = true;
+      void this.loadAllInstalledPacks().then(() => {
+        for (const [langId, packData] of this.loadedPacks.entries()) {
+          reverseDictionary.indexPack(langId, packData);
+        }
+      });
     }
   }
 
@@ -1223,6 +1240,12 @@ export class DictionaryManager {
             }
           }
           if (entries && entries.length > 0) {
+            if (entries.length > 1 && !this.sortedEntriesCache.has(entries)) {
+              const sorted = sortEntriesByPinyinFrequency(candidate, entries);
+              this.data[candidate] = sorted;
+              this.sortedEntriesCache.add(sorted);
+              entries = sorted;
+            }
             const charCount = Array.from(candidate).length;
             if (charCount <= maxLen) {
               if (!bestMatch || charCount > bestMatch.length) {
@@ -1479,6 +1502,12 @@ export class DictionaryManager {
       }
     }
     if (!entries || entries.length === 0) return undefined;
+    if (entries.length > 1 && !this.sortedEntriesCache.has(entries)) {
+      const sorted = sortEntriesByPinyinFrequency(word, entries);
+      this.data[word] = sorted;
+      this.sortedEntriesCache.add(sorted);
+      entries = sorted;
+    }
     if (preferredPinyin) {
       return sortEntriesByPinyinFrequency(word, entries, preferredPinyin);
     }

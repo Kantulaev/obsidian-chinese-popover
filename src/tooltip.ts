@@ -44,6 +44,7 @@ export class DictTooltip {
   private currentAudio: HTMLAudioElement | null = null;
   private cleanupActiveDrag: (() => void) | null = null;
   private plugin: ChineseHoverDictPlugin | null = null;
+  private lastStyleSignature: string = "";
 
   constructor(plugin?: ChineseHoverDictPlugin) {
     this.plugin = plugin ?? null;
@@ -91,18 +92,35 @@ export class DictTooltip {
    * Applies custom CSS variables, theme classes, and color presets
    */
   applyDynamicStyles(settings: ChineseDictSettings): void {
+    const useReaderFont =
+      settings.readerMode &&
+      settings.readerModeFontFamily &&
+      settings.readerModeFontFamily !== "default";
+    const fontFamily = useReaderFont
+      ? resolveChineseFontFamily(settings.readerModeFontFamily, settings.readerModeCustomFont)
+      : resolveChineseFontFamily(settings.chineseFontFamily, settings.customChineseFont);
+
     const width = settings.popoverWidth || 330;
     const height = settings.popoverHeight || 165;
     const blur = settings.blurIntensity ?? 34;
-    const fontFamily = resolveChineseFontFamily(settings.chineseFontFamily, settings.customChineseFont);
+    const fontHanzi = settings.fontSizeHanzi || 21;
+    const fontPinyin = settings.fontSizePinyin || 13;
+    const fontTrans = settings.fontSizeTranslation || 16;
+    const theme = settings.theme || "auto";
+    const colorPreset = settings.textColorPreset || "white";
+    const resizable = settings.enableResizablePopover ?? true;
+
+    const sig = `${width}|${height}|${blur}|${fontHanzi}|${fontPinyin}|${fontTrans}|${fontFamily}|${theme}|${colorPreset}|${resizable}`;
+    if (sig === this.lastStyleSignature) return;
+    this.lastStyleSignature = sig;
 
     this.el.setCssProps({
       "--ch-dict-width": `${width}px`,
       "--ch-dict-height": `${height}px`,
       "--ch-dict-blur": `${blur}px`,
-      "--ch-dict-font-hanzi": `${settings.fontSizeHanzi || 21}px`,
-      "--ch-dict-font-pinyin": `${settings.fontSizePinyin || 13}px`,
-      "--ch-dict-font-translation": `${settings.fontSizeTranslation || 16}px`,
+      "--ch-dict-font-hanzi": `${fontHanzi}px`,
+      "--ch-dict-font-pinyin": `${fontPinyin}px`,
+      "--ch-dict-font-translation": `${fontTrans}px`,
       "--ch-dict-font-hanzi-family": fontFamily,
     });
 
@@ -113,7 +131,7 @@ export class DictTooltip {
       "ch-dict-theme-glass_light",
       "ch-dict-theme-solid"
     );
-    this.el.addClass(`ch-dict-theme-${settings.theme || "auto"}`);
+    this.el.addClass(`ch-dict-theme-${theme}`);
 
     // Reset color classes
     this.el.removeClass(
@@ -122,10 +140,10 @@ export class DictTooltip {
       "ch-dict-color-gold",
       "ch-dict-color-obsidian"
     );
-    this.el.addClass(`ch-dict-color-${settings.textColorPreset || "white"}`);
+    this.el.addClass(`ch-dict-color-${colorPreset}`);
 
     // Resizable class
-    if (settings.enableResizablePopover ?? true) {
+    if (resizable) {
       this.el.addClass("ch-dict-resizable");
     } else {
       this.el.removeClass("ch-dict-resizable");
@@ -238,12 +256,16 @@ export class DictTooltip {
       this.plugin.refreshVocabularyViews();
     }
 
+    // Always reset any manual resize dimensions so each word opens at optimal auto-fit size
+    this.el.style.width = "";
+    this.el.style.height = "";
+
     this.applyDynamicStyles(settings);
     this.render(match, settings, contextSentence);
-    this.position(x, y, settings, bounds, targetRect);
 
-    // Make visible and interactive via CSS class
+    // Make visible before positioning so offsetWidth/offsetHeight measure true rendered size
     this.el.addClass("ch-dict-visible");
+    this.position(x, y, settings, bounds, targetRect);
     this.isVisible = true;
 
     if (settings.autoPlayAudio) {
@@ -287,6 +309,8 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
+    this.el.style.width = "";
+    this.el.style.height = "";
     this.isVisible = false;
     this.isPinned = false;
     this.hasCustomPosition = false;
@@ -1113,7 +1137,9 @@ export class DictTooltip {
       return;
     }
 
-    const width = settings.popoverWidth || 330;
+    // Rendered dimensions check (use actual element width & height once rendered, with fallback)
+    const renderedWidth = this.el.offsetWidth;
+    const width = renderedWidth > 40 ? renderedWidth : (settings.popoverWidth || 330);
     const padding = 10;
     const offsetDistance = 10;
 
@@ -1121,7 +1147,6 @@ export class DictTooltip {
     const windowWidth = win.innerWidth;
     const windowHeight = win.innerHeight;
 
-    // Rendered height check (use actual element height once rendered, with fallback)
     const renderedHeight = this.el.offsetHeight;
     const height = renderedHeight > 40 ? renderedHeight : (settings.popoverHeight || 165);
 

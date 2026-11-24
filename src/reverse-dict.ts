@@ -16,8 +16,15 @@ export interface ReverseLookupResult {
   allWords: string[];
 }
 
+const PUNCT_RE = /[?!.,;:'"()[\]{}]/g;
+const PACK_SPLIT_RE = /[,;/]/;
+const EN_SPLIT_RE = /[;/]/;
+const LETTER_RE = /[\p{L}]/u;
+const LEADING_TO_RE = /^to\s+/;
+
 export class ReverseDictionaryEngine {
   private langIndexes = new Map<string, Map<string, string[]>>();
+  private indexedPacks = new Set<string>();
   private isEnReady = false;
   private isRuReady = false;
   private isMultiCoreReady = false;
@@ -51,30 +58,39 @@ export class ReverseDictionaryEngine {
 
   /**
    * Dynamically indexes any downloaded full dictionary pack (HanDeDict, CFDICT, etc.)
+   * Only runs once per language pack.
    */
   public indexPack(langId: string, packData: Record<string, string[]>): void {
+    if (this.indexedPacks.has(langId)) return;
+    this.indexedPacks.add(langId);
+
     const idx = this.getOrCreateIndex(langId);
     for (const [chWord, defs] of Object.entries(packData)) {
       if (!defs || !Array.isArray(defs)) continue;
       for (const def of defs) {
-        const parts = def.split(/[,;/]/);
+        const parts = def.split(PACK_SPLIT_RE);
         for (const rawP of parts) {
           let s = rawP.trim().toLowerCase();
-          s = s.replace(/[?!.,;:'"()[\]{}]/g, "").trim();
+          if (!s) continue;
+          s = s.replace(PUNCT_RE, "").trim();
           if (!s || s.length > 50) continue;
-          if (s.length === 1 && !/[\p{L}]/u.test(s)) continue;
+          if (s.length === 1 && !LETTER_RE.test(s)) continue;
 
           let list = idx.get(s);
           if (!list) {
-            list = [];
+            list = [chWord];
             idx.set(s, list);
-          }
-          if (!list.includes(chWord) && list.length < 35) {
+          } else if (list.length < 35 && !list.includes(chWord)) {
             list.push(chWord);
           }
         }
       }
     }
+  }
+
+  public unindexPack(langId: string): void {
+    this.indexedPacks.delete(langId);
+    this.langIndexes.delete(langId);
   }
 
   /**
@@ -89,26 +105,23 @@ export class ReverseDictionaryEngine {
       for (const entry of entries) {
         if (!entry.definitions) continue;
         for (const def of entry.definitions) {
-          const parts = def.split(/[;/]/);
+          const parts = def.split(EN_SPLIT_RE);
           for (const rawPart of parts) {
             let s = rawPart.trim().toLowerCase();
-            s = s.replace(/[?!.,;:'"()[\]{}]/g, "").trim();
+            if (!s) continue;
+            s = s.replace(PUNCT_RE, "").trim();
             if (!s || s.length > 40) continue;
-            if (s.length === 1 && !/[\p{L}]/u.test(s)) continue;
+            if (s.length === 1 && !LETTER_RE.test(s)) continue;
 
-            const noTo = s.replace(/^to\s+/, "").trim();
-            const candidates = [s];
-            if (noTo !== s && noTo.length >= 1) {
-              candidates.push(noTo);
-            }
+            const noTo = s.replace(LEADING_TO_RE, "").trim();
+            const candidates = noTo !== s && noTo.length >= 1 ? [s, noTo] : [s];
 
             for (const cand of candidates) {
               let list = idx.get(cand);
               if (!list) {
-                list = [];
+                list = [chWord];
                 idx.set(cand, list);
-              }
-              if (!list.includes(chWord) && list.length < 35) {
+              } else if (list.length < 35 && !list.includes(chWord)) {
                 list.push(chWord);
               }
             }

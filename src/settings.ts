@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
-import { applyChineseFontToDOM, ChineseFontPreset, ChineseFontScope } from "./font.ts";
+import { ChineseFontPreset, ChineseFontScope } from "./font.ts";
 import {
   AnkiConnectSettings,
   checkAnkiConnect,
@@ -76,6 +76,8 @@ export interface ChineseDictSettings {
   chineseFontFamily: ChineseFontPreset;
   customChineseFont: string;
   chineseFontScope: ChineseFontScope;
+  readerModeFontFamily: ChineseFontPreset;
+  readerModeCustomFont: string;
 
   // Learning & Visual Aids
   showHskBadge: boolean;
@@ -163,6 +165,8 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   chineseFontFamily: "default",
   customChineseFont: "",
   chineseFontScope: "popover_and_sidebar",
+  readerModeFontFamily: "default",
+  readerModeCustomFont: "",
 
   showHskBadge: false,
   showCharacterBreakdown: false,
@@ -340,6 +344,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             this.plugin.settings.readerMode = value;
             await this.plugin.saveSettings();
             this.plugin.updateReaderStatusBar();
+            this.plugin.applyCurrentFont();
           })
       );
 
@@ -697,11 +702,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.chineseFontFamily = value as ChineseFontPreset;
             await this.plugin.saveSettings();
-            applyChineseFontToDOM(
-              this.plugin.settings.chineseFontFamily,
-              this.plugin.settings.chineseFontScope,
-              this.plugin.settings.customChineseFont
-            );
+            this.plugin.applyCurrentFont();
             this.renderSettings();
           })
       );
@@ -717,11 +718,44 @@ export class ChineseDictSettingTab extends PluginSettingTab {
             .onChange(async (val) => {
               this.plugin.settings.customChineseFont = val.trim();
               await this.plugin.saveSettings();
-              applyChineseFontToDOM(
-                this.plugin.settings.chineseFontFamily,
-                this.plugin.settings.chineseFontScope,
-                this.plugin.settings.customChineseFont
-              );
+              this.plugin.applyCurrentFont();
+            })
+        );
+    }
+
+    new Setting(containerEl)
+      .setName(t("settings.reader_font_family"))
+      .setDesc(t("settings.reader_font_family_desc"))
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("default", t("settings.reader_font_same"))
+          .addOption("kaiti", t("settings.font_kaiti"))
+          .addOption("songti", t("settings.font_songti"))
+          .addOption("heiti", t("settings.font_heiti"))
+          .addOption("fangsong", t("settings.font_fangsong"))
+          .addOption("wenkai", t("settings.font_wenkai"))
+          .addOption("custom", t("settings.font_custom"))
+          .setValue(this.plugin.settings.readerModeFontFamily || "default")
+          .onChange(async (value) => {
+            this.plugin.settings.readerModeFontFamily = value as ChineseFontPreset;
+            await this.plugin.saveSettings();
+            this.plugin.applyCurrentFont();
+            this.renderSettings();
+          })
+      );
+
+    if (this.plugin.settings.readerModeFontFamily === "custom") {
+      new Setting(containerEl)
+        .setName(t("settings.custom_font_name"))
+        .setDesc(t("settings.custom_font_desc"))
+        .addText((text) =>
+          text
+            .setPlaceholder("LXGW WenKai")
+            .setValue(this.plugin.settings.readerModeCustomFont)
+            .onChange(async (val) => {
+              this.plugin.settings.readerModeCustomFont = val.trim();
+              await this.plugin.saveSettings();
+              this.plugin.applyCurrentFont();
             })
         );
     }
@@ -737,11 +771,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.chineseFontScope = value as ChineseFontScope;
             await this.plugin.saveSettings();
-            applyChineseFontToDOM(
-              this.plugin.settings.chineseFontFamily,
-              this.plugin.settings.chineseFontScope,
-              this.plugin.settings.customChineseFont
-            );
+            this.plugin.applyCurrentFont();
           })
       );
 

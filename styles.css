@@ -9,14 +9,16 @@ div.menu {
 .ch-dict-tooltip {
   position: fixed;
   z-index: 10000;
-  width: var(--ch-dict-width, 330px);
-  min-width: 280px;
-  max-width: min(440px, calc(100vw - 24px));
+  width: fit-content;
+  min-width: min(var(--ch-dict-width, 330px), calc(100vw - 24px));
+  max-width: min(480px, calc(100vw - 24px));
+  height: auto;
   min-height: auto;
-  max-height: 520px;
+  max-height: min(76vh, 580px);
   box-sizing: border-box;
   padding: 12px 14px;
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   /* Hidden by default */
   display: none;
@@ -39,11 +41,13 @@ div.menu {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
   user-select: text;
 
+  will-change: transform, opacity;
   opacity: 0;
-  transform: scale(0.96) translateY(5px);
-  transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              left 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate3d(0, 6px, 0) scale(0.96);
+  transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Light Theme Liquid Glass (Apple Minimalist) */
@@ -92,7 +96,19 @@ div.menu {
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
-  transform: scale(1) translateY(0);
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: ch-popover-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ch-popover-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 7px, 0) scale(0.955);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 /* Main Card Column (contains top-bar, hero pinyin, translations, breakdown) */
@@ -942,21 +958,21 @@ div.menu {
   flex-direction: column;
   gap: 7px;
   box-sizing: border-box;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.22s ease,
-              border-color 0.22s ease;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.24s ease;
   overflow: hidden;
-  animation: ch-card-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: ch-card-fade-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes ch-card-fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, 8px, 0) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
@@ -2062,7 +2078,7 @@ body .ch-dict-tooltip.ch-dict-is-dragging {
 /* Resizable Popover */
 .ch-dict-tooltip.ch-dict-resizable {
   resize: both;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* Pinned (Sticky) Mode Styling */
@@ -2353,18 +2369,38 @@ body .ch-dict-tooltip.ch-dict-is-dragging {
 
 /* Drawer Smooth Fade-in Animations */
 .ch-dict-decomp-row {
-  animation: ch-drawer-fade-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: ch-drawer-fade-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes ch-drawer-fade-in {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
+}
+
+/* Smooth Apple-style micro-interactions across buttons, chips, and cards */
+.ch-dict-tooltip button,
+.ch-dict-decomp-chip,
+.ch-dict-pack-btn,
+.ch-vocab-tab-btn {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.2s ease;
+}
+
+.ch-dict-tooltip button:active,
+.ch-dict-decomp-chip:active,
+.ch-dict-pack-btn:active,
+.ch-vocab-tab-btn:active {
+  transform: scale(0.95);
 }
 
 /* History Group Headers */

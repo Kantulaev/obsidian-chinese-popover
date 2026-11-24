@@ -53,11 +53,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     setActiveLanguage(this.settings.uiLanguage);
 
     // Apply Chinese font settings to Obsidian workspace DOM
-    applyChineseFontToDOM(
-      this.settings.chineseFontFamily,
-      this.settings.chineseFontScope,
-      this.settings.customChineseFont
-    );
+    this.applyCurrentFont();
 
     this.dictionary = new DictionaryManager(this);
     // Non-blocking background load: Obsidian launches instantly without freeze
@@ -93,6 +89,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.settings.readerMode = !this.settings.readerMode;
         await this.saveSettings();
         this.updateReaderStatusBar();
+        this.applyCurrentFont();
         new Notice(
           `Режим быстрого чтения: ${
             this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
@@ -324,6 +321,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         this.settings.readerMode = !this.settings.readerMode;
         await this.saveSettings();
         this.updateReaderStatusBar();
+        this.applyCurrentFont();
         new Notice(
           `Режим быстрого чтения: ${
             this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
@@ -879,18 +877,25 @@ export default class ChineseHoverDictPlugin extends Plugin {
           const isReader = this.settings.readerMode;
           if (mode !== "hover" && mode !== "hover_modifier" && !isReader) return;
 
-          const target = event.target as HTMLElement | null;
-          if (target?.closest(".ch-dict-tooltip")) {
-            this.cancelHoverLookup();
-            this.cancelHoverHide();
-            return;
-          }
-
           if (mode === "hover_modifier" && !isReader) {
             if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
               this.cancelHoverLookup();
               return;
             }
+          }
+
+          // Fast jitter guard before DOM traversal
+          if (this.lastHoverCoords && this.hoverTimeout !== null) {
+            if (Math.hypot(event.clientX - this.lastHoverCoords.x, event.clientY - this.lastHoverCoords.y) < 4) {
+              return;
+            }
+          }
+
+          const target = event.target as HTMLElement | null;
+          if (target?.closest(".ch-dict-tooltip")) {
+            this.cancelHoverLookup();
+            this.cancelHoverHide();
+            return;
           }
 
           this.scheduleHoverLookup(
@@ -1321,6 +1326,20 @@ export default class ChineseHoverDictPlugin extends Plugin {
     const isReader = this.settings.readerMode;
     if (mode !== "hover" && mode !== "hover_modifier" && !isReader) return;
 
+    if (mode === "hover_modifier" && !isReader) {
+      if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
+        this.cancelHoverLookup();
+        return;
+      }
+    }
+
+    // Fast jitter guard before expensive DOM closest() calls
+    if (this.lastHoverCoords && this.hoverTimeout !== null) {
+      if (Math.hypot(event.clientX - this.lastHoverCoords.x, event.clientY - this.lastHoverCoords.y) < 4) {
+        return;
+      }
+    }
+
     const target = event.target as HTMLElement | null;
     if (!target) return;
     if (target.closest(".cm-editor") || target.closest(".ch-dict-tooltip")) {
@@ -1335,13 +1354,6 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (!(container instanceof HTMLElement)) {
       this.cancelHoverLookup();
       return;
-    }
-
-    if (mode === "hover_modifier" && !isReader) {
-      if (!this.checkModifier(event, this.settings.hoverModifierKey)) {
-        this.cancelHoverLookup();
-        return;
-      }
     }
 
     this.scheduleHoverLookup(
@@ -2362,5 +2374,30 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     return result;
+  }
+
+  /**
+   * Applies the active Chinese font preset to the workspace DOM:
+   * uses the separate Reader Mode font when Reader Mode is active and configured,
+   * and restores the normal font when Reader Mode is turned off.
+   */
+  public applyCurrentFont(): void {
+    const useReaderFont =
+      this.settings.readerMode &&
+      this.settings.readerModeFontFamily &&
+      this.settings.readerModeFontFamily !== "default";
+
+    const preset = useReaderFont
+      ? this.settings.readerModeFontFamily
+      : this.settings.chineseFontFamily;
+    const customFont = useReaderFont
+      ? this.settings.readerModeCustomFont
+      : this.settings.customChineseFont;
+
+    applyChineseFontToDOM(preset, this.settings.chineseFontScope, customFont);
+
+    if (this.tooltip?.getIsOpen()) {
+      this.tooltip.refresh(this.settings);
+    }
   }
 }

@@ -156,7 +156,7 @@
     </g>
   </g>
 
-  <!-- PANEL 3: REVERSE LOOKUP, CHENGYU & WORKSHEETS -->
+  <!-- PANEL 3: REVERSE LOOKUP, READER MODE & WORKSHEETS -->
   <g transform="translate(660, 136)" filter="url(#tools-shadow)">
     <rect width="280" height="380" rx="16" fill="url(#tools-card-glass)" stroke="rgba(255, 255, 255, 0.14)" stroke-width="1.2" />
     <rect x="1" y="1" width="278" height="44" rx="15" fill="url(#tools-specular)" pointer-events="none" />
@@ -164,7 +164,7 @@
     <!-- Header -->
     <g transform="translate(18, 16)">
       <text x="0" y="16" class="font-sans" font-size="15" font-weight="700" fill="#ffffff">🔄 Reverse &amp; Worksheets</text>
-      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Reverse search, fables, worksheets</text>
+      <text x="0" y="32" class="font-sans" font-size="11" fill="#94a3b8">Reverse lookup, Reader Mode, sheets</text>
     </g>
 
     <!-- Item 1: 20-Language Reverse Lookup -->
@@ -175,13 +175,13 @@
       <text x="12" y="62" class="font-sans" font-size="11" fill="#e2e8f0">EN, RU, ES, FR, DE, JA, KO &amp; more!</text>
     </g>
 
-    <!-- Item 2: Chengyu Origin Story -->
+    <!-- Item 2: Instant Reader Mode & Hanzi Fonts -->
     <g transform="translate(18, 160)">
       <rect width="244" height="96" rx="10" fill="rgba(251, 191, 36, 0.12)" stroke="rgba(251, 191, 36, 0.3)" stroke-width="1" />
-      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#fbbf24">📜 Chengyu Stories (成语故事)</text>
-      <text x="12" y="44" class="font-kaiti" font-size="13" font-weight="700" fill="#ffffff">«画蛇添足» — Draw a snake and add feet</text>
-      <text x="12" y="64" class="font-sans" font-size="10.5" fill="#94a3b8">Warring States Period (Zhan Guo Ce):</text>
-      <text x="12" y="80" class="font-sans" font-size="10.5" fill="#cbd5e1">Ruining an achievement with excess.</text>
+      <text x="12" y="24" class="font-sans" font-size="13" font-weight="700" fill="#fbbf24">📖 Instant Reader Mode</text>
+      <text x="12" y="44" class="font-kaiti" font-size="12.5" font-weight="700" fill="#ffffff">Zero-delay Hanzi hover &amp; fonts</text>
+      <text x="12" y="64" class="font-sans" font-size="10.5" fill="#94a3b8">Dedicated KaiTi / WenKai reader font,</text>
+      <text x="12" y="80" class="font-sans" font-size="10.5" fill="#cbd5e1">auto-restores editor typography on exit.</text>
     </g>
 
     <!-- Item 3: Printable PDF Worksheets -->

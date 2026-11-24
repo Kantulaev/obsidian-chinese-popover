@@ -1,7 +1,15 @@
 {
   "name": "chinese-popover-dict",
   "version": "2.3.0",
-  "description": "Instant Apple Liquid Glass Chinese popover dictionary. Features Mandarin Pinyin, Cantonese Jyutping, 214 Kangxi radicals anatomy, 20-language reverse lookup, and spaced repetition vocabulary book.",
+  "description": "Liquid Glass Chinese popup dictionary & translator: Mandarin Pinyin, Cantonese Jyutping, Hanzi, HSK, 214 Kangxi radicals, stroke order, tone colors, Reader Mode, TTS audio, offline CEDICT/BKRS, 20-language reverse lookup, Anki & Pleco SRS flashcards.",
+  "homepage": "https://github.com/Kantulaev/obsidian-chinese-popover#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kantulaev/obsidian-chinese-popover.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Kantulaev/obsidian-chinese-popover/issues"
+  },
   "main": "main.js",
   "scripts": {
     "dev": "deno run -A build.ts",
@@ -11,9 +19,33 @@
     "obsidian",
     "obsidian-plugin",
     "chinese",
+    "mandarin",
+    "cantonese",
+    "hanzi",
     "pinyin",
     "jyutping",
-    "dictionary"
+    "dictionary",
+    "popup-dictionary",
+    "popover-dictionary",
+    "cedict",
+    "cc-cedict",
+    "cc-canto",
+    "bkrs",
+    "hsk",
+    "kangxi-radicals",
+    "stroke-order",
+    "reverse-dictionary",
+    "anki",
+    "ankiconnect",
+    "pleco",
+    "spaced-repetition",
+    "srs",
+    "flashcards",
+    "ruby-annotations",
+    "simplified-traditional",
+    "tts",
+    "calligraphy",
+    "language-learning"
   ],
   "author": "Kantulaev",
   "license": "MIT",

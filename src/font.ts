@@ -1,8 +1,9 @@
 /**
  * Chinese Font Customization for Obsidian
  * Supports official HSK Exam font (KaiTi / 楷体), SongTi, HeiTi, FangSong, and Custom fonts.
- * Uses CSS @font-face with strict CJK unicode-range so Russian, English, and all other scripts
- * remain untouched in Obsidian's native default font.
+ * Places Obsidian's native text fonts FIRST for Latin, Cyrillic (Russian), and Pinyin,
+ * and uses @font-face with strict CJK unicode-range so ONLY Chinese Hanzi characters
+ * render in the chosen Chinese typeface.
  */
 
 export type ChineseFontPreset =
@@ -29,21 +30,23 @@ const CHINESE_LOCAL_FONTS: Record<ChineseFontPreset, string[]> = {
   custom: [],
 };
 
+const NATIVE_FIRST_CJK_STACK =
+  'var(--font-text), var(--default-font), -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Roboto", "ChDictHanziOnly", sans-serif';
+
 export const CHINESE_FONT_STACKS: Record<ChineseFontPreset, string> = {
   default: "inherit",
-  kaiti: '"ChDictHanziOnly", var(--font-text, inherit)',
-  songti: '"ChDictHanziOnly", var(--font-text, inherit)',
-  heiti: '"ChDictHanziOnly", var(--font-text, inherit)',
-  fangsong: '"ChDictHanziOnly", var(--font-text, inherit)',
-  wenkai: '"ChDictHanziOnly", var(--font-text, inherit)',
-  custom: '"ChDictHanziOnly", var(--font-text, inherit)',
+  kaiti: NATIVE_FIRST_CJK_STACK,
+  songti: NATIVE_FIRST_CJK_STACK,
+  heiti: NATIVE_FIRST_CJK_STACK,
+  fangsong: NATIVE_FIRST_CJK_STACK,
+  wenkai: NATIVE_FIRST_CJK_STACK,
+  custom: NATIVE_FIRST_CJK_STACK,
 };
 
 const FONT_STYLE_EL_ID = "ch-dict-cjk-font-style";
 
 /**
  * Injects or updates the @font-face rule restricted strictly to CJK Chinese characters.
- * Ensures Russian, English, numbers, and punctuation always use Obsidian's native font.
  */
 function updateCjkFontFaceRule(preset: ChineseFontPreset, customFont?: string): void {
   let styleEl = document.getElementById(FONT_STYLE_EL_ID) as HTMLStyleElement | null;
@@ -83,7 +86,9 @@ function updateCjkFontFaceRule(preset: ChineseFontPreset, customFont?: string): 
 }
 
 /**
- * Resolves the CSS font-family string based on preset and custom font name
+ * Resolves the CSS font-family string based on preset and custom font name.
+ * Obsidian's native font is always placed first so Russian, English, and Pinyin
+ * never pick up Chinese font metrics or wide glyphs.
  */
 export function resolveChineseFontFamily(
   preset: ChineseFontPreset,
@@ -93,7 +98,7 @@ export function resolveChineseFontFamily(
   if (preset === "custom" && (!customFont || !customFont.trim())) {
     return "inherit";
   }
-  return '"ChDictHanziOnly", var(--font-text, var(--default-font, inherit))';
+  return NATIVE_FIRST_CJK_STACK;
 }
 
 /**
@@ -106,12 +111,11 @@ export function applyChineseFontToDOM(
 ): void {
   updateCjkFontFaceRule(preset, customFont);
   const fontStack = resolveChineseFontFamily(preset, customFont);
-  const root = document.documentElement;
 
-  // Set CSS property for popover, vocabulary & editor components
-  root.setCssProps({ "--ch-dict-font-hanzi-family": fontStack });
-
+  // Apply on document.body (where Obsidian defines --font-text and --default-font)
   const body = document.body;
+  body.setCssProps({ "--ch-dict-font-hanzi-family": fontStack });
+
   body.classList.remove(
     "ch-dict-font-entire-editor",
     "ch-dict-font-kaiti",

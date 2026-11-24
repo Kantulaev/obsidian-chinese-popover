@@ -1,4 +1,4 @@
-import { Notice, requestUrl } from "obsidian";
+import { Notice } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import {
   DICT_PACKS,
@@ -6,8 +6,11 @@ import {
   downloadDictPack,
   deleteDictPack,
   loadDictPackData,
+  fetchJsonFromMirrors,
+  buildDictMirrorUrls,
   MULTILANG_CORE_VOCAB,
 } from "./dict-packs.ts";
+import { HAN_CHAR_RE } from "./utils.ts";
 import { getRussianDefinitions } from "./russian-dict.ts";
 import { getActiveLanguage } from "./i18n/index.ts";
 import {
@@ -767,39 +770,15 @@ export class DictionaryManager {
     }
     const dictPath = `${dictsFolder}/cedict.json`;
 
-    const urls = [
-      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/cedict.json",
-      "https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/cedict.json",
-      "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/cedict.json",
-    ];
-
     if (!isSilent) {
       new Notice("Chinese Popover: Загрузка словаря... / Downloading dictionary database...", 4000);
     }
 
     try {
-      let res: { text: string } | null = null;
-      let lastError: unknown = null;
-      for (const url of urls) {
-        try {
-          const attempt = await requestUrl({ url });
-          if (attempt && attempt.text && attempt.text.trim().startsWith("{")) {
-            res = attempt;
-            break;
-          }
-        } catch (err) {
-          lastError = err;
-        }
-      }
-
-      if (!res || !res.text) {
-        if (lastError instanceof Error) {
-          throw lastError;
-        }
-        throw new Error(typeof lastError === "string" ? lastError : "Failed to download cedict.json from mirrors");
-      }
-
-      const text = res.text;
+      const text = await fetchJsonFromMirrors(
+        buildDictMirrorUrls("cedict.json"),
+        "Failed to download cedict.json from mirrors"
+      );
       await adapter.write(dictPath, text);
       this.data = Object.assign({}, JSON.parse(text) as DictionaryData, CANTONESE_CORE_DICT);
       this.sortedEntriesCache = new WeakSet<DictEntry[]>();
@@ -992,15 +971,138 @@ export class DictionaryManager {
    * (including CJK Extension A through I, Cantonese HKSCS, and Kangxi radicals)
    */
   isChinese(text: string): boolean {
-    if (!text) return false;
-    return /\p{Script=Han}/u.test(text);
+    return Boolean(text && HAN_CHAR_RE.test(text));
+  }
+
+  private normalizeSurrogateOffset(fullText: string, offset: number): number {
+    if (offset > 0 && offset < fullText.length) {
+      const code = fullText.charCodeAt(offset);
+      if (code >= 0xdc00 && code <= 0xdfff) return offset - 1;
+    }
+    return offset;
+  }
+
+  private isTrailingSurrogate(text: string, idx: number): boolean {
+    const code = text.charCodeAt(idx);
+    return code >= 0xdc00 && code <= 0xdfff;
+  }
+
+  private ensureSorted(word: string, entries?: DictEntry[]): DictEntry[] | undefined {
+    if (!entries || entries.length === 0) return undefined;
+    if (entries.length > 1 && !this.sortedEntriesCache.has(entries)) {
+      const sorted = sortEntriesByPinyinFrequency(word, entries);
+      this.data[word] = sorted;
+      this.sortedEntriesCache.add(sorted);
+      return sorted;
+    }
+    return entries;
+  }
+
+  /**
+   * Matches multi-character Cantonese A-not-A questions (XY唔XY / X唔X)
+   * and potential/resultative complements (X得Y / X唔Y) covering `offset`.
+   */
+  private matchCantoneseGrammarPatterns(fullText: string, offset: number): MatchResult | null {
+    // 1. A-not-A 5-character pattern: XY唔XY (e.g. 鍾意唔鍾意, 清楚唔清楚)
+    for (let s = Math.max(0, offset - 4); s <= offset && s + 5 <= fullText.length; s++) {
+      if (s > 0 && this.isTrailingSurrogate(fullText, s)) continue;
+      if (offset < s || offset >= s + 5) continue;
+      const w1 = fullText.slice(s, s + 2);
+      const mid = fullText[s + 2];
+      const w2 = fullText.slice(s + 3, s + 5);
+      if (w1 === w2 && (mid === "唔" || mid === "不") && this.isChinese(w1)) {
+        const word = fullText.slice(s, s + 5);
+        const base = this.data[w1]?.[0];
+        const baseDef = base?.definitions?.[0] || w1;
+        const baseJyut = base?.jyutping || "";
+        const basePin = base?.pinyin || "";
+        const synth: DictEntry[] = [{
+          traditional: word,
+          pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
+          jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
+          definitions: [`whether or not ${baseDef}? (Cantonese A-not-A question)`],
+        }];
+        return { word, entries: this.data[word] || synth, length: 5, start: s, end: s + 5 };
+      }
+    }
+
+    // 2. A-not-A 3-char (X唔X / X不X) & Potential complements (X得Y / X唔Y)
+    for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
+      if (s > 0 && this.isTrailingSurrogate(fullText, s)) continue;
+      if (offset < s || offset >= s + 3) continue;
+      const c0 = fullText[s];
+      const c1 = fullText[s + 1];
+      const c2 = fullText[s + 2];
+      if (!this.isChinese(c0)) continue;
+
+      if (c0 === c2 && (c1 === "唔" || c1 === "不")) {
+        const word = fullText.slice(s, s + 3);
+        const base = this.data[c0]?.[0];
+        const baseDef = base?.definitions?.[0] || c0;
+        const baseJyut = base?.jyutping || "";
+        const basePin = base?.pinyin || "";
+        const synth: DictEntry[] = [{
+          traditional: word,
+          pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
+          jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
+          definitions: [`whether or not to ${baseDef}? (Cantonese A-not-A question)`],
+        }];
+        return { word, entries: this.data[word] || synth, length: 3, start: s, end: s + 3 };
+      }
+
+      if ((c1 === "得" || c1 === "唔") && RESULT_COMPLEMENTS.has(c2)) {
+        const word = fullText.slice(s, s + 3);
+        const base = this.data[c0]?.[0];
+        const baseDef = base?.definitions?.[0] || c0;
+        const baseJyut = base?.jyutping || "";
+        const isAffirmative = c1 === "得";
+        const synth: DictEntry[] = [{
+          traditional: word,
+          pinyin: "",
+          jyutping: baseJyut ? `${baseJyut} ${isAffirmative ? "dak1" : "m4"} ...` : "",
+          definitions: [
+            isAffirmative
+              ? `able to ${baseDef} successfully (Cantonese potential complement)`
+              : `unable to ${baseDef} (Cantonese negative potential complement)`,
+          ],
+        }];
+        return { word, entries: this.data[word] || synth, length: 3, start: s, end: s + 3 };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Matches Verb + Cantonese Aspect marker: X緊, X咗, X晒, X埋, X返, X番, X吓, X下
+   */
+  private matchCantoneseAspectAtOffset(fullText: string, offset: number): MatchResult | null {
+    for (let s = Math.max(0, offset - 1); s <= offset && s + 2 <= fullText.length; s++) {
+      if (s > 0 && this.isTrailingSurrogate(fullText, s)) continue;
+      if (offset < s || offset >= s + 2) continue;
+      const c0 = fullText[s];
+      const c1 = fullText[s + 1];
+      const asp = ASPECT_MARKERS[c1];
+      if (asp && this.isChinese(c0)) {
+        const word = fullText.slice(s, s + 2);
+        const base = this.data[c0]?.[0];
+        const baseDef = base?.definitions?.[0] || c0;
+        const baseJyut = base?.jyutping || "";
+        const synth: DictEntry[] = [{
+          traditional: word,
+          pinyin: "",
+          jyutping: baseJyut ? `${baseJyut} ${asp.jyut}` : "",
+          definitions: [`${baseDef} (${asp.desc})`],
+        }];
+        return { word, entries: this.data[word] || synth, length: 2, start: s, end: s + 2 };
+      }
+    }
+    return null;
   }
 
   /**
    * Specifically detects whether the character at `offset` belongs to a colloquial
    * Cantonese phrase, idiom, or grammatical construction (A-not-A, aspect particles, complements).
-   * Returns the MatchResult if a Cantonese phrase is detected, or null otherwise
-   * so Obsidian's built-in word selector can handle standard Chinese words and chengyu cleanly.
    */
   findCantonesePhraseAtOffset(
     fullText: string,
@@ -1011,13 +1113,7 @@ export class DictionaryManager {
       return null;
     }
 
-    if (offset > 0 && offset < fullText.length) {
-      const code = fullText.charCodeAt(offset);
-      if (code >= 0xdc00 && code <= 0xdfff) {
-        offset--;
-      }
-    }
-
+    offset = this.normalizeSurrogateOffset(fullText, offset);
     const codePoint = fullText.codePointAt(offset);
     if (codePoint === undefined) return null;
     const clickedChar = String.fromCodePoint(codePoint);
@@ -1028,16 +1124,15 @@ export class DictionaryManager {
     // 1. Check against Cantonese specific vocabulary
     for (let len = Math.min(maxLen * 2, fullText.length); len >= 2; len--) {
       for (let s = Math.max(0, offset - len + 1); s <= offset; s++) {
-        if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
+        if (s > 0 && this.isTrailingSurrogate(fullText, s)) continue;
         const e = s + len;
-        if (e < fullText.length && fullText.charCodeAt(e) >= 0xdc00 && fullText.charCodeAt(e) <= 0xdfff) continue;
+        if (e < fullText.length && this.isTrailingSurrogate(fullText, e)) continue;
         if (offset >= s && offset < e && e <= fullText.length) {
           const cand = fullText.slice(s, e);
           if (CANTONESE_SPECIFIC_WORDS.has(cand)) {
-            const entries = this.data[cand] || [];
             return {
               word: cand,
-              entries,
+              entries: this.data[cand] || [],
               length: Array.from(cand).length,
               start: s,
               end: e,
@@ -1047,146 +1142,15 @@ export class DictionaryManager {
       }
     }
 
-    // 2. A-not-A 5-character pattern: XY唔XY (e.g. 鍾意唔鍾意, 清楚唔清楚, 開心唔開心)
-    for (let s = Math.max(0, offset - 4); s <= offset && s + 5 <= fullText.length; s++) {
-      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-      if (offset < s || offset >= s + 5) continue;
-      const w1 = fullText.slice(s, s + 2);
-      const mid = fullText[s + 2];
-      const w2 = fullText.slice(s + 3, s + 5);
-      if (w1 === w2 && (mid === "唔" || mid === "不") && this.isChinese(w1)) {
-        const word = fullText.slice(s, s + 5);
-        const baseEntries = this.data[w1] || [];
-        const baseDef = baseEntries[0]?.definitions?.[0] || w1;
-        const baseJyut = baseEntries[0]?.jyutping || "";
-        const basePin = baseEntries[0]?.pinyin || "";
-        const synthesizedEntries: DictEntry[] = [
-          {
-            traditional: word,
-            pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
-            jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
-            definitions: [`whether or not ${baseDef}? (Cantonese A-not-A question)`],
-          },
-        ];
-        return {
-          word,
-          entries: this.data[word] || synthesizedEntries,
-          length: 5,
-          start: s,
-          end: s + 5,
-        };
-      }
-    }
+    // 2. Cantonese A-not-A & potential complements
+    const grammarMatch = this.matchCantoneseGrammarPatterns(fullText, offset);
+    if (grammarMatch) return grammarMatch;
 
-    // 3. A-not-A 3-character pattern: X唔X or X不X (e.g. 去唔去, 識唔識, 知唔知, 食唔食)
-    for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
-      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-      if (offset < s || offset >= s + 3) continue;
-      const c0 = fullText[s];
-      const c1 = fullText[s + 1];
-      const c2 = fullText[s + 2];
-      if (c0 === c2 && (c1 === "唔" || c1 === "不") && this.isChinese(c0)) {
-        const word = fullText.slice(s, s + 3);
-        const baseEntries = this.data[c0] || [];
-        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-        const baseJyut = baseEntries[0]?.jyutping || "";
-        const basePin = baseEntries[0]?.pinyin || "";
-        const synthesizedEntries: DictEntry[] = [
-          {
-            traditional: word,
-            pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
-            jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
-            definitions: [`whether or not to ${baseDef}? (Cantonese A-not-A question)`],
-          },
-        ];
-        return {
-          word,
-          entries: this.data[word] || synthesizedEntries,
-          length: 3,
-          start: s,
-          end: s + 3,
-        };
-      }
-    }
+    // 3. Cantonese aspect markers
+    const aspectMatch = this.matchCantoneseAspectAtOffset(fullText, offset);
+    if (aspectMatch) return aspectMatch;
 
-    // 4. Potential / Resultative complements: X得Y or X唔Y (e.g. 睇唔明, 聽得明, 搞得掂, 食唔落)
-    const resultComplements = new Set(["明", "掂", "到", "落", "出", "入", "完", "好", "成", "開", "走"]);
-    for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
-      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-      if (offset < s || offset >= s + 3) continue;
-      const c0 = fullText[s];
-      const c1 = fullText[s + 1];
-      const c2 = fullText[s + 2];
-      if ((c1 === "得" || c1 === "唔") && resultComplements.has(c2) && this.isChinese(c0)) {
-        const word = fullText.slice(s, s + 3);
-        const baseEntries = this.data[c0] || [];
-        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-        const baseJyut = baseEntries[0]?.jyutping || "";
-        const isAffirmative = c1 === "得";
-        const synthesizedEntries: DictEntry[] = [
-          {
-            traditional: word,
-            pinyin: "",
-            jyutping: baseJyut ? `${baseJyut} ${isAffirmative ? "dak1" : "m4"} ...` : "",
-            definitions: [
-              isAffirmative
-                ? `able to ${baseDef} successfully (Cantonese potential complement)`
-                : `unable to ${baseDef} (Cantonese negative potential complement)`,
-            ],
-          },
-        ];
-        return {
-          word,
-          entries: this.data[word] || synthesizedEntries,
-          length: 3,
-          start: s,
-          end: s + 3,
-        };
-      }
-    }
-
-    // 5. Verb + Cantonese Aspect marker: X緊, X咗, X晒, X埋, X返, X番, X吓, X下
-    const aspectMarkers: Record<string, { jyut: string; desc: string }> = {
-      "緊": { jyut: "gan2", desc: "currently doing (progressive aspect)" },
-      "咗": { jyut: "zo2", desc: "completed / finished doing (perfective aspect)" },
-      "晒": { jyut: "saai3", desc: "completely / entirely finished doing" },
-      "埋": { jyut: "maai4", desc: "finish up / also doing" },
-      "返": { jyut: "faan1", desc: "doing back / returning" },
-      "番": { jyut: "faan1", desc: "doing back / again" },
-      "吓": { jyut: "haa5", desc: "do a little bit / have a try" },
-      "下": { jyut: "haa5", desc: "do a little bit / briefly" },
-    };
-
-    for (let s = Math.max(0, offset - 1); s <= offset && s + 2 <= fullText.length; s++) {
-      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-      if (offset < s || offset >= s + 2) continue;
-      const c0 = fullText[s];
-      const c1 = fullText[s + 1];
-      const asp = aspectMarkers[c1];
-      if (asp && this.isChinese(c0)) {
-        const word = fullText.slice(s, s + 2);
-        const baseEntries = this.data[c0] || [];
-        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-        const baseJyut = baseEntries[0]?.jyutping || "";
-        const synthesizedEntries: DictEntry[] = [
-          {
-            traditional: word,
-            pinyin: "",
-            jyutping: baseJyut ? `${baseJyut} ${asp.jyut}` : "",
-            definitions: [`${baseDef} (${asp.desc})`],
-          },
-        ];
-        return {
-          word,
-          entries: this.data[word] || synthesizedEntries,
-          length: 2,
-          start: s,
-          end: s + 2,
-        };
-      }
-    }
-
-    // 6. Single Cantonese unique character (like 𨋢)
+    // 4. Single Cantonese unique character (like 𨋢)
     if (CANTONESE_SPECIFIC_WORDS.has(clickedChar)) {
       return {
         word: clickedChar,
@@ -1202,13 +1166,6 @@ export class DictionaryManager {
 
   /**
    * Finds the best matching Chinese or Cantonese word covering the given offset.
-   * Features:
-   * - Full Unicode astral plane / surrogate pair support (HKSCS Cantonese characters)
-   * - Longest-match search in CC-CEDICT + Cantonese Core Lexicon
-   * - Cantonese A-not-A question patterns (3-char & 5-char)
-   * - Cantonese potential / resultative complements (X得Y / X唔Y)
-   * - Cantonese aspect markers (Verb + 緊/咗/晒/埋/返/番/吓/下)
-   * - Native Intl.Segmenter fallback with Cantonese locales ('zh-HK', 'yue')
    */
   findWordAtOffset(
     fullText: string,
@@ -1219,14 +1176,7 @@ export class DictionaryManager {
       return null;
     }
 
-    // Adjust offset if pointing to a trailing surrogate (0xDC00 - 0xDFFF)
-    if (offset > 0 && offset < fullText.length) {
-      const code = fullText.charCodeAt(offset);
-      if (code >= 0xdc00 && code <= 0xdfff) {
-        offset--;
-      }
-    }
-
+    offset = this.normalizeSurrogateOffset(fullText, offset);
     const codePoint = fullText.codePointAt(offset);
     if (codePoint === undefined) return null;
     const clickedChar = String.fromCodePoint(codePoint);
@@ -1241,192 +1191,51 @@ export class DictionaryManager {
 
     // 1. Longest match search in dictionary (CEDICT + Cantonese Lexicon + Normalized proverbs)
     for (let start = minStart; start <= offset; start++) {
-      if (start > 0 && fullText.charCodeAt(start) >= 0xdc00 && fullText.charCodeAt(start) <= 0xdfff) {
-        continue;
-      }
+      if (start > 0 && this.isTrailingSurrogate(fullText, start)) continue;
       const maxCandidateLen = Math.min(fullText.length - start, maxLen * 2);
       for (let len = maxCandidateLen; len >= 1; len--) {
         const end = start + len;
-        if (end < fullText.length && fullText.charCodeAt(end) >= 0xdc00 && fullText.charCodeAt(end) <= 0xdfff) {
-          continue;
-        }
+        if (end < fullText.length && this.isTrailingSurrogate(fullText, end)) continue;
         if (offset >= start && offset < end) {
           const candidate = fullText.slice(start, end);
-          let entries = this.data[candidate];
+          let entries: DictEntry[] | undefined = this.data[candidate];
           if (!entries || entries.length === 0) {
             const normKey = this.normalizedMap.get(candidate);
-            if (normKey) {
-              entries = this.data[normKey];
-            }
+            if (normKey) entries = this.data[normKey];
           }
           if (!entries || entries.length === 0) {
             const clause = this.findIdiomClauseMatch(candidate);
-            if (clause && clause.length > 0) {
-              entries = clause;
-            }
+            if (clause && clause.length > 0) entries = clause;
           }
+          entries = this.ensureSorted(candidate, entries);
           if (entries && entries.length > 0) {
-            if (entries.length > 1 && !this.sortedEntriesCache.has(entries)) {
-              const sorted = sortEntriesByPinyinFrequency(candidate, entries);
-              this.data[candidate] = sorted;
-              this.sortedEntriesCache.add(sorted);
-              entries = sorted;
-            }
             const charCount = Array.from(candidate).length;
-            if (charCount <= maxLen) {
-              if (!bestMatch || charCount > bestMatch.length) {
-                bestMatch = {
-                  word: candidate,
-                  entries: entries,
-                  length: charCount,
-                  start: start,
-                  end: end,
-                };
-                bestStart = start;
-                bestEnd = end;
-              }
+            if (charCount <= maxLen && (!bestMatch || charCount > bestMatch.length)) {
+              bestMatch = { word: candidate, entries, length: charCount, start, end };
+              bestStart = start;
+              bestEnd = end;
             }
           }
         }
       }
     }
 
-    // Check multi-character Cantonese grammatical patterns before accepting shorter dictionary matches
+    // 2. Check multi-character Cantonese grammatical patterns before accepting shorter dictionary matches
     if (!bestMatch || bestMatch.length < 3) {
-      // 2a. A-not-A 5-character pattern: XY唔XY (e.g. 鍾意唔鍾意, 清楚唔清楚, 開心唔開心)
-      for (let s = Math.max(0, offset - 4); s <= offset && s + 5 <= fullText.length; s++) {
-        if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-        if (offset < s || offset >= s + 5) continue;
-        const w1 = fullText.slice(s, s + 2);
-        const mid = fullText[s + 2];
-        const w2 = fullText.slice(s + 3, s + 5);
-        if (w1 === w2 && (mid === "唔" || mid === "不") && this.isChinese(w1)) {
-          const word = fullText.slice(s, s + 5);
-          const baseEntries = this.data[w1] || [];
-          const baseDef = baseEntries[0]?.definitions?.[0] || w1;
-          const baseJyut = baseEntries[0]?.jyutping || "";
-          const basePin = baseEntries[0]?.pinyin || "";
-          const synthesizedEntries: DictEntry[] = [
-            {
-              traditional: word,
-              pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
-              jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
-              definitions: [`whether or not ${baseDef}? (Cantonese A-not-A question)`],
-            },
-          ];
-          return {
-            word,
-            entries: this.data[word] || synthesizedEntries,
-            length: 5,
-            start: s,
-            end: s + 5,
-          };
-        }
-      }
-
-      // 2b. A-not-A 3-character pattern: X唔X or X不X (e.g. 去唔去, 識唔識, 知唔知, 食唔食)
-      for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
-        if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-        if (offset < s || offset >= s + 3) continue;
-        const c0 = fullText[s];
-        const c1 = fullText[s + 1];
-        const c2 = fullText[s + 2];
-        if (c0 === c2 && (c1 === "唔" || c1 === "不") && this.isChinese(c0)) {
-          const word = fullText.slice(s, s + 3);
-          const baseEntries = this.data[c0] || [];
-          const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-          const baseJyut = baseEntries[0]?.jyutping || "";
-          const basePin = baseEntries[0]?.pinyin || "";
-          const synthesizedEntries: DictEntry[] = [
-            {
-              traditional: word,
-              pinyin: basePin ? `${basePin} bu4 ${basePin}` : "",
-              jyutping: baseJyut ? `${baseJyut} m4 ${baseJyut}` : "",
-              definitions: [`whether or not to ${baseDef}? (Cantonese A-not-A question)`],
-            },
-          ];
-          return {
-            word,
-            entries: this.data[word] || synthesizedEntries,
-            length: 3,
-            start: s,
-            end: s + 3,
-          };
-        }
-      }
-
-      // 2c. Potential / Resultative complements: X得Y or X唔Y (e.g. 睇唔明, 聽得明, 搞得掂, 食唔落)
-      for (let s = Math.max(0, offset - 2); s <= offset && s + 3 <= fullText.length; s++) {
-        if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-        if (offset < s || offset >= s + 3) continue;
-        const c0 = fullText[s];
-        const c1 = fullText[s + 1];
-        const c2 = fullText[s + 2];
-        if ((c1 === "得" || c1 === "唔") && RESULT_COMPLEMENTS.has(c2) && this.isChinese(c0)) {
-          const word = fullText.slice(s, s + 3);
-          const baseEntries = this.data[c0] || [];
-          const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-          const baseJyut = baseEntries[0]?.jyutping || "";
-          const isAffirmative = c1 === "得";
-          const synthesizedEntries: DictEntry[] = [
-            {
-              traditional: word,
-              pinyin: "",
-              jyutping: baseJyut ? `${baseJyut} ${isAffirmative ? "dak1" : "m4"} ...` : "",
-              definitions: [
-                isAffirmative
-                  ? `able to ${baseDef} successfully (Cantonese potential complement)`
-                  : `unable to ${baseDef} (Cantonese negative potential complement)`,
-              ],
-            },
-          ];
-          return {
-            word,
-            entries: this.data[word] || synthesizedEntries,
-            length: 3,
-            start: s,
-            end: s + 3,
-          };
-        }
-      }
+      const grammarMatch = this.matchCantoneseGrammarPatterns(fullText, offset);
+      if (grammarMatch) return grammarMatch;
     }
 
-    // If a multi-character match (>= 2 chars) was found in the dictionary, return it
+    // 3. Return multi-character dictionary match if found
     if (bestMatch && bestMatch.length >= 2) {
       bestMatch.start = bestStart;
       bestMatch.end = bestEnd;
       return bestMatch;
     }
 
-    // 2d. Verb + Cantonese Aspect marker: X緊, X咗, X晒, X埋, X返, X番, X吓, X下
-    for (let s = Math.max(0, offset - 1); s <= offset && s + 2 <= fullText.length; s++) {
-      if (s > 0 && fullText.charCodeAt(s) >= 0xdc00 && fullText.charCodeAt(s) <= 0xdfff) continue;
-      if (offset < s || offset >= s + 2) continue;
-      const c0 = fullText[s];
-      const c1 = fullText[s + 1];
-      const asp = ASPECT_MARKERS[c1];
-      if (asp && this.isChinese(c0)) {
-        const word = fullText.slice(s, s + 2);
-        const baseEntries = this.data[c0] || [];
-        const baseDef = baseEntries[0]?.definitions?.[0] || c0;
-        const baseJyut = baseEntries[0]?.jyutping || "";
-        const synthesizedEntries: DictEntry[] = [
-          {
-            traditional: word,
-            pinyin: "",
-            jyutping: baseJyut ? `${baseJyut} ${asp.jyut}` : "",
-            definitions: [`${baseDef} (${asp.desc})`],
-          },
-        ];
-        return {
-          word,
-          entries: this.data[word] || synthesizedEntries,
-          length: 2,
-          start: s,
-          end: s + 2,
-        };
-      }
-    }
+    // 4. Cantonese aspect markers (Verb + 緊/咗/晒/埋/返/番/吓/下)
+    const aspectMatch = this.matchCantoneseAspectAtOffset(fullText, offset);
+    if (aspectMatch) return aspectMatch;
 
     if (bestMatch) {
       bestMatch.start = bestStart;

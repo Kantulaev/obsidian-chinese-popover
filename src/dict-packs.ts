@@ -1,9 +1,10 @@
 /**
- * Multi-Language Dictionary Packs (20 Languages)
- * Handles metadata, built-in core vocabulary, and on-demand download/removal.
+ * Multi-Language Dictionary Packs (20+ Languages + Cantonese)
+ * Handles pack metadata, mirror fetching, and on-demand install/removal.
  */
 
 import { DataAdapter, Notice, requestUrl } from "obsidian";
+export { MULTILANG_CORE_VOCAB } from "./multilang-data.ts";
 
 export interface DictPackInfo {
   id: string;
@@ -17,1053 +18,115 @@ export interface DictPackInfo {
   downloadUrl: string;
 }
 
+const RAW_MAIN_BASE = "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts";
+
+function packEntry(
+  id: string,
+  name: string,
+  nativeName: string,
+  flag: string,
+  source: string,
+  entries: string,
+  approxSize: string,
+  fileName: string
+): DictPackInfo {
+  return {
+    id,
+    name,
+    nativeName,
+    flag,
+    source,
+    entries,
+    approxSize,
+    fileName,
+    downloadUrl: `${RAW_MAIN_BASE}/${fileName}`,
+  };
+}
+
 export const DICT_PACKS: DictPackInfo[] = [
-  {
-    id: "en",
-    name: "English",
-    nativeName: "English (CC-CEDICT)",
-    flag: "🇬🇧",
-    source: "CC-CEDICT Open Corpus",
-    entries: "122 000+",
-    approxSize: "~42.3 MB",
-    fileName: "cedict.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/cedict.json",
-  },
-  {
-    id: "yue",
-    name: "Cantonese",
-    nativeName: "廣東話 / 粵語 (Cantonese Jyutping)",
-    flag: "🇭🇰",
-    source: "Hong Kong Cantonese Corpus & Jyutping Lexicon",
-    entries: "231 000+",
-    approxSize: "~17.3 MB",
-    fileName: "dict-yue.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-yue.json",
-  },
-  {
-    id: "ru",
-    name: "Russian",
-    nativeName: "Русский (БКРС / Большой словарь)",
-    flag: "🇷🇺",
-    source: "БКРС / Большой китайско-русский словарь",
-    entries: "470 000+",
-    approxSize: "~33.6 MB",
-    fileName: "dict-ru.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ru.json",
-  },
-  {
-    id: "de",
-    name: "German",
-    nativeName: "Deutsch (HanDeDict)",
-    flag: "🇩🇪",
-    source: "HanDeDict (Chinesisch-Deutsches Wörterbuch)",
-    entries: "246 000+",
-    approxSize: "~13.2 MB",
-    fileName: "dict-de.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-de.json",
-  },
-  {
-    id: "fr",
-    name: "French",
-    nativeName: "Français (CFDICT / CC-CEDICT Français)",
-    flag: "🇫🇷",
-    source: "CFDICT (Chinois-Français) & C+DICT",
-    entries: "515 000+",
-    approxSize: "~25.9 MB",
-    fileName: "dict-fr.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-fr.json",
-  },
-  {
-    id: "es",
-    name: "Spanish",
-    nativeName: "Español (Gran Diccionario Chino-Español)",
-    flag: "🇪🇸",
-    source: "Gran Diccionario Chino-Español (CEDICT-ES)",
-    entries: "475 000+",
-    approxSize: "~24.2 MB",
-    fileName: "dict-es.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-es.json",
-  },
-  {
-    id: "ja",
-    name: "Japanese",
-    nativeName: "日本語 (中日辞書 / MJdic)",
-    flag: "🇯🇵",
-    source: "MJdic Open Japanese Corpus & C+DICT",
-    entries: "465 000+",
-    approxSize: "~23.8 MB",
-    fileName: "dict-ja.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ja.json",
-  },
-  {
-    id: "ko",
-    name: "Korean",
-    nativeName: "한국어 (한중사전 / C+DICT)",
-    flag: "🇰🇷",
-    source: "CC-CPLUSDICT Korean & Hanja Lexicon",
-    entries: "365 000+",
-    approxSize: "~18.9 MB",
-    fileName: "dict-ko.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ko.json",
-  },
-  {
-    id: "vi",
-    name: "Vietnamese",
-    nativeName: "Tiếng Việt (Từ điển Hán-Việt CVDICT)",
-    flag: "🇻🇳",
-    source: "Từ điển Hán-Việt Open Corpus",
-    entries: "194 000+",
-    approxSize: "~12.9 MB",
-    fileName: "dict-vi.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-vi.json",
-  },
-  {
-    id: "it",
-    name: "Italian",
-    nativeName: "Italiano (Dizionario Cinese-Italiano)",
-    flag: "🇮🇹",
-    source: "Il dizionario di Cinese Moderno & HSK",
-    entries: "315 000+",
-    approxSize: "~12.7 MB",
-    fileName: "dict-it.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-it.json",
-  },
-  {
-    id: "pt",
-    name: "Portuguese",
-    nativeName: "Português (Dicionário Chinês-Português)",
-    flag: "🇵🇹",
-    source: "Dicionário Chinês-Português C+DICT",
-    entries: "455 000+",
-    approxSize: "~23.1 MB",
-    fileName: "dict-pt.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-pt.json",
-  },
-  {
-    id: "id",
-    name: "Indonesian",
-    nativeName: "Bahasa Indonesia (Kamus Mandarin-Indonesia)",
-    flag: "🇮🇩",
-    source: "Kamus Lengkap Mandarin-Indonesia C+DICT",
-    entries: "300 000+",
-    approxSize: "~16.1 MB",
-    fileName: "dict-id.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-id.json",
-  },
-  {
-    id: "th",
-    name: "Thai",
-    nativeName: "ไทย (พจนานุกรมจีน-ไทย)",
-    flag: "🇹🇭",
-    source: "พจนานุกรมจีน-ไทย ฉบับสมบูรณ์ C+DICT",
-    entries: "255 000+",
-    approxSize: "~25.7 MB",
-    fileName: "dict-th.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-th.json",
-  },
-  {
-    id: "ar",
-    name: "Arabic",
-    nativeName: "العربية (القاموس الصيني العربي)",
-    flag: "🇸🇦",
-    source: "القاموس الصيني العربي الحديث & HSK",
-    entries: "155 000+",
-    approxSize: "~7.9 MB",
-    fileName: "dict-ar.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-ar.json",
-  },
-  {
-    id: "tr",
-    name: "Turkish",
-    nativeName: "Türkçe (Çince-Türkçe Sözlük)",
-    flag: "🇹🇷",
-    source: "Kapsamlı Çince-Türkçe Sözlük & HSK",
-    entries: "129 000+",
-    approxSize: "~5.5 MB",
-    fileName: "dict-tr.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-tr.json",
-  },
-  {
-    id: "pl",
-    name: "Polish",
-    nativeName: "Polski (Słownik chińsko-polski)",
-    flag: "🇵🇱",
-    source: "Praktyczny słownik chińsko-polski & HSK",
-    entries: "279 000+",
-    approxSize: "~11.2 MB",
-    fileName: "dict-pl.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-pl.json",
-  },
-  {
-    id: "nl",
-    name: "Dutch",
-    nativeName: "Nederlands (Chinees-Nederlands Woordenboek)",
-    flag: "🇳🇱",
-    source: "Chinees-Nederlands Handwoordenboek & HSK",
-    entries: "290 000+",
-    approxSize: "~11.2 MB",
-    fileName: "dict-nl.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-nl.json",
-  },
-  {
-    id: "uk",
-    name: "Ukrainian",
-    nativeName: "Українська (Китайсько-український словник)",
-    flag: "🇺🇦",
-    source: "Сучасний китайсько-український словник & HSK",
-    entries: "214 000+",
-    approxSize: "~10.9 MB",
-    fileName: "dict-uk.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-uk.json",
-  },
-  {
-    id: "hi",
-    name: "Hindi",
-    nativeName: "हिन्दी (चीनी-हिन्दी शब्दкоश)",
-    flag: "🇮🇳",
-    source: "आधुनिक चीनी-हिन्दी शब्दкош",
-    entries: "39 000+",
-    approxSize: "~2.1 MB",
-    fileName: "dict-hi.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-hi.json",
-  },
-  {
-    id: "zh-CN",
-    name: "Simplified Chinese",
-    nativeName: "现代汉语规范释义 (新华字典)",
-    flag: "🇨🇳",
-    source: "现代汉语词典 / 新华字典 / 规范语料库",
-    entries: "287 000+",
-    approxSize: "~18.0 MB",
-    fileName: "dict-zh-cn.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-zh-cn.json",
-  },
-  {
-    id: "zh-TW",
-    name: "Traditional Chinese",
-    nativeName: "國語辭典 / 繁體注釋 (教育部版)",
-    flag: "🇹🇼",
-    source: "國語辭典教育部修訂版",
-    entries: "287 000+",
-    approxSize: "~18.0 MB",
-    fileName: "dict-zh-tw.json",
-    downloadUrl: "https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/main/dicts/dict-zh-tw.json",
-  },
+  packEntry("en", "English", "English (CC-CEDICT)", "🇬🇧", "CC-CEDICT Open Corpus", "122 000+", "~42.3 MB", "cedict.json"),
+  packEntry("yue", "Cantonese", "廣東話 / 粵語 (Cantonese Jyutping)", "🇭🇰", "Hong Kong Cantonese Corpus & Jyutping Lexicon", "231 000+", "~17.3 MB", "dict-yue.json"),
+  packEntry("ru", "Russian", "Русский (БКРС / Большой словарь)", "🇷🇺", "БКРС / Большой китайско-русский словарь", "470 000+", "~33.6 MB", "dict-ru.json"),
+  packEntry("de", "German", "Deutsch (HanDeDict)", "🇩🇪", "HanDeDict (Chinesisch-Deutsches Wörterbuch)", "246 000+", "~13.2 MB", "dict-de.json"),
+  packEntry("fr", "French", "Français (CFDICT / CC-CEDICT Français)", "🇫🇷", "CFDICT (Chinois-Français) & C+DICT", "515 000+", "~25.9 MB", "dict-fr.json"),
+  packEntry("es", "Spanish", "Español (Gran Diccionario Chino-Español)", "🇪🇸", "Gran Diccionario Chino-Español (CEDICT-ES)", "475 000+", "~24.2 MB", "dict-es.json"),
+  packEntry("ja", "Japanese", "日本語 (中日辞書 / MJdic)", "🇯🇵", "MJdic Open Japanese Corpus & C+DICT", "465 000+", "~23.8 MB", "dict-ja.json"),
+  packEntry("ko", "Korean", "한국어 (한중사전 / C+DICT)", "🇰🇷", "CC-CPLUSDICT Korean & Hanja Lexicon", "365 000+", "~18.9 MB", "dict-ko.json"),
+  packEntry("vi", "Vietnamese", "Tiếng Việt (Từ điển Hán-Việt CVDICT)", "🇻🇳", "Từ điển Hán-Việt Open Corpus", "194 000+", "~12.9 MB", "dict-vi.json"),
+  packEntry("it", "Italian", "Italiano (Dizionario Cinese-Italiano)", "🇮🇹", "Il dizionario di Cinese Moderno & HSK", "315 000+", "~12.7 MB", "dict-it.json"),
+  packEntry("pt", "Portuguese", "Português (Dicionário Chinês-Português)", "🇵🇹", "Dicionário Chinês-Português C+DICT", "455 000+", "~23.1 MB", "dict-pt.json"),
+  packEntry("id", "Indonesian", "Bahasa Indonesia (Kamus Mandarin-Indonesia)", "🇮🇩", "Kamus Lengkap Mandarin-Indonesia C+DICT", "300 000+", "~16.1 MB", "dict-id.json"),
+  packEntry("th", "Thai", "ไทย (พจนานุกรมจีน-ไทย)", "🇹🇭", "พจนานุกรมจีน-ไทย ฉบับสมบูรณ์ C+DICT", "255 000+", "~25.7 MB", "dict-th.json"),
+  packEntry("ar", "Arabic", "العربية (القاموس الصيني العربي)", "🇸🇦", "القاموس الصيني العربي الحديث & HSK", "155 000+", "~7.9 MB", "dict-ar.json"),
+  packEntry("tr", "Turkish", "Türkçe (Çince-Türkçe Sözlük)", "🇹🇷", "Kapsamlı Çince-Türkçe Sözlük & HSK", "129 000+", "~5.5 MB", "dict-tr.json"),
+  packEntry("pl", "Polish", "Polski (Słownik chińsko-polski)", "🇵🇱", "Praktyczny słownik chińsko-polski & HSK", "279 000+", "~11.2 MB", "dict-pl.json"),
+  packEntry("nl", "Dutch", "Nederlands (Chinees-Nederlands Woordenboek)", "🇳🇱", "Chinees-Nederlands Handwoordenboek & HSK", "290 000+", "~11.2 MB", "dict-nl.json"),
+  packEntry("uk", "Ukrainian", "Українська (Китайсько-український словник)", "🇺🇦", "Сучасний китайсько-український словник & HSK", "214 000+", "~10.9 MB", "dict-uk.json"),
+  packEntry("hi", "Hindi", "हिन्दी (चीनी-हिन्दी शब्दкоश)", "🇮🇳", "आधुनिक चीनी-हिन्दी शब्दकोश", "39 000+", "~2.1 MB", "dict-hi.json"),
+  packEntry("zh-CN", "Simplified Chinese", "现代汉语规范释义 (新华字典)", "🇨🇳", "现代汉语词典 / 新华字典 / 规范语料库", "287 000+", "~18.0 MB", "dict-zh-cn.json"),
+  packEntry("zh-TW", "Traditional Chinese", "國語辭典 / 繁體注釋 (教育部版)", "🇹🇼", "國語辭典教育部修訂版", "287 000+", "~18.0 MB", "dict-zh-tw.json"),
 ];
 
 /**
- * Built-in high frequency core vocabulary translated into 20 languages.
- * Available instantly offline without downloading any packs!
+ * Downloads a JSON string from ordered mirror URLs, guaranteeing an Error instance on failure.
  */
-export const MULTILANG_CORE_VOCAB: Record<string, Partial<Record<string, string[]>>> = {
-  "你好": {
-    ru: ["здравствуйте", "привет"],
-    de: ["hallo", "guten tag"],
-    fr: ["bonjour", "salut"],
-    es: ["hola", "buenos días"],
-    ja: ["こんにちは", "おはよう"],
-    ko: ["안녕하세요", "안녕"],
-    vi: ["xin chào"],
-    it: ["ciao", "buongiorno"],
-    pt: ["olá", "bom dia"],
-    id: ["halo", "hai"],
-    th: ["สวัสดี"],
-    ar: ["مرحبا", "اهلا"],
-    tr: ["merhaba", "selam"],
-    pl: ["cześć", "dzień dobry"],
-    nl: ["hallo", "goedendag"],
-    uk: ["добридень", "привіт"],
-    hi: ["नमस्ते", "प्रणाम"],
-    "zh-CN": ["问候语，常用于初次见面或日常打招呼"],
-    "zh-TW": ["問候語，見面時禮貌打招呼"],
-  },
-  "谢谢": {
-    ru: ["спасибо", "благодарить"],
-    de: ["danke", "danken"],
-    fr: ["merci", "remercier"],
-    es: ["gracias", "agradecer"],
-    ja: ["ありがとう", "感謝する"],
-    ko: ["감사합니다", "고맙습니다"],
-    vi: ["cảm ơn"],
-    it: ["grazie", "ringraziare"],
-    pt: ["obrigado", "agradecer"],
-    id: ["terima kasih"],
-    th: ["ขอบคุณ"],
-    ar: ["شكرا", "يشكر"],
-    tr: ["teşekkür ederim", "sağ ol"],
-    pl: ["dziękuję", "dzięki"],
-    nl: ["dank je", "bedankt"],
-    uk: ["дякую", "спасибі"],
-    hi: ["धन्यवाद", "शुक्रिया"],
-    "zh-CN": ["表示感谢，致谢"],
-    "zh-TW": ["表示感謝、致謝"],
-  },
-  "再见": {
-    ru: ["до свидания", "пока"],
-    de: ["auf wiedersehen", "tschüss"],
-    fr: ["au revoir", "à bientôt"],
-    es: ["adiós", "hasta luego"],
-    ja: ["さようなら", "またね"],
-    ko: ["안녕히 계세요", "또 만나요"],
-    vi: ["tạm biệt", "hẹn gặp lại"],
-    it: ["arrivederci", "ciao"],
-    pt: ["adeus", "até logo"],
-    id: ["sampai jumpa", "selamat tinggal"],
-    th: ["ลาก่อน", "พบกันใหม่"],
-    ar: ["إلى اللقاء", "مع السلامة"],
-    tr: ["hoşça kal", "görüşürüz"],
-    pl: ["do widzenia", "żegnaj"],
-    nl: ["tot ziens", "dag"],
-    uk: ["до побачення", "бувай"],
-    hi: ["अलविदा", "फिर मिलेंगे"],
-    "zh-CN": ["分别时的告别语"],
-    "zh-TW": ["分別時的禮貌告別語"],
-  },
-  "老师": {
-    ru: ["учитель", "преподаватель"],
-    de: ["lehrer", "dozent"],
-    fr: ["professeur", "enseignant"],
-    es: ["profesor", "maestro"],
-    ja: ["先生", "せんせい", "教師"],
-    ko: ["선생님", "교사"],
-    vi: ["thầy giáo", "cô giáo", "giáo viên"],
-    it: ["insegnante", "professore"],
-    pt: ["professor", "mestre"],
-    id: ["guru", "pengajar"],
-    th: ["ครู", "อาจารย์"],
-    ar: ["معلم", "أستاذ"],
-    tr: ["öğretmen", "hoca"],
-    pl: ["nauczyciel"],
-    nl: ["leraar", "docent"],
-    uk: ["вчитель", "викладач"],
-    hi: ["शिक्षक", "अध्यापक"],
-  },
-  "学生": {
-    ru: ["студент", "ученик"],
-    de: ["student", "schüler"],
-    fr: ["étudiant", "élève"],
-    es: ["estudiante", "alumno"],
-    ja: ["学生", "がくせい", "生徒"],
-    ko: ["학생"],
-    vi: ["học sinh", "sinh viên"],
-    it: ["studente", "alunno"],
-    pt: ["estudante", "aluno"],
-    id: ["murid", "siswa", "mahasiswa"],
-    th: ["นักเรียน", "นักศึกษา"],
-    ar: ["طالب", "تلميذ"],
-    tr: ["öğrenci", "talebe"],
-    pl: ["student", "uczeń"],
-    nl: ["student", "leerling"],
-    uk: ["студент", "учень"],
-    hi: ["छात्र", "विद्यार्थी"],
-  },
-  "朋友": {
-    ru: ["друг", "приятель"],
-    de: ["freund", "kamerad"],
-    fr: ["ami", "copain"],
-    es: ["amigo", "compañero"],
-    ja: ["友達", "ともだち", "友人"],
-    ko: ["친구", "벗"],
-    vi: ["bạn bè", "người bạn"],
-    it: ["amico", "compagno"],
-    pt: ["amigo", "companheiro"],
-    id: ["teman", "sahabat"],
-    th: ["เพื่อน", "มิตร"],
-    ar: ["صديق", "رفيق"],
-    tr: ["arkadaş", "dost"],
-    pl: ["przyjaciel", "kolega"],
-    nl: ["vriend", "kameraad"],
-    uk: ["друг", "приятель"],
-    hi: ["मित्र", "दोस्त"],
-  },
-  "水": {
-    ru: ["вода"],
-    de: ["wasser"],
-    fr: ["eau"],
-    es: ["agua"],
-    ja: ["水", "みず"],
-    ko: ["물"],
-    vi: ["nước"],
-    it: ["acqua"],
-    pt: ["água"],
-    id: ["air"],
-    th: ["น้ำ"],
-    ar: ["ماء", "مياه"],
-    tr: ["su"],
-    pl: ["woda"],
-    nl: ["water"],
-    uk: ["вода"],
-    hi: ["पानी", "जल"],
-  },
-  "茶": {
-    ru: ["чай"],
-    de: ["tee"],
-    fr: ["thé"],
-    es: ["té"],
-    ja: ["お茶", "茶", "おちゃ"],
-    ko: ["차"],
-    vi: ["trà", "chè"],
-    it: ["tè"],
-    pt: ["chá"],
-    id: ["teh"],
-    th: ["ชา"],
-    ar: ["شاي"],
-    tr: ["çay"],
-    pl: ["herbata"],
-    nl: ["thee"],
-    uk: ["чай"],
-    hi: ["चाय"],
-  },
-  "人": {
-    ru: ["человек", "люди"],
-    de: ["mensch", "person", "leute"],
-    fr: ["personne", "homme", "gens"],
-    es: ["persona", "hombre", "gente"],
-    ja: ["人", "ひと"],
-    ko: ["사람", "인간"],
-    vi: ["người"],
-    it: ["persona", "uomo", "gente"],
-    pt: ["pessoa", "homem", "gente"],
-    id: ["orang", "manusia"],
-    th: ["คน", "มนุษย์"],
-    ar: ["إنسان", "شخص", "ناس"],
-    tr: ["insan", "kişi"],
-    pl: ["człowiek", "ludzie"],
-    nl: ["mens", "persoon"],
-    uk: ["людина", "люди"],
-    hi: ["व्यक्ति", "लोग"],
-  },
-  "吃": {
-    ru: ["есть", "кушать"],
-    de: ["essen", "speisen"],
-    fr: ["manger"],
-    es: ["comer"],
-    ja: ["食べる", "たべる"],
-    ko: ["먹다"],
-    vi: ["ăn"],
-    it: ["mangiare"],
-    pt: ["comer"],
-    id: ["makan"],
-    th: ["กิน", "ทาน"],
-    ar: ["يأكل", "أكل"],
-    tr: ["yemek"],
-    pl: ["jeść"],
-    nl: ["eten"],
-    uk: ["їсти"],
-    hi: ["खाना"],
-  },
-  "喝": {
-    ru: ["пить"],
-    de: ["trinken"],
-    fr: ["boire"],
-    es: ["beber", "tomar"],
-    ja: ["飲む", "のむ"],
-    ko: ["마시다"],
-    vi: ["uống"],
-    it: ["bere"],
-    pt: ["beber"],
-    id: ["minum"],
-    th: ["ดื่ม"],
-    ar: ["يشرب", "شرب"],
-    tr: ["içmek"],
-    pl: ["pić"],
-    nl: ["drinken"],
-    uk: ["пити"],
-    hi: ["पीना"],
-  },
-  "学习": {
-    ru: ["учиться", "изучать", "учёба"],
-    de: ["lernen", "studieren"],
-    fr: ["apprendre", "étudier"],
-    es: ["estudiar", "aprender"],
-    ja: ["勉強する", "学習する", "学ぶ"],
-    ko: ["공부하다", "배우다"],
-    vi: ["học tập", "nghiên cứu"],
-    it: ["studiare", "imparare"],
-    pt: ["estudar", "aprender"],
-    id: ["belajar", "mempelajari"],
-    th: ["เรียน", "ศึกษา"],
-    ar: ["يتعلم", "يدرس"],
-    tr: ["öğrenmek", "çalışmak"],
-    pl: ["uczyć się", "studiować"],
-    nl: ["leren", "studeren"],
-    uk: ["вчитися", "вивчати"],
-    hi: ["सीखना", "पढ़ना"],
-  },
-  "工作": {
-    ru: ["работать", "работа"],
-    de: ["arbeiten", "arbeit", "beruf"],
-    fr: ["travailler", "travail"],
-    es: ["trabajar", "trabajo"],
-    ja: ["働く", "仕事", "勤務する"],
-    ko: ["일하다", "일", "직업"],
-    vi: ["làm việc", "công việc"],
-    it: ["lavorare", "lavoro"],
-    pt: ["trabalhar", "trabalho"],
-    id: ["bekerja", "pekerjaan"],
-    th: ["ทำงาน", "งาน"],
-    ar: ["يعمل", "عمل"],
-    tr: ["çalışmak", "iş"],
-    pl: ["pracować", "praca"],
-    nl: ["werken", "werk"],
-    uk: ["працювати", "робота"],
-    hi: ["काम करना", "काम"],
-  },
-  "钱": {
-    ru: ["деньги"],
-    de: ["geld"],
-    fr: ["argent"],
-    es: ["dinero"],
-    ja: ["お金", "金", "おかね"],
-    ko: ["돈"],
-    vi: ["tiền"],
-    it: ["soldi", "denaro"],
-    pt: ["dinheiro"],
-    id: ["uang"],
-    th: ["เงิน"],
-    ar: ["مال", "نقود"],
-    tr: ["para"],
-    pl: ["pieniądze"],
-    nl: ["geld"],
-    uk: ["гроші"],
-    hi: ["पैसा", "धन"],
-  },
-  "时间": {
-    ru: ["время"],
-    de: ["zeit"],
-    fr: ["temps"],
-    es: ["tiempo"],
-    ja: ["時間", "じかん"],
-    ko: ["시간"],
-    vi: ["thời gian"],
-    it: ["tempo"],
-    pt: ["tempo"],
-    id: ["waktu"],
-    th: ["เวลา"],
-    ar: ["وقت", "زمن"],
-    tr: ["zaman", "vakit"],
-    pl: ["czas"],
-    nl: ["tijd"],
-    uk: ["час"],
-    hi: ["समय", "वक़्त"],
-  },
-  "爱": {
-    ru: ["любить", "любовь"],
-    de: ["lieben", "liebe"],
-    fr: ["aimer", "amour"],
-    es: ["amar", "amor"],
-    ja: ["愛する", "愛", "あい"],
-    ko: ["사랑하다", "사랑"],
-    vi: ["yêu", "tình yêu"],
-    it: ["amare", "amore"],
-    pt: ["amar", "amor"],
-    id: ["cinta", "mencintai"],
-    th: ["รัก", "ความรัก"],
-    ar: ["يحب", "حب"],
-    tr: ["sevmek", "aşk"],
-    pl: ["kochać", "miłość"],
-    nl: ["houden van", "liefde"],
-    uk: ["любити", "кохати", "любов"],
-    hi: ["प्यार", "प्रेम"],
-  },
-  "喜欢": {
-    ru: ["нравиться", "любить"],
-    de: ["mögen", "gefallen"],
-    fr: ["aimer", "apprécier"],
-    es: ["gustar"],
-    ja: ["好き", "好む", "すき"],
-    ko: ["좋아하다"],
-    vi: ["thích"],
-    it: ["piacere"],
-    pt: ["gostar"],
-    id: ["suka", "menyukai"],
-    th: ["ชอบ"],
-    ar: ["يعجبه"],
-    tr: ["beğenmek", "hoşlanmak"],
-    pl: ["lubić"],
-    nl: ["leuk vinden"],
-    uk: ["подобатися", "любити"],
-    hi: ["पसंद करना"],
-  },
-  "大": {
-    ru: ["большой", "крупный"],
-    de: ["groß"],
-    fr: ["grand", "gros"],
-    es: ["grande"],
-    ja: ["大きい", "おおきい", "大"],
-    ko: ["크다", "큰"],
-    vi: ["lớn", "to"],
-    it: ["grande"],
-    pt: ["grande"],
-    id: ["besar"],
-    th: ["ใหญ่"],
-    ar: ["كبير"],
-    tr: ["büyük"],
-    pl: ["duży", "wielki"],
-    nl: ["groot"],
-    uk: ["великий"],
-    hi: ["बड़ा"],
-  },
-  "小": {
-    ru: ["маленький", "небольшой"],
-    de: ["klein"],
-    fr: ["petit"],
-    es: ["pequeño"],
-    ja: ["小さい", "ちいさい", "小"],
-    ko: ["작다", "작은"],
-    vi: ["nhỏ", "bé"],
-    it: ["piccolo"],
-    pt: ["pequeno"],
-    id: ["kecil"],
-    th: ["เล็ก"],
-    ar: ["صغير"],
-    tr: ["küçük"],
-    pl: ["mały"],
-    nl: ["klein"],
-    uk: ["маленький"],
-    hi: ["छोटा"],
-  },
-  "好": {
-    ru: ["хороший", "хорошо"],
-    de: ["gut"],
-    fr: ["bon", "bien"],
-    es: ["bueno", "bien"],
-    ja: ["良い", "いい", "よい"],
-    ko: ["좋다", "좋은"],
-    vi: ["tốt", "hay"],
-    it: ["buono", "bene"],
-    pt: ["bom", "bem"],
-    id: ["bagus", "baik"],
-    th: ["ดี"],
-    ar: ["جيد", "حسن"],
-    tr: ["iyi", "güzel"],
-    pl: ["dobry"],
-    nl: ["goed"],
-    uk: ["добрий", "гарний"],
-    hi: ["अच्छा"],
-  },
-  "书": {
-    ru: ["книга"],
-    de: ["buch"],
-    fr: ["livre"],
-    es: ["libro"],
-    ja: ["本", "ほん"],
-    ko: ["책"],
-    vi: ["sách"],
-    it: ["libro"],
-    pt: ["livro"],
-    id: ["buku"],
-    th: ["หนังสือ"],
-    ar: ["كتاب"],
-    tr: ["kitap"],
-    pl: ["książka"],
-    nl: ["boek"],
-    uk: ["книга"],
-    hi: ["किताब", "पुस्तक"],
-  },
-  "家": {
-    ru: ["дом", "семья"],
-    de: ["zuhause", "familie", "heim"],
-    fr: ["maison", "famille"],
-    es: ["casa", "familia"],
-    ja: ["家", "家族", "いえ"],
-    ko: ["집", "가족"],
-    vi: ["nhà", "gia đình"],
-    it: ["casa", "famiglia"],
-    pt: ["casa", "família"],
-    id: ["rumah", "keluarga"],
-    th: ["บ้าน", "ครอบครัว"],
-    ar: ["بيت", "عائلة"],
-    tr: ["ev", "aile"],
-    pl: ["dom", "rodzina"],
-    nl: ["huis", "familie"],
-    uk: ["дім", "родина"],
-    hi: ["घर", "परिवार"],
-  },
-  "中国": {
-    ru: ["Китай", "КНР"],
-    de: ["China"],
-    fr: ["Chine"],
-    es: ["China"],
-    ja: ["中国", "ちゅうごく"],
-    ko: ["중국"],
-    vi: ["Trung Quốc"],
-    it: ["Cina"],
-    pt: ["China"],
-    id: ["Tiongkok", "Cina"],
-    th: ["ประเทศจีน"],
-    ar: ["الصين"],
-    tr: ["Çin"],
-    pl: ["Chiny"],
-    nl: ["China"],
-    uk: ["Китай"],
-    hi: ["चीन"],
-  },
-  "去": {
-    ru: ["идти", "ехать", "отправляться"],
-    de: ["gehen", "fahren"],
-    fr: ["aller", "partir"],
-    es: ["ir"],
-    ja: ["行く", "いく"],
-    ko: ["가다"],
-    vi: ["đi"],
-    it: ["andare"],
-    pt: ["ir"],
-    id: ["pergi"],
-    th: ["ไป"],
-    ar: ["يذهب", "ذهب"],
-    tr: ["gitmek"],
-    pl: ["iść", "jechać"],
-    nl: ["gaan"],
-    uk: ["йти", "їхати"],
-    hi: ["जाना"],
-  },
-  "来": {
-    ru: ["приходить", "приезжать"],
-    de: ["kommen"],
-    fr: ["venir"],
-    es: ["venir"],
-    ja: ["来る", "くる"],
-    ko: ["오다"],
-    vi: ["đến", "tới"],
-    it: ["venire"],
-    pt: ["vir"],
-    id: ["datang"],
-    th: ["มา"],
-    ar: ["يأتي", "أتى"],
-    tr: ["gelmek"],
-    pl: ["przychodzić", "przyjechać"],
-    nl: ["komen"],
-    uk: ["приходити", "приїжджати"],
-    hi: ["आना"],
-  },
-  "看": {
-    ru: ["смотреть", "читать", "видеть"],
-    de: ["sehen", "schauen", "lesen"],
-    fr: ["regarder", "voir", "lire"],
-    es: ["mirar", "ver", "leer"],
-    ja: ["見る", "みる"],
-    ko: ["보다"],
-    vi: ["nhìn", "xem", "đọc"],
-    it: ["guardare", "vedere", "leggere"],
-    pt: ["olhar", "ver", "ler"],
-    id: ["melihat", "menonton"],
-    th: ["ดู", "มอง"],
-    ar: ["ينظر", "يرى", "يقرا"],
-    tr: ["bakmak", "görmek", "okumak"],
-    pl: ["patrzeć", "widzieć", "czytać"],
-    nl: ["kijken", "zien", "lezen"],
-    uk: ["дивитися", "бачити", "читати"],
-    hi: ["देखना", "पढ़ना"],
-  },
-  "听": {
-    ru: ["слушать", "слышать"],
-    de: ["hören", "zuhören"],
-    fr: ["écouter", "entendre"],
-    es: ["escuchar", "oír"],
-    ja: ["聞く", "きく"],
-    ko: ["듣다"],
-    vi: ["nghe"],
-    it: ["ascoltare", "sentire"],
-    pt: ["ouvir", "escutar"],
-    id: ["mendengar"],
-    th: ["ฟัง"],
-    ar: ["يسمع", "سمع"],
-    tr: ["dinlemek", "duymak"],
-    pl: ["słuchać", "słyszeć"],
-    nl: ["luisteren", "horen"],
-    uk: ["слухати", "чути"],
-    hi: ["सुनना"],
-  },
-  "说": {
-    ru: ["говорить", "сказать"],
-    de: ["sprechen", "sagen"],
-    fr: ["parler", "dire"],
-    es: ["hablar", "decir"],
-    ja: ["話す", "言う", "はなす"],
-    ko: ["말하다"],
-    vi: ["nói"],
-    it: ["parlare", "dire"],
-    pt: ["falar", "dizer"],
-    id: ["berbicara", "mengatakan"],
-    th: ["พูด", "บอก"],
-    ar: ["يتكلم", "يقول"],
-    tr: ["konuşmak", "söylemek"],
-    pl: ["mówić", "powiedzieć"],
-    nl: ["spreken", "zeggen"],
-    uk: ["говорити", "сказати"],
-    hi: ["बोलना", "कहना"],
-  },
-  "做": {
-    ru: ["делать", "изготавливать"],
-    de: ["machen", "tun"],
-    fr: ["faire"],
-    es: ["hacer"],
-    ja: ["する", "作る", "つくる"],
-    ko: ["하다", "만들다"],
-    vi: ["làm"],
-    it: ["fare"],
-    pt: ["fazer"],
-    id: ["membuat", "melakukan"],
-    th: ["ทำ"],
-    ar: ["يفعل", "صنع"],
-    tr: ["yapmak"],
-    pl: ["robić"],
-    nl: ["doen", "maken"],
-    uk: ["робити"],
-    hi: ["करना", "बनाना"],
-  },
-  "买": {
-    ru: ["покупать", "купить"],
-    de: ["kaufen"],
-    fr: ["acheter"],
-    es: ["comprar"],
-    ja: ["買う", "かう"],
-    ko: ["사다"],
-    vi: ["mua"],
-    it: ["comprare", "acquistare"],
-    pt: ["comprar"],
-    id: ["membeli"],
-    th: ["ซื้อ"],
-    ar: ["يشتري", "شراء"],
-    tr: ["satın almak", "almak"],
-    pl: ["kupować", "kupić"],
-    nl: ["kopen"],
-    uk: ["купувати", "купити"],
-    hi: ["खरीदना"],
-  },
-  "猫": {
-    ru: ["кот", "кошка"],
-    de: ["katze"],
-    fr: ["chat"],
-    es: ["gato"],
-    ja: ["猫", "ねこ"],
-    ko: ["고양이"],
-    vi: ["mèo"],
-    it: ["gatto"],
-    pt: ["gato"],
-    id: ["kucing"],
-    th: ["แมว"],
-    ar: ["قطة", "قط"],
-    tr: ["kedi"],
-    pl: ["kot"],
-    nl: ["kat"],
-    uk: ["кіт", "кішка"],
-    hi: ["बिल्ली"],
-  },
-  "狗": {
-    ru: ["собака", "пёс"],
-    de: ["hund"],
-    fr: ["chien"],
-    es: ["perro"],
-    ja: ["犬", "いぬ"],
-    ko: ["개", "강아지"],
-    vi: ["chó"],
-    it: ["cane"],
-    pt: ["cachorro", "cão"],
-    id: ["anjing"],
-    th: ["หมา", "สุนัข"],
-    ar: ["كلب"],
-    tr: ["köpek"],
-    pl: ["pies"],
-    nl: ["hond"],
-    uk: ["собака", "пес"],
-    hi: ["कुत्ता"],
-  },
-  "我": {
-    ru: ["я", "меня", "мне"],
-    de: ["ich", "mich", "mir"],
-    fr: ["je", "moi"],
-    es: ["yo", "mí"],
-    ja: ["私", "わたし", "僕", "ぼく"],
-    ko: ["나", "저"],
-    vi: ["tôi", "mình"],
-    it: ["io", "me"],
-    pt: ["eu", "mim"],
-    id: ["saya", "aku"],
-    th: ["ฉัน", "ผม"],
-    ar: ["أنا"],
-    tr: ["ben"],
-    pl: ["ja", "mnie"],
-    nl: ["ik", "mij"],
-    uk: ["я", "мене"],
-    hi: ["मैं", "मुझे"],
-  },
-  "你": {
-    ru: ["ты", "тебя", "вы"],
-    de: ["du", "dich", "dir", "sie"],
-    fr: ["tu", "toi", "vous"],
-    es: ["tú", "te", "usted"],
-    ja: ["あなた", "君", "きみ"],
-    ko: ["너", "당신"],
-    vi: ["bạn", "anh", "chị"],
-    it: ["tu", "te", "lei"],
-    pt: ["você", "tu"],
-    id: ["kamu", "anda"],
-    th: ["คุณ", "เธอ"],
-    ar: ["أنت"],
-    tr: ["sen", "siz"],
-    pl: ["ty", "ciebie"],
-    nl: ["jij", "je", "u"],
-    uk: ["ти", "тебе", "ви"],
-    hi: ["तुम", "आप"],
-  },
-  "他": {
-    ru: ["он", "его", "ему"],
-    de: ["er", "ihn", "ihm"],
-    fr: ["il", "lui"],
-    es: ["él"],
-    ja: ["彼", "かれ"],
-    ko: ["그"],
-    vi: ["anh ấy"],
-    it: ["lui", "egli"],
-    pt: ["ele"],
-    id: ["dia"],
-    th: ["เขา"],
-    ar: ["هو"],
-    tr: ["o"],
-    pl: ["on", "jego"],
-    nl: ["hij", "hem"],
-    uk: ["він", "його"],
-    hi: ["वह", "उसे"],
-  },
-  "她": {
-    ru: ["она", "её", "ей"],
-    de: ["sie", "ihr"],
-    fr: ["elle"],
-    es: ["ella"],
-    ja: ["彼女", "かのじょ"],
-    ko: ["그녀"],
-    vi: ["cô ấy"],
-    it: ["lei", "essa"],
-    pt: ["ela"],
-    id: ["dia (wanita)"],
-    th: ["เธอ", "หล่อน"],
-    ar: ["هي"],
-    tr: ["o (kadın)"],
-    pl: ["ona", "jej"],
-    nl: ["zij", "haar"],
-    uk: ["вона", "її"],
-    hi: ["वह (स्त्री)"],
-  },
-  "我们": {
-    ru: ["мы", "нас", "нам"],
-    de: ["wir", "uns"],
-    fr: ["nous"],
-    es: ["nosotros"],
-    ja: ["私たち", "わたしたち"],
-    ko: ["우리", "저희"],
-    vi: ["chúng tôi", "chúng ta"],
-    it: ["noi"],
-    pt: ["nós"],
-    id: ["kami", "kita"],
-    th: ["พวกเรา"],
-    ar: ["نحن"],
-    tr: ["biz"],
-    pl: ["my", "nas"],
-    nl: ["wij", "we"],
-    uk: ["ми", "нас"],
-    hi: ["हम", "हम सब"],
-  },
-  "今天": {
-    ru: ["сегодня"],
-    de: ["heute"],
-    fr: ["aujourd'hui"],
-    es: ["hoy"],
-    ja: ["今日", "きょう"],
-    ko: ["오늘"],
-    vi: ["hôm nay"],
-    it: ["oggi"],
-    pt: ["hoje"],
-    id: ["hari ini"],
-    th: ["วันนี้"],
-    ar: ["اليوم"],
-    tr: ["bugün"],
-    pl: ["dzisiaj", "dziś"],
-    nl: ["vandaag"],
-    uk: ["сьогодні"],
-    hi: ["आज"],
-  },
-  "明天": {
-    ru: ["завтра"],
-    de: ["morgen"],
-    fr: ["demain"],
-    es: ["mañana"],
-    ja: ["明日", "あした", "みょうにち"],
-    ko: ["내일"],
-    vi: ["ngày mai"],
-    it: ["domani"],
-    pt: ["amanhã"],
-    id: ["besok"],
-    th: ["พรุ่งนี้"],
-    ar: ["غدا", "بكرة"],
-    tr: ["yarın"],
-    pl: ["jutro"],
-    nl: ["morgen"],
-    uk: ["завтра"],
-    hi: ["कल", "आने वाला कल"],
-  },
-  "昨天": {
-    ru: ["вчера"],
-    de: ["gestern"],
-    fr: ["hier"],
-    es: ["ayer"],
-    ja: ["昨日", "きのう"],
-    ko: ["어제"],
-    vi: ["hôm qua"],
-    it: ["ieri"],
-    pt: ["ontem"],
-    id: ["kemarin"],
-    th: ["เมื่อวาน"],
-    ar: ["أمس", "البارحة"],
-    tr: ["dün"],
-    pl: ["wczoraj"],
-    nl: ["gisteren"],
-    uk: ["вчора"],
-    hi: ["कल", "बीता हुआ कल"],
-  },
-};
+export async function fetchJsonFromMirrors(
+  urls: string[],
+  fallbackErrorMsg: string
+): Promise<string> {
+  let lastError: unknown = null;
+
+  for (const url of urls) {
+    try {
+      const attempt = await requestUrl({ url });
+      if (attempt?.text && attempt.text.trim().startsWith("{")) {
+        return attempt.text;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error(typeof lastError === "string" ? lastError : fallbackErrorMsg);
+}
 
 /**
- * Returns the path of a dictionary file inside the plugin folder.
+ * Returns standard mirror URLs for any dictionary file in the repository's dicts/ directory.
  */
+export function buildDictMirrorUrls(fileName: string, primaryUrl?: string): string[] {
+  const urls = [
+    primaryUrl || `${RAW_MAIN_BASE}/${fileName}`,
+    `https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/${fileName}`,
+    `https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/${fileName}`,
+  ];
+  return Array.from(new Set(urls));
+}
+
 export function getDictPackFilePath(pluginDir: string, fileName: string): string {
   return `${pluginDir}/dicts/${fileName}`;
 }
 
-/**
- * Returns the path of an existing dictionary file (checks dicts/ folder first, then root folder as fallback).
- */
 export async function getExistingDictPackPath(
   adapter: DataAdapter,
   pluginDir: string,
   fileName: string
 ): Promise<string | null> {
   const dictsPath = `${pluginDir}/dicts/${fileName}`;
-  if (await adapter.exists(dictsPath)) {
-    return dictsPath;
-  }
+  if (await adapter.exists(dictsPath)) return dictsPath;
   const rootPath = `${pluginDir}/${fileName}`;
-  if (await adapter.exists(rootPath)) {
-    return rootPath;
-  }
+  if (await adapter.exists(rootPath)) return rootPath;
   return null;
 }
 
-/**
- * Checks if a dictionary pack is already downloaded and saved locally.
- */
 export async function isDictPackInstalled(adapter: DataAdapter, pluginDir: string, packId: string): Promise<boolean> {
   const pack = DICT_PACKS.find((p) => p.id === packId);
   if (!pack) return false;
-
-  const existingPath = await getExistingDictPackPath(adapter, pluginDir, pack.fileName);
-  return existingPath !== null;
+  return (await getExistingDictPackPath(adapter, pluginDir, pack.fileName)) !== null;
 }
 
-/**
- * Downloads a dictionary pack on demand via requestUrl and writes it into the vault.
- */
 export async function downloadDictPack(
   adapter: DataAdapter,
   pluginDir: string,
@@ -1076,41 +139,17 @@ export async function downloadDictPack(
   new Notice(`Chinese Popover: Загрузка словаря ${pack.flag} ${pack.name}...`, 4000);
 
   try {
-    // Ensure dicts folder exists
     const dictsFolder = `${pluginDir}/dicts`;
     if (!(await adapter.exists(dictsFolder))) {
       await adapter.mkdir(dictsFolder);
     }
 
-    const mirrors = [
-      pack.downloadUrl,
-      `https://cdn.jsdelivr.net/gh/Kantulaev/obsidian-chinese-popover@main/dicts/${pack.fileName}`,
-      `https://raw.githubusercontent.com/Kantulaev/obsidian-chinese-popover/master/dicts/${pack.fileName}`,
-    ];
+    const text = await fetchJsonFromMirrors(
+      buildDictMirrorUrls(pack.fileName, pack.downloadUrl),
+      `Failed to download ${pack.fileName} from mirrors`
+    );
 
-    let res: { text: string } | null = null;
-    let lastError: unknown = null;
-
-    for (const url of mirrors) {
-      try {
-        const attempt = await requestUrl({ url });
-        if (attempt && attempt.text && attempt.text.trim().startsWith("{")) {
-          res = attempt;
-          break;
-        }
-      } catch (err) {
-        lastError = err;
-      }
-    }
-
-    if (!res || !res.text) {
-      if (lastError instanceof Error) {
-        throw lastError;
-      }
-      throw new Error(typeof lastError === "string" ? lastError : "Failed to download dictionary pack from mirrors");
-    }
-
-    await adapter.write(targetPath, res.text);
+    await adapter.write(targetPath, text);
     new Notice(`Chinese Popover: Словарь ${pack.flag} ${pack.name} успешно загружен!`, 5000);
     return true;
   } catch (err) {
@@ -1120,9 +159,6 @@ export async function downloadDictPack(
   }
 }
 
-/**
- * Deletes a downloaded dictionary pack to free up disk space.
- */
 export async function deleteDictPack(
   adapter: DataAdapter,
   pluginDir: string,
@@ -1132,31 +168,23 @@ export async function deleteDictPack(
   if (!pack) return false;
 
   let deleted = false;
-  const dictsPath = `${pluginDir}/dicts/${pack.fileName}`;
-  const rootPath = `${pluginDir}/${pack.fileName}`;
-  try {
-    if (await adapter.exists(dictsPath)) {
-      await adapter.remove(dictsPath);
-      deleted = true;
+  for (const path of [`${pluginDir}/dicts/${pack.fileName}`, `${pluginDir}/${pack.fileName}`]) {
+    try {
+      if (await adapter.exists(path)) {
+        await adapter.remove(path);
+        deleted = true;
+      }
+    } catch (err) {
+      console.error(`[Chinese Dict] Failed to delete pack ${packId} at ${path}:`, err);
     }
-    if (await adapter.exists(rootPath)) {
-      await adapter.remove(rootPath);
-      deleted = true;
-    }
-    if (deleted) {
-      new Notice(`Chinese Popover: Словарь ${pack.flag} ${pack.name} удален с диска.`, 4000);
-      return true;
-    }
-    return false;
-  } catch (err) {
-    console.error(`[Chinese Dict] Failed to delete pack ${packId}:`, err);
-    return false;
   }
+
+  if (deleted) {
+    new Notice(`Chinese Popover: Словарь ${pack.flag} ${pack.name} удален с диска.`, 4000);
+  }
+  return deleted;
 }
 
-/**
- * Reads and parses a downloaded dictionary pack.
- */
 export async function loadDictPackData(
   adapter: DataAdapter,
   pluginDir: string,
@@ -1167,9 +195,8 @@ export async function loadDictPackData(
 
   try {
     const existingPath = await getExistingDictPackPath(adapter, pluginDir, pack.fileName);
-    if (existingPath && await adapter.exists(existingPath)) {
-      const content = await adapter.read(existingPath);
-      return JSON.parse(content) as Record<string, string[]>;
+    if (existingPath) {
+      return JSON.parse(await adapter.read(existingPath)) as Record<string, string[]>;
     }
   } catch (err) {
     console.warn(`[Chinese Dict] Failed to read dictionary pack ${packId}:`, err);

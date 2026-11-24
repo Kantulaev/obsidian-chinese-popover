@@ -12,6 +12,7 @@ import { getRawDefinitionsList } from "./russian-dict.ts";
 import { detectPinyinTone, detectJyutpingTone, getToneColor } from "./tones.ts";
 import { getCharacterComponents, getCharacterRadical, getRadicalMeaning } from "./radicals.ts";
 import { t, getActiveLanguage } from "./i18n/index.ts";
+import { formatPhoneticLabel } from "./utils.ts";
 
 export interface ContentBounds {
   left: number;
@@ -374,23 +375,13 @@ export class DictTooltip {
       )
     );
 
-    const pinyinText = formatPinyin(
-      match.entries[0]?.pinyin || "",
+    const phonetics = formatPhoneticLabel(
+      firstEntry?.pinyin || "",
+      firstEntry?.jyutping,
+      settings.phoneticDisplay,
+      settings.dialect,
       settings.showAccentedPinyin
     );
-    const jyutping = match.entries[0]?.jyutping || "";
-
-    let phonetics = pinyinText;
-    if (settings.phoneticDisplay === "both" && jyutping) {
-      phonetics = `${pinyinText} / ${jyutping}`;
-    } else if (settings.phoneticDisplay === "jyutping" && jyutping) {
-      phonetics = jyutping;
-    } else if (settings.phoneticDisplay === "dialect_auto") {
-      phonetics =
-        settings.dialect === "cantonese" && jyutping
-          ? `${pinyinText} / ${jyutping}`
-          : pinyinText;
-    }
 
     const defsText = this.formatConciseDefinitions(
       match.entries,

@@ -1,16 +1,11 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type ChineseHoverDictPlugin from "./main.ts";
 import { ChineseFontPreset, ChineseFontScope } from "./font.ts";
-import {
-  AnkiConnectSettings,
-  checkAnkiConnect,
-  DEFAULT_ANKI_SETTINGS,
-  generateAnkiTsv,
-} from "./anki.ts";
-import { generatePlecoFlashcards } from "./pleco.ts";
+import { AnkiConnectSettings, checkAnkiConnect, DEFAULT_ANKI_SETTINGS } from "./anki.ts";
 import { WorksheetModal } from "./worksheet.ts";
 import { SUPPORTED_LANGUAGES, t, setActiveLanguage } from "./i18n/index.ts";
 import { DICT_PACKS } from "./dict-packs.ts";
+import { exportVocabularyFile } from "./utils.ts";
 
 export type ChineseDialect = "cantonese" | "mandarin";
 export type TriggerMode = "dblclick" | "hover_modifier" | "hover" | "command_only";
@@ -159,7 +154,6 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   vocabularySort: "date_desc",
 
   selectCantonesePhrases: false,
-
   readerMode: false,
 
   chineseFontFamily: "default",
@@ -199,9 +193,7 @@ interface AppWithSetting extends App {
     open(): void;
     openTabById(id: string): void;
     activeTab?: {
-      searchComponent?: {
-        setValue(val: string): void;
-      };
+      searchComponent?: { setValue(val: string): void };
       updateHotkeyVisibility?(): void;
     };
   };
@@ -209,6 +201,7 @@ interface AppWithSetting extends App {
 
 export class ChineseDictSettingTab extends PluginSettingTab {
   plugin: ChineseHoverDictPlugin;
+  private dictFilterQuery: string = "";
 
   constructor(app: App, plugin: ChineseHoverDictPlugin) {
     super(app, plugin);
@@ -219,799 +212,648 @@ export class ChineseDictSettingTab extends PluginSettingTab {
     this.renderSettings();
   }
 
+  private async saveAndRefresh(refreshTooltip: boolean = true): Promise<void> {
+    await this.plugin.saveSettings();
+    if (refreshTooltip && this.plugin.tooltip.getIsOpen()) {
+      this.plugin.tooltip.refresh(this.plugin.settings);
+    }
+  }
+
+  private addToggle(
+    container: HTMLElement,
+    name: string,
+    desc: string,
+    value: boolean,
+    onChange: (val: boolean) => Promise<void> | void,
+    refreshTooltip: boolean = true
+  ): Setting {
+    return new Setting(container)
+      .setName(name)
+      .setDesc(desc)
+      .addToggle((toggle) =>
+        toggle.setValue(value).onChange(async (val) => {
+          await onChange(val);
+          await this.saveAndRefresh(refreshTooltip);
+        })
+      );
+  }
+
+  private addDropdown(
+    container: HTMLElement,
+    name: string,
+    desc: string,
+    options: Array<[string, string]>,
+    value: string,
+    onChange: (val: string) => Promise<void> | void,
+    refreshTooltip: boolean = true,
+    rerender: boolean = false
+  ): Setting {
+    return new Setting(container)
+      .setName(name)
+      .setDesc(desc)
+      .addDropdown((dropdown) => {
+        for (const [optVal, optLabel] of options) {
+          dropdown.addOption(optVal, optLabel);
+        }
+        dropdown.setValue(value).onChange(async (val) => {
+          await onChange(val);
+          await this.saveAndRefresh(refreshTooltip);
+          if (rerender) this.renderSettings();
+        });
+      });
+  }
+
+  private addSlider(
+    container: HTMLElement,
+    name: string,
+    desc: string,
+    min: number,
+    max: number,
+    step: number,
+    value: number,
+    onChange: (val: number) => void,
+    refreshTooltip: boolean = true
+  ): Setting {
+    return new Setting(container)
+      .setName(name)
+      .setDesc(desc)
+      .addSlider((slider) =>
+        slider
+          .setLimits(min, max, step)
+          .setValue(value)
+          .onChange(async (val) => {
+            onChange(val);
+            await this.saveAndRefresh(refreshTooltip);
+          })
+      );
+  }
+
+  private getFontPresetOptions(includeSameDefault: boolean = false): Array<[string, string]> {
+    return [
+      ["default", includeSameDefault ? t("settings.reader_font_same") : t("settings.font_default")],
+      ["kaiti", t("settings.font_kaiti")],
+      ["songti", t("settings.font_songti")],
+      ["heiti", t("settings.font_heiti")],
+      ["fangsong", t("settings.font_fangsong")],
+      ["wenkai", t("settings.font_wenkai")],
+      ["custom", t("settings.font_custom")],
+    ];
+  }
+
+  private renderHeroBar(containerEl: HTMLElement): void {
+    const isFull = this.plugin.dictionary?.isFullDictionaryLoaded?.() ?? false;
+    const hero = containerEl.createDiv({ cls: "ch-settings-hero" });
+
+    const info = hero.createDiv({ cls: "ch-settings-hero-info" });
+    info.createDiv({ cls: "ch-settings-hero-title", text: "🏮 Chinese Popover Dictionary" });
+    info.createDiv({
+      cls: "ch-settings-hero-sub",
+      text: isFull ? t("settings.dict_db_ready") : t("settings.dict_db_demo"),
+    });
+
+    const actions = hero.createDiv({ cls: "ch-settings-hero-actions" });
+
+    const vocabBtn = actions.createEl("button", {
+      cls: "ch-settings-hero-btn",
+      text: `📖 ${t("settings.open_sidebar_btn")}`,
+    });
+    vocabBtn.addEventListener("click", () => {
+      void this.plugin.activateVocabularyView();
+    });
+
+    const hotkeysBtn = actions.createEl("button", {
+      cls: "mod-cta ch-settings-hero-btn",
+      text: `⌨️ ${t("settings.hotkeys_btn")}`,
+    });
+    hotkeysBtn.addEventListener("click", () => {
+      try {
+        const settingTab = (this.app as AppWithSetting).setting;
+        if (settingTab) {
+          settingTab.open();
+          settingTab.openTabById("hotkeys");
+          if (settingTab.activeTab?.searchComponent) {
+            settingTab.activeTab.searchComponent.setValue("Chinese Dictionary");
+            settingTab.activeTab.updateHotkeyVisibility?.();
+          }
+        }
+      } catch (e) {
+        console.warn("[Chinese Dict] Could not open hotkey settings tab:", e);
+      }
+    });
+  }
+
   private renderSettings(): void {
     const { containerEl } = this;
     containerEl.empty();
 
-    // --- QUICK HOTKEY HELPER ---
+    const s = this.plugin.settings;
+    const langOptions: Array<[string, string]> = SUPPORTED_LANGUAGES.map((l) => [
+      l.code,
+      `${l.flag} ${l.nativeName} (${l.name})`,
+    ]);
+
+    // Top Hero Status & Quick Shortcuts
+    this.renderHeroBar(containerEl);
+
+    // ==========================================
+    // 1. САМОЕ ВАЖНОЕ: АКТИВАЦИЯ, ЯЗЫК И РЕЖИМ ЧТЕНИЯ
+    // ==========================================
+    new Setting(containerEl).setName(t("settings.activation_heading")).setHeading();
+
+    this.addToggle(
+      containerEl,
+      t("settings.enable_plugin"),
+      t("settings.enable_plugin_desc"),
+      s.enabled,
+      (val) => {
+        s.enabled = val;
+        if (!val) this.plugin.tooltip.hide();
+      },
+      false
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.ui_language"),
+      t("settings.ui_language_desc"),
+      [["auto", t("settings.ui_language_auto")], ...langOptions],
+      s.uiLanguage || "auto",
+      async (val) => {
+        s.uiLanguage = val;
+        setActiveLanguage(val);
+        await this.plugin.dictionary.ensureActiveLanguageDictPack();
+      },
+      false,
+      true
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.trans_lang"),
+      t("settings.trans_lang_desc"),
+      [["auto", t("settings.trans_lang_auto")], ["both", t("settings.trans_lang_both")], ...langOptions],
+      s.translationLanguage || "auto",
+      async (val) => {
+        s.translationLanguage = val;
+        await this.plugin.dictionary.ensureActiveLanguageDictPack();
+      },
+      true
+    );
+
+    this.addToggle(
+      containerEl,
+      t("settings.reader_mode"),
+      t("settings.reader_mode_desc"),
+      s.readerMode,
+      (val) => {
+        s.readerMode = val;
+        this.plugin.updateReaderStatusBar();
+        this.plugin.applyCurrentFont();
+      },
+      false
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.trigger_mode"),
+      t("settings.trigger_mode_desc"),
+      [
+        ["dblclick", t("settings.trigger_dblclick")],
+        ["hover_modifier", t("settings.trigger_hover_mod")],
+        ["hover", t("settings.trigger_hover")],
+        ["command_only", t("settings.trigger_command")],
+      ],
+      s.triggerMode,
+      (val) => { s.triggerMode = val as TriggerMode; },
+      false,
+      true
+    );
+
+    if (s.triggerMode === "hover_modifier") {
+      this.addDropdown(
+        containerEl,
+        t("settings.modifier_key"),
+        t("settings.modifier_key_desc"),
+        [
+          ["Alt", "Alt / Option (⌥)"],
+          ["Shift", "Shift (⇧)"],
+          ["Control", "Ctrl (⌃)"],
+          ["Meta", "Command ⌘ / Windows ⊞"],
+        ],
+        s.hoverModifierKey,
+        (val) => { s.hoverModifierKey = val as ModifierKey; },
+        false
+      );
+    }
+
+    if (s.triggerMode === "hover" || s.triggerMode === "hover_modifier") {
+      this.addSlider(
+        containerEl,
+        t("settings.hover_delay"),
+        t("settings.hover_delay_desc"),
+        100, 800, 50,
+        s.hoverDelayMs,
+        (val) => { s.hoverDelayMs = val; },
+        false
+      );
+    }
+
+    this.addToggle(
+      containerEl,
+      t("settings.cantonese_phrases"),
+      t("settings.cantonese_phrases_desc"),
+      s.selectCantonesePhrases ?? true,
+      (val) => { s.selectCantonesePhrases = val; },
+      false
+    );
+
+    this.addToggle(
+      containerEl,
+      t("settings.reverse_lookup"),
+      t("settings.reverse_lookup_desc"),
+      s.enableReverseLookup,
+      (val) => {
+        s.enableReverseLookup = val;
+        if (val) this.plugin.dictionary.ensureReverseIndexReady();
+      },
+      false
+    );
+
+    if (s.enableReverseLookup) {
+      this.addDropdown(
+        containerEl,
+        t("settings.reverse_lang"),
+        t("settings.reverse_lang_desc"),
+        [["auto", t("settings.reverse_lang_auto")], ...DICT_PACKS.map((p) => [p.id, `${p.flag} ${p.name} (${p.nativeName})`] as [string, string])],
+        s.reverseLookupLanguage || "auto",
+        (val) => { s.reverseLookupLanguage = val; },
+        false
+      );
+    }
+
+    // ==========================================
+    // 2. ФОНЕТИКА, ДИАЛЕКТ И ОЗВУЧКА
+    // ==========================================
+    new Setting(containerEl).setName(t("settings.phonetics_heading")).setHeading();
+
+    this.addDropdown(
+      containerEl,
+      t("settings.dialect"),
+      t("settings.dialect_desc"),
+      [
+        ["mandarin", t("settings.dialect_mandarin")],
+        ["cantonese", t("settings.dialect_cantonese")],
+      ],
+      s.dialect,
+      (val) => { s.dialect = val as ChineseDialect; }
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.phonetic_display"),
+      t("settings.phonetic_display_desc"),
+      [
+        ["pinyin", t("settings.phonetic_pinyin")],
+        ["both", t("settings.phonetic_both")],
+        ["jyutping", t("settings.phonetic_jyutping")],
+        ["dialect_auto", t("settings.phonetic_auto")],
+      ],
+      s.phoneticDisplay,
+      (val) => { s.phoneticDisplay = val as PhoneticDisplay; }
+    );
+
+    this.addToggle(containerEl, t("settings.accented_pinyin"), t("settings.accented_pinyin_desc"), s.showAccentedPinyin, (v) => { s.showAccentedPinyin = v; });
+    this.addToggle(containerEl, t("settings.show_traditional"), t("settings.show_traditional_desc"), s.showTraditional, (v) => { s.showTraditional = v; });
+
+    this.addDropdown(
+      containerEl,
+      t("settings.trad_separator"),
+      t("settings.trad_separator_desc"),
+      [
+        [" - ", " ' - ' (学 - 學)"],
+        [" / ", " ' / ' (学 / 學)"],
+        [" · ", " ' · ' (学 · 學)"],
+        [" () ", " ' ( )' (学 (學))"],
+      ],
+      s.traditionalSeparator,
+      (val) => { s.traditionalSeparator = val as TraditionalSeparator; }
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.tone_colors"),
+      t("settings.tone_colors_desc"),
+      [
+        ["off", t("settings.tone_off")],
+        ["phonetics", t("settings.tone_phonetics")],
+        ["all", t("settings.tone_all")],
+      ],
+      s.toneColoring,
+      (val) => {
+        s.toneColoring = val as "off" | "phonetics" | "all";
+        s.toneColoringExplicit = true;
+      }
+    );
+
+    this.addSlider(containerEl, t("settings.max_definitions"), t("settings.max_definitions_desc"), 1, 8, 1, s.maxDefinitions || 6, (v) => { s.maxDefinitions = v; });
+
+    this.addDropdown(
+      containerEl,
+      t("settings.audio_engine"),
+      t("settings.audio_engine_desc"),
+      [
+        ["google_neural", t("settings.audio_engine_neural")],
+        ["web_speech", t("settings.audio_engine_webspeech")],
+      ],
+      s.audioEngine,
+      (val) => { s.audioEngine = val as AudioEngine; },
+      false
+    );
+    this.addSlider(containerEl, t("settings.speech_speed"), t("settings.speech_speed_desc"), 0.5, 1.4, 0.05, s.speechSpeed, (v) => { s.speechSpeed = v; }, false);
+    this.addToggle(containerEl, t("settings.autoplay_audio"), t("settings.autoplay_audio_desc"), s.autoPlayAudio, (v) => { s.autoPlayAudio = v; }, false);
+
+    // ==========================================
+    // 3. КИТАЙСКАЯ ТИПОГРАФИКА И ШРИФТЫ
+    // ==========================================
+    new Setting(containerEl).setName(t("settings.typography_heading")).setHeading();
+
+    this.addDropdown(
+      containerEl,
+      t("settings.font_family"),
+      t("settings.font_family_desc"),
+      this.getFontPresetOptions(false),
+      s.chineseFontFamily,
+      (val) => {
+        s.chineseFontFamily = val as ChineseFontPreset;
+        this.plugin.applyCurrentFont();
+      },
+      false,
+      true
+    );
+
+    if (s.chineseFontFamily === "custom") {
+      new Setting(containerEl)
+        .setName(t("settings.custom_font_name"))
+        .setDesc(t("settings.custom_font_desc"))
+        .addText((text) =>
+          text.setPlaceholder("Source Han Serif SC").setValue(s.customChineseFont).onChange(async (val) => {
+            s.customChineseFont = val.trim();
+            await this.plugin.saveSettings();
+            this.plugin.applyCurrentFont();
+          })
+        );
+    }
+
+    this.addDropdown(
+      containerEl,
+      t("settings.reader_font_family"),
+      t("settings.reader_font_family_desc"),
+      this.getFontPresetOptions(true),
+      s.readerModeFontFamily || "default",
+      (val) => {
+        s.readerModeFontFamily = val as ChineseFontPreset;
+        this.plugin.applyCurrentFont();
+      },
+      false,
+      true
+    );
+
+    if (s.readerModeFontFamily === "custom") {
+      new Setting(containerEl)
+        .setName(t("settings.custom_font_name"))
+        .setDesc(t("settings.custom_font_desc"))
+        .addText((text) =>
+          text.setPlaceholder("LXGW WenKai").setValue(s.readerModeCustomFont).onChange(async (val) => {
+            s.readerModeCustomFont = val.trim();
+            await this.plugin.saveSettings();
+            this.plugin.applyCurrentFont();
+          })
+        );
+    }
+
+    this.addDropdown(
+      containerEl,
+      t("settings.font_scope"),
+      t("settings.font_scope_desc"),
+      [
+        ["popover_and_sidebar", t("settings.scope_popover_sidebar")],
+        ["entire_editor", t("settings.scope_entire_editor")],
+      ],
+      s.chineseFontScope,
+      (val) => {
+        s.chineseFontScope = val as ChineseFontScope;
+        this.plugin.applyCurrentFont();
+      },
+      false
+    );
+
+    // ==========================================
+    // 4. ВНЕШНИЙ ВИД, МОДУЛИ КАРТОЧКИ И UX
+    // ==========================================
+    new Setting(containerEl).setName(t("settings.appearance_heading")).setHeading();
+
+    this.addDropdown(
+      containerEl,
+      t("settings.theme"),
+      t("settings.theme_desc"),
+      [
+        ["auto", t("settings.theme_auto")],
+        ["glass_dark", t("settings.theme_glass_dark")],
+        ["glass_light", t("settings.theme_glass_light")],
+        ["solid", t("settings.theme_solid")],
+      ],
+      s.theme,
+      (val) => { s.theme = val as PopoverTheme; }
+    );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.text_color_preset"),
+      t("settings.text_color_desc"),
+      [
+        ["white", t("settings.color_white")],
+        ["cyan", t("settings.color_cyan")],
+        ["gold", t("settings.color_gold")],
+        ["obsidian", t("settings.color_obsidian")],
+      ],
+      s.textColorPreset,
+      (val) => { s.textColorPreset = val as TextColorPreset; }
+    );
+
+    this.addSlider(containerEl, t("settings.blur_intensity"), t("settings.blur_desc"), 0, 60, 2, s.blurIntensity, (v) => { s.blurIntensity = v; });
+    this.addSlider(containerEl, t("settings.popover_width"), t("settings.popover_width_desc"), 280, 520, 10, s.popoverWidth, (v) => { s.popoverWidth = v; });
+    this.addSlider(containerEl, t("settings.popover_height"), t("settings.popover_height_desc"), 130, 250, 5, s.popoverHeight, (v) => { s.popoverHeight = v; });
+    this.addSlider(containerEl, t("settings.font_size_hanzi"), t("settings.font_size_hanzi_desc"), 14, 32, 1, s.fontSizeHanzi, (v) => { s.fontSizeHanzi = v; });
+    this.addSlider(containerEl, t("settings.font_size_pinyin"), t("settings.font_size_pinyin_desc"), 10, 24, 1, s.fontSizePinyin, (v) => { s.fontSizePinyin = v; });
+    this.addSlider(containerEl, t("settings.font_size_trans"), t("settings.font_size_trans_desc"), 12, 24, 1, s.fontSizeTranslation, (v) => { s.fontSizeTranslation = v; });
+
+    this.addToggle(containerEl, t("settings.show_action_buttons"), t("settings.show_action_buttons_desc"), s.showActionButtons, (v) => { s.showActionButtons = v; });
+    this.addToggle(containerEl, t("settings.show_hsk"), t("settings.show_hsk_desc"), s.showHskBadge, (v) => { s.showHskBadge = v; });
+    this.addToggle(containerEl, t("settings.char_breakdown"), t("settings.char_breakdown_desc"), s.showCharacterBreakdown, (v) => { s.showCharacterBreakdown = v; });
+    this.addToggle(containerEl, t("settings.parts_of_speech"), t("settings.parts_of_speech_desc"), s.showPartOfSpeech, (v) => { s.showPartOfSpeech = v; });
+    this.addToggle(containerEl, t("settings.radicals"), t("settings.radicals_desc"), s.showRadicals, (v) => { s.showRadicals = v; });
+    this.addToggle(containerEl, t("settings.stroke_order"), t("settings.stroke_order_desc"), s.showStrokeOrder, (v) => { s.showStrokeOrder = v; });
+    this.addToggle(containerEl, t("settings.word_note_btn"), t("settings.word_note_btn_desc"), s.showWordNotesButton, (v) => { s.showWordNotesButton = v; });
+
+    this.addToggle(containerEl, t("settings.draggable"), t("settings.draggable_desc"), s.enableDraggablePopover ?? true, (v) => { s.enableDraggablePopover = v; }, false);
+    this.addToggle(containerEl, t("settings.resizable"), t("settings.resizable_desc"), s.enableResizablePopover ?? true, (v) => { s.enableResizablePopover = v; });
+    this.addToggle(containerEl, t("settings.popover_hotkeys"), t("settings.popover_hotkeys_desc"), s.enablePopoverHotkeys ?? true, (v) => { s.enablePopoverHotkeys = v; }, false);
+
+    this.addDropdown(
+      containerEl,
+      t("settings.copy_format"),
+      t("settings.copy_format_desc"),
+      [
+        ["default", t("settings.copy_format_default")],
+        ["hanzi_only", t("settings.copy_format_hanzi")],
+        ["pinyin_only", t("settings.copy_format_pinyin")],
+        ["wikilink", t("settings.copy_format_wikilink")],
+        ["markdown_table", t("settings.copy_format_table")],
+      ],
+      s.copyFormat ?? "default",
+      (val) => { s.copyFormat = val as CopyFormat; },
+      false
+    );
+    this.addSlider(containerEl, t("settings.recent_history_limit"), t("settings.recent_history_desc"), 10, 100, 5, s.maxRecentHistory ?? 50, (v) => { s.maxRecentHistory = v; }, false);
+
+    // ==========================================
+    // 5. УЧЁБА, ЛИЧНЫЙ СЛОВАРИК, ЭКСПОРТ И ANKI
+    // ==========================================
+    new Setting(containerEl).setName(t("settings.vocab_heading")).setHeading();
+
     new Setting(containerEl)
-      .setName(t("settings.hotkeys_title"))
-      .setDesc(t("settings.hotkeys_desc"))
+      .setName(t("settings.vocab_path"))
+      .setDesc(t("settings.vocab_path_desc"))
+      .addText((text) =>
+        text.setPlaceholder("Chinese Vocabulary.md").setValue(s.vocabularyFilePath).onChange(async (value) => {
+          let clean = value.trim().replace(/^[/\\]+/, "").replace(/\.\./g, "");
+          if (clean && !clean.endsWith(".md")) clean += ".md";
+          s.vocabularyFilePath = clean || "Chinese Vocabulary.md";
+          await this.plugin.saveSettings();
+        })
+      );
+
+    this.addToggle(containerEl, t("settings.save_context"), t("settings.save_context_desc"), s.autoSaveContextSentence, (v) => { s.autoSaveContextSentence = v; }, false);
+
+    new Setting(containerEl)
+      .setName(t("settings.word_notes_folder"))
+      .setDesc(t("settings.word_notes_folder_desc"))
+      .addText((text) =>
+        text.setPlaceholder("Chinese/Words").setValue(s.wordNotesFolder).onChange(async (val) => {
+          s.wordNotesFolder = val.trim() || "Chinese/Words";
+          await this.plugin.saveSettings();
+        })
+      );
+
+    this.addDropdown(
+      containerEl,
+      t("settings.ruby_dialect"),
+      t("settings.ruby_dialect_desc"),
+      [
+        ["pinyin", t("settings.ruby_pinyin")],
+        ["jyutping", t("settings.ruby_jyutping")],
+      ],
+      s.rubyDialect,
+      (val) => { s.rubyDialect = val as "pinyin" | "jyutping"; },
+      false
+    );
+
+    new Setting(containerEl)
+      .setName(t("settings.worksheets"))
+      .setDesc(t("settings.worksheets_desc"))
       .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.hotkeys_btn"))
-          .setCta()
-          .onClick(() => {
-            try {
-              const settingTab = (this.app as AppWithSetting).setting;
-              if (settingTab) {
-                settingTab.open();
-                settingTab.openTabById("hotkeys");
-                const hotkeyTab = settingTab.activeTab;
-                if (hotkeyTab && hotkeyTab.searchComponent) {
-                  hotkeyTab.searchComponent.setValue("Chinese Dictionary");
-                  hotkeyTab.updateHotkeyVisibility?.();
-                }
-              }
-            } catch (e) {
-              console.warn("[Chinese Dict] Could not open hotkey settings tab:", e);
-            }
-          })
-      );
-
-    // ==========================================
-    // 0. ЯЗЫК ИНТЕРФЕЙСА И СЛОВАРИ (I18N & DICTIONARY PACKS)
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.lang_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.ui_language"))
-      .setDesc(t("settings.ui_language_desc"))
-      .addDropdown((dropdown) => {
-        dropdown.addOption("auto", t("settings.ui_language_auto"));
-        for (const lang of SUPPORTED_LANGUAGES) {
-          dropdown.addOption(lang.code, `${lang.flag} ${lang.nativeName} (${lang.name})`);
-        }
-        dropdown.setValue(this.plugin.settings.uiLanguage || "auto");
-        dropdown.onChange(async (val) => {
-          this.plugin.settings.uiLanguage = val;
-          setActiveLanguage(val);
-          await this.plugin.saveSettings();
-          await this.plugin.dictionary.ensureActiveLanguageDictPack();
-          this.renderSettings();
-        });
-      });
-
-    new Setting(containerEl)
-      .setName(t("settings.dict_packs_title"))
-      .setDesc(t("settings.dict_packs_desc"));
-
-    const packsContainer = containerEl.createDiv({ cls: "ch-dict-packs-container" });
-    void this.renderDictPacksCards(packsContainer);
-
-    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
-
-    // ==========================================
-    // 1. АКТИВАЦИЯ И ТРИГГЕРЫ
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.activation_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.enable_plugin"))
-      .setDesc(t("settings.enable_plugin_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enabled)
-          .onChange(async (value) => {
-            this.plugin.settings.enabled = value;
-            await this.plugin.saveSettings();
-            if (!value) {
-              this.plugin.tooltip.hide();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.trigger_mode"))
-      .setDesc(t("settings.trigger_mode_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("dblclick", t("settings.trigger_dblclick"))
-          .addOption("hover_modifier", t("settings.trigger_hover_mod"))
-          .addOption("hover", t("settings.trigger_hover"))
-          .addOption("command_only", t("settings.trigger_command"))
-          .setValue(this.plugin.settings.triggerMode)
-          .onChange(async (value) => {
-            this.plugin.settings.triggerMode = value as TriggerMode;
-            await this.plugin.saveSettings();
-            this.renderSettings(); // Refresh to show/hide relevant modifier options
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.cantonese_phrases"))
-      .setDesc(t("settings.cantonese_phrases_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.selectCantonesePhrases ?? true)
-          .onChange(async (value) => {
-            this.plugin.settings.selectCantonesePhrases = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.reader_mode"))
-      .setDesc(t("settings.reader_mode_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.readerMode)
-          .onChange(async (value) => {
-            this.plugin.settings.readerMode = value;
-            await this.plugin.saveSettings();
-            this.plugin.updateReaderStatusBar();
-            this.plugin.applyCurrentFont();
-          })
-      );
-
-    if (this.plugin.settings.triggerMode === "hover_modifier") {
-      new Setting(containerEl)
-        .setName(t("settings.modifier_key"))
-        .setDesc(t("settings.modifier_key_desc"))
-        .addDropdown((dropdown) =>
-          dropdown
-            .addOption("Alt", "Alt / Option (⌥)")
-            .addOption("Shift", "Shift (⇧)")
-            .addOption("Control", "Ctrl (⌃)")
-            .addOption("Meta", "Command ⌘ / Windows ⊞")
-            .setValue(this.plugin.settings.hoverModifierKey)
-            .onChange(async (value) => {
-              this.plugin.settings.hoverModifierKey = value as ModifierKey;
-              await this.plugin.saveSettings();
-            })
-        );
-    }
-
-    if (this.plugin.settings.triggerMode === "hover" || this.plugin.settings.triggerMode === "hover_modifier") {
-      new Setting(containerEl)
-        .setName(t("settings.hover_delay"))
-        .setDesc(t("settings.hover_delay_desc"))
-        .addSlider((slider) =>
-          slider
-            .setLimits(100, 800, 50)
-            .setValue(this.plugin.settings.hoverDelayMs)
-            .onChange(async (value) => {
-              this.plugin.settings.hoverDelayMs = value;
-              await this.plugin.saveSettings();
-            })
-        );
-    }
-
-    // ==========================================
-    // 2. ОЗВУЧКА И ПРОИЗНОШЕНИЕ
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.voice_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.dialect"))
-      .setDesc(t("settings.dialect_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("mandarin", t("settings.dialect_mandarin"))
-          .addOption("cantonese", t("settings.dialect_cantonese"))
-          .setValue(this.plugin.settings.dialect)
-          .onChange(async (value) => {
-            this.plugin.settings.dialect = value as ChineseDialect;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.audio_engine"))
-      .setDesc(t("settings.audio_engine_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("google_neural", t("settings.audio_engine_neural"))
-          .addOption("web_speech", t("settings.audio_engine_webspeech"))
-          .setValue(this.plugin.settings.audioEngine)
-          .onChange(async (value) => {
-            this.plugin.settings.audioEngine = value as AudioEngine;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.speech_speed"))
-      .setDesc(t("settings.speech_speed_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(0.5, 1.4, 0.05)
-          .setValue(this.plugin.settings.speechSpeed)
-          .onChange(async (value) => {
-            this.plugin.settings.speechSpeed = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.autoplay_audio"))
-      .setDesc(t("settings.autoplay_audio_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoPlayAudio)
-          .onChange(async (value) => {
-            this.plugin.settings.autoPlayAudio = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // ==========================================
-    // 3. ОТОБРАЖЕНИЕ ФОНЕТИКИ И ИЕРОГЛИФОВ
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.phonetics_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.phonetic_display"))
-      .setDesc(t("settings.phonetic_display_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("pinyin", t("settings.phonetic_pinyin"))
-          .addOption("both", t("settings.phonetic_both"))
-          .addOption("jyutping", t("settings.phonetic_jyutping"))
-          .addOption("dialect_auto", t("settings.phonetic_auto"))
-          .setValue(this.plugin.settings.phoneticDisplay)
-          .onChange(async (value) => {
-            this.plugin.settings.phoneticDisplay = value as PhoneticDisplay;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.accented_pinyin"))
-      .setDesc(t("settings.accented_pinyin_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showAccentedPinyin)
-          .onChange(async (value) => {
-            this.plugin.settings.showAccentedPinyin = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.show_traditional"))
-      .setDesc(t("settings.show_traditional_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showTraditional)
-          .onChange(async (value) => {
-            this.plugin.settings.showTraditional = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.trad_separator"))
-      .setDesc(t("settings.trad_separator_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption(" - ", " ' - ' (学 - 學)")
-          .addOption(" / ", " ' / ' (学 / 學)")
-          .addOption(" · ", " ' · ' (学 · 學)")
-          .addOption(" () ", " ' ( )' (学 (學))")
-          .setValue(this.plugin.settings.traditionalSeparator)
-          .onChange(async (value) => {
-            this.plugin.settings.traditionalSeparator = value as TraditionalSeparator;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.max_definitions"))
-      .setDesc(t("settings.max_definitions_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(1, 8, 1)
-          .setValue(this.plugin.settings.maxDefinitions || 6)
-          .onChange(async (value) => {
-            this.plugin.settings.maxDefinitions = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.show_action_buttons"))
-      .setDesc(t("settings.show_action_buttons_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showActionButtons)
-          .onChange(async (value) => {
-            this.plugin.settings.showActionButtons = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.show_hsk"))
-      .setDesc(t("settings.show_hsk_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showHskBadge)
-          .onChange(async (value) => {
-            this.plugin.settings.showHskBadge = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.char_breakdown"))
-      .setDesc(t("settings.char_breakdown_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showCharacterBreakdown)
-          .onChange(async (value) => {
-            this.plugin.settings.showCharacterBreakdown = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.trans_lang"))
-      .setDesc(t("settings.trans_lang_desc"))
-      .addDropdown((dropdown) => {
-        dropdown.addOption("auto", t("settings.trans_lang_auto"));
-        dropdown.addOption("both", t("settings.trans_lang_both"));
-        for (const lang of SUPPORTED_LANGUAGES) {
-          dropdown.addOption(lang.code, `${lang.flag} ${lang.nativeName} (${lang.name})`);
-        }
-        dropdown.setValue(this.plugin.settings.translationLanguage || "auto");
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.translationLanguage = value;
-          await this.plugin.saveSettings();
-          await this.plugin.dictionary.ensureActiveLanguageDictPack();
-          if (this.plugin.tooltip.getIsOpen()) {
-            this.plugin.tooltip.refresh(this.plugin.settings);
+        btn.setButtonText(t("settings.worksheets_btn")).onClick(() => {
+          const items = this.plugin.vocabulary.getItems();
+          if (items.length === 0) {
+            new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
+            return;
           }
-        });
-      });
-
-    new Setting(containerEl)
-      .setName(t("settings.parts_of_speech"))
-      .setDesc(t("settings.parts_of_speech_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showPartOfSpeech)
-          .onChange(async (value) => {
-            this.plugin.settings.showPartOfSpeech = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
+          new WorksheetModal(this.app, items).open();
+        })
       );
 
-    new Setting(containerEl)
-      .setName(t("settings.tone_colors"))
-      .setDesc(t("settings.tone_colors_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("off", t("settings.tone_off"))
-          .addOption("phonetics", t("settings.tone_phonetics"))
-          .addOption("all", t("settings.tone_all"))
-          .setValue(this.plugin.settings.toneColoring)
-          .onChange(async (value) => {
-            this.plugin.settings.toneColoring = value as "off" | "phonetics" | "all";
-            this.plugin.settings.toneColoringExplicit = true;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
+    this.addDropdown(
+      containerEl,
+      t("settings.anki_heading"),
+      t("settings.anki_enable_desc"),
+      [
+        ["off", "Off"],
+        ["on", "AnkiConnect On"],
+      ],
+      s.anki.enabled ? "on" : "off",
+      (val) => { s.anki.enabled = val === "on"; },
+      false,
+      true
+    );
 
-    new Setting(containerEl)
-      .setName(t("settings.radicals"))
-      .setDesc(t("settings.radicals_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showRadicals)
-          .onChange(async (value) => {
-            this.plugin.settings.showRadicals = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.stroke_order"))
-      .setDesc(t("settings.stroke_order_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showStrokeOrder)
-          .onChange(async (value) => {
-            this.plugin.settings.showStrokeOrder = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.word_note_btn"))
-      .setDesc(t("settings.word_note_btn_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showWordNotesButton)
-          .onChange(async (value) => {
-            this.plugin.settings.showWordNotesButton = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    // ==========================================
-    // 4. КИТАЙСКАЯ ТИПОГРАФИКА И ШРИФТЫ
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.typography_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.font_family"))
-      .setDesc(t("settings.font_family_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("default", t("settings.font_default"))
-          .addOption("kaiti", t("settings.font_kaiti"))
-          .addOption("songti", t("settings.font_songti"))
-          .addOption("heiti", t("settings.font_heiti"))
-          .addOption("fangsong", t("settings.font_fangsong"))
-          .addOption("wenkai", t("settings.font_wenkai"))
-          .addOption("custom", t("settings.font_custom"))
-          .setValue(this.plugin.settings.chineseFontFamily)
-          .onChange(async (value) => {
-            this.plugin.settings.chineseFontFamily = value as ChineseFontPreset;
-            await this.plugin.saveSettings();
-            this.plugin.applyCurrentFont();
-            this.renderSettings();
-          })
-      );
-
-    if (this.plugin.settings.chineseFontFamily === "custom") {
+    if (s.anki.enabled) {
       new Setting(containerEl)
-        .setName(t("settings.custom_font_name"))
-        .setDesc(t("settings.custom_font_desc"))
+        .setName(t("settings.anki_url"))
+        .setDesc("http://127.0.0.1:8765")
         .addText((text) =>
-          text
-            .setPlaceholder("Source Han Serif SC")
-            .setValue(this.plugin.settings.customChineseFont)
-            .onChange(async (val) => {
-              this.plugin.settings.customChineseFont = val.trim();
-              await this.plugin.saveSettings();
-              this.plugin.applyCurrentFont();
-            })
+          text.setPlaceholder("http://127.0.0.1:8765").setValue(s.anki.serverUrl).onChange(async (val) => {
+            const url = val.trim();
+            s.anki.serverUrl = url ? (/^https?:\/\//i.test(url) ? url : `http://${url}`) : "http://127.0.0.1:8765";
+            await this.plugin.saveSettings();
+          })
+        );
+
+      new Setting(containerEl)
+        .setName(t("settings.anki_deck"))
+        .setDesc("Chinese")
+        .addText((text) =>
+          text.setPlaceholder("Chinese").setValue(s.anki.deckName).onChange(async (val) => {
+            s.anki.deckName = val.trim() || "Chinese";
+            await this.plugin.saveSettings();
+          })
+        );
+
+      this.addToggle(containerEl, t("settings.anki_sync_star"), t("settings.anki_sync_star_desc"), s.ankiSyncOnStar, (v) => { s.ankiSyncOnStar = v; }, false);
+
+      new Setting(containerEl)
+        .setName(t("settings.anki_test"))
+        .setDesc(t("settings.anki_test_desc"))
+        .addButton((btn) =>
+          btn.setButtonText(t("settings.anki_test_btn")).onClick(async () => {
+            btn.setDisabled(true);
+            const ok = await checkAnkiConnect(s.anki.serverUrl);
+            btn.setDisabled(false);
+            new Notice(ok ? "✅ AnkiConnect OK!" : "❌ AnkiConnect Failed!", 3500);
+          })
         );
     }
 
     new Setting(containerEl)
-      .setName(t("settings.reader_font_family"))
-      .setDesc(t("settings.reader_font_family_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("default", t("settings.reader_font_same"))
-          .addOption("kaiti", t("settings.font_kaiti"))
-          .addOption("songti", t("settings.font_songti"))
-          .addOption("heiti", t("settings.font_heiti"))
-          .addOption("fangsong", t("settings.font_fangsong"))
-          .addOption("wenkai", t("settings.font_wenkai"))
-          .addOption("custom", t("settings.font_custom"))
-          .setValue(this.plugin.settings.readerModeFontFamily || "default")
-          .onChange(async (value) => {
-            this.plugin.settings.readerModeFontFamily = value as ChineseFontPreset;
-            await this.plugin.saveSettings();
-            this.plugin.applyCurrentFont();
-            this.renderSettings();
-          })
+      .setName(t("settings.anki_export_tsv"))
+      .setDesc(t("settings.anki_export_tsv_desc"))
+      .addButton((btn) =>
+        btn.setButtonText(t("settings.anki_export_tsv_btn")).onClick(() => {
+          exportVocabularyFile(this.plugin.vocabulary.getItems(), "anki");
+        })
       );
 
-    if (this.plugin.settings.readerModeFontFamily === "custom") {
-      new Setting(containerEl)
-        .setName(t("settings.custom_font_name"))
-        .setDesc(t("settings.custom_font_desc"))
-        .addText((text) =>
-          text
-            .setPlaceholder("LXGW WenKai")
-            .setValue(this.plugin.settings.readerModeCustomFont)
-            .onChange(async (val) => {
-              this.plugin.settings.readerModeCustomFont = val.trim();
-              await this.plugin.saveSettings();
-              this.plugin.applyCurrentFont();
-            })
-        );
-    }
-
     new Setting(containerEl)
-      .setName(t("settings.font_scope"))
-      .setDesc(t("settings.font_scope_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("popover_and_sidebar", t("settings.scope_popover_sidebar"))
-          .addOption("entire_editor", t("settings.scope_entire_editor"))
-          .setValue(this.plugin.settings.chineseFontScope)
-          .onChange(async (value) => {
-            this.plugin.settings.chineseFontScope = value as ChineseFontScope;
-            await this.plugin.saveSettings();
-            this.plugin.applyCurrentFont();
-          })
+      .setName(t("settings.pleco_export"))
+      .setDesc(t("settings.pleco_export_desc"))
+      .addButton((btn) =>
+        btn.setButtonText(t("settings.pleco_export_btn")).onClick(() => {
+          exportVocabularyFile(this.plugin.vocabulary.getItems(), "pleco");
+        })
       );
 
     // ==========================================
-    // 5. ВНЕШНИЙ ВИД И СТИЛЬ LIQUID GLASS
+    // 6. ОФЛАЙН-СЛОВАРИ И ЯЗЫКОВЫЕ БАЗЫ (ВНИЗУ)
     // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.appearance_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.theme"))
-      .setDesc(t("settings.theme_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("auto", t("settings.theme_auto"))
-          .addOption("glass_dark", t("settings.theme_glass_dark"))
-          .addOption("glass_light", t("settings.theme_glass_light"))
-          .addOption("solid", t("settings.theme_solid"))
-          .setValue(this.plugin.settings.theme)
-          .onChange(async (value) => {
-            this.plugin.settings.theme = value as PopoverTheme;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.text_color_preset"))
-      .setDesc(t("settings.text_color_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("white", t("settings.color_white"))
-          .addOption("cyan", t("settings.color_cyan"))
-          .addOption("gold", t("settings.color_gold"))
-          .addOption("obsidian", t("settings.color_obsidian"))
-          .setValue(this.plugin.settings.textColorPreset)
-          .onChange(async (value) => {
-            this.plugin.settings.textColorPreset = value as TextColorPreset;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.popover_width"))
-      .setDesc(t("settings.popover_width_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(280, 520, 10)
-          .setValue(this.plugin.settings.popoverWidth)
-          .onChange(async (value) => {
-            this.plugin.settings.popoverWidth = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.popover_height"))
-      .setDesc(t("settings.popover_height_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(130, 250, 5)
-          .setValue(this.plugin.settings.popoverHeight)
-          .onChange(async (value) => {
-            this.plugin.settings.popoverHeight = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.blur_intensity"))
-      .setDesc(t("settings.blur_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(0, 60, 2)
-          .setValue(this.plugin.settings.blurIntensity)
-          .onChange(async (value) => {
-            this.plugin.settings.blurIntensity = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.font_size_hanzi"))
-      .setDesc(t("settings.font_size_hanzi_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(14, 32, 1)
-          .setValue(this.plugin.settings.fontSizeHanzi)
-          .onChange(async (value) => {
-            this.plugin.settings.fontSizeHanzi = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.font_size_pinyin"))
-      .setDesc(t("settings.font_size_pinyin_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(10, 24, 1)
-          .setValue(this.plugin.settings.fontSizePinyin)
-          .onChange(async (value) => {
-            this.plugin.settings.fontSizePinyin = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.font_size_trans"))
-      .setDesc(t("settings.font_size_trans_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(12, 24, 1)
-          .setValue(this.plugin.settings.fontSizeTranslation)
-          .onChange(async (value) => {
-            this.plugin.settings.fontSizeTranslation = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    // ==========================================
-    // 6. ИНТЕРАКТИВНОСТЬ И УДОБСТВО (UX)
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.ux_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.draggable"))
-      .setDesc(t("settings.draggable_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableDraggablePopover ?? true)
-          .onChange(async (value) => {
-            this.plugin.settings.enableDraggablePopover = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.resizable"))
-      .setDesc(t("settings.resizable_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableResizablePopover ?? true)
-          .onChange(async (value) => {
-            this.plugin.settings.enableResizablePopover = value;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.popover_hotkeys"))
-      .setDesc(t("settings.popover_hotkeys_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enablePopoverHotkeys ?? true)
-          .onChange(async (value) => {
-            this.plugin.settings.enablePopoverHotkeys = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.copy_format"))
-      .setDesc(t("settings.copy_format_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("default", t("settings.copy_format_default"))
-          .addOption("hanzi_only", t("settings.copy_format_hanzi"))
-          .addOption("pinyin_only", t("settings.copy_format_pinyin"))
-          .addOption("wikilink", t("settings.copy_format_wikilink"))
-          .addOption("markdown_table", t("settings.copy_format_table"))
-          .setValue(this.plugin.settings.copyFormat ?? "default")
-          .onChange(async (value) => {
-            this.plugin.settings.copyFormat = value as CopyFormat;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.recent_history_limit"))
-      .setDesc(t("settings.recent_history_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(10, 100, 5)
-          .setValue(this.plugin.settings.maxRecentHistory ?? 50)
-          .onChange(async (value) => {
-            this.plugin.settings.maxRecentHistory = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // ==========================================
-    // 7. ПАРАМЕТРЫ СЛОВАРЯ
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.dict_db_heading"))
-      .setHeading();
+    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
+    new Setting(containerEl).setName(t("settings.dict_packs_title")).setHeading();
 
     const isFull = this.plugin.dictionary?.isFullDictionaryLoaded?.() ?? false;
     new Setting(containerEl)
       .setName(t("settings.dict_db_title"))
-      .setDesc(
-        isFull
-          ? t("settings.dict_db_ready")
-          : t("settings.dict_db_demo")
-      )
+      .setDesc(isFull ? t("settings.dict_db_ready") : t("settings.dict_db_demo"))
       .addButton((btn) => {
         btn.setButtonText(isFull ? t("settings.dict_reload_btn") : t("settings.dict_download_full_btn"));
-        if (!isFull) {
-          btn.setCta();
-        }
+        if (!isFull) btn.setCta();
         btn.onClick(async () => {
           btn.setDisabled(true);
           btn.setButtonText(t("settings.dict_downloading"));
@@ -1021,286 +863,25 @@ export class ChineseDictSettingTab extends PluginSettingTab {
         });
       });
 
-    new Setting(containerEl)
-      .setName(t("settings.max_word_len"))
-      .setDesc(t("settings.max_word_len_desc"))
-      .addSlider((slider) =>
-        slider
-          .setLimits(2, 16, 1)
-          .setValue(this.plugin.settings.maxWordLength)
-          .onChange(async (value) => {
-            this.plugin.settings.maxWordLength = value;
-            await this.plugin.saveSettings();
-          })
-      );
+    this.addSlider(containerEl, t("settings.max_word_len"), t("settings.max_word_len_desc"), 2, 16, 1, s.maxWordLength, (v) => { s.maxWordLength = v; }, false);
 
     new Setting(containerEl)
-      .setName(t("settings.reverse_lookup"))
-      .setDesc(t("settings.reverse_lookup_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableReverseLookup)
-          .onChange(async (value) => {
-            this.plugin.settings.enableReverseLookup = value;
-            await this.plugin.saveSettings();
-            if (value) {
-              this.plugin.dictionary.ensureReverseIndexReady();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.reverse_lang"))
-      .setDesc(t("settings.reverse_lang_desc"))
-      .addDropdown((dropdown) => {
-        dropdown.addOption("auto", t("settings.reverse_lang_auto"));
-        for (const pack of DICT_PACKS) {
-          dropdown.addOption(pack.id, `${pack.flag} ${pack.name} (${pack.nativeName})`);
-        }
-        dropdown.setValue(this.plugin.settings.reverseLookupLanguage || "auto");
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.reverseLookupLanguage = value;
-          await this.plugin.saveSettings();
-        });
-      });
-
-    // ==========================================
-    // 8. ЛИЧНЫЙ СЛОВАРИК
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.vocab_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.vocab_path"))
-      .setDesc(t("settings.vocab_path_desc"))
+      .setName(t("settings.dict_packs_desc"))
       .addText((text) =>
         text
-          .setPlaceholder("Chinese Vocabulary.md")
-          .setValue(this.plugin.settings.vocabularyFilePath)
-          .onChange(async (value) => {
-            let clean = value.trim().replace(/^[/\\]+/, "").replace(/\.\./g, "");
-            if (clean && !clean.endsWith(".md")) clean += ".md";
-            this.plugin.settings.vocabularyFilePath = clean || "Chinese Vocabulary.md";
-            await this.plugin.saveSettings();
+          .setPlaceholder("🔍 Filter languages (ru, ko, yue, es...)")
+          .setValue(this.dictFilterQuery)
+          .onChange((val) => {
+            this.dictFilterQuery = val.trim().toLowerCase();
+            void this.renderDictPacksCards(packsContainer);
           })
       );
 
-    new Setting(containerEl)
-      .setName(t("settings.save_context"))
-      .setDesc(t("settings.save_context_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoSaveContextSentence)
-          .onChange(async (value) => {
-            this.plugin.settings.autoSaveContextSentence = value;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.word_notes_folder"))
-      .setDesc(t("settings.word_notes_folder_desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder("Chinese/Words")
-          .setValue(this.plugin.settings.wordNotesFolder)
-          .onChange(async (val) => {
-            this.plugin.settings.wordNotesFolder = val.trim() || "Chinese/Words";
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.open_sidebar"))
-      .setDesc(t("settings.open_sidebar_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.open_sidebar_btn"))
-          .setCta()
-          .onClick(() => {
-            void this.plugin.activateVocabularyView();
-          })
-      );
+    const packsContainer = containerEl.createDiv({ cls: "ch-dict-packs-container" });
+    void this.renderDictPacksCards(packsContainer);
 
     // ==========================================
-    // 7. ИНТЕГРАЦИЯ С ANKI & PLECO
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.anki_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.anki_enable"))
-      .setDesc(t("settings.anki_enable_desc"))
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.anki.enabled)
-          .onChange(async (value) => {
-            this.plugin.settings.anki.enabled = value;
-            await this.plugin.saveSettings();
-            this.renderSettings();
-          })
-      );
-
-    if (this.plugin.settings.anki.enabled) {
-      new Setting(containerEl)
-        .setName(t("settings.anki_url"))
-        .setDesc("http://127.0.0.1:8765")
-        .addText((text) =>
-          text
-            .setPlaceholder("http://127.0.0.1:8765")
-            .setValue(this.plugin.settings.anki.serverUrl)
-            .onChange(async (val) => {
-              const url = val.trim();
-              if (/^https?:\/\//i.test(url)) {
-                this.plugin.settings.anki.serverUrl = url;
-              } else if (url) {
-                this.plugin.settings.anki.serverUrl = `http://${url}`;
-              } else {
-                this.plugin.settings.anki.serverUrl = "http://127.0.0.1:8765";
-              }
-              await this.plugin.saveSettings();
-            })
-        );
-
-      new Setting(containerEl)
-        .setName(t("settings.anki_deck"))
-        .setDesc("Chinese")
-        .addText((text) =>
-          text
-            .setPlaceholder("Chinese")
-            .setValue(this.plugin.settings.anki.deckName)
-            .onChange(async (val) => {
-              this.plugin.settings.anki.deckName = val.trim() || "Chinese";
-              await this.plugin.saveSettings();
-            })
-        );
-
-      new Setting(containerEl)
-        .setName(t("settings.anki_sync_star"))
-        .setDesc(t("settings.anki_sync_star_desc"))
-        .addToggle((toggle) =>
-          toggle
-            .setValue(this.plugin.settings.ankiSyncOnStar)
-            .onChange(async (val) => {
-              this.plugin.settings.ankiSyncOnStar = val;
-              await this.plugin.saveSettings();
-            })
-        );
-
-      new Setting(containerEl)
-        .setName(t("settings.anki_test"))
-        .setDesc(t("settings.anki_test_desc"))
-        .addButton((btn) =>
-          btn
-            .setButtonText(t("settings.anki_test_btn"))
-            .onClick(async () => {
-              btn.setDisabled(true);
-              const ok = await checkAnkiConnect(this.plugin.settings.anki.serverUrl);
-              btn.setDisabled(false);
-              if (ok) {
-                new Notice("✅ AnkiConnect OK!", 3500);
-              } else {
-                new Notice("❌ AnkiConnect Failed!", 4000);
-              }
-            })
-        );
-    }
-
-    new Setting(containerEl)
-      .setName(t("settings.anki_export_tsv"))
-      .setDesc(t("settings.anki_export_tsv_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.anki_export_tsv_btn"))
-          .onClick(() => {
-            const items = this.plugin.vocabulary.getItems();
-            if (items.length === 0) {
-              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
-              return;
-            }
-            const tsv = generateAnkiTsv(items);
-            const blob = new Blob([tsv], { type: "text/tab-separated-values;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const link = createEl("a", {
-              href: url,
-              attr: {
-                download: `Anki_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.tsv`,
-              },
-            });
-            link.click();
-            URL.revokeObjectURL(url);
-            new Notice(`Exported ${items.length} words to TSV!`);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.pleco_export"))
-      .setDesc(t("settings.pleco_export_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.pleco_export_btn"))
-          .onClick(() => {
-            const items = this.plugin.vocabulary.getItems();
-            if (items.length === 0) {
-              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
-              return;
-            }
-            const txt = generatePlecoFlashcards(items);
-            const blob = new Blob([txt], { type: "text/plain;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const link = createEl("a", {
-              href: url,
-              attr: {
-                download: `Pleco_Chinese_Vocabulary_${new Date().toISOString().slice(0, 10)}.txt`,
-              },
-            });
-            link.click();
-            URL.revokeObjectURL(url);
-            new Notice(`Exported ${items.length} words for Pleco!`);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t("settings.worksheets"))
-      .setDesc(t("settings.worksheets_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.worksheets_btn"))
-          .onClick(() => {
-            const items = this.plugin.vocabulary.getItems();
-            if (items.length === 0) {
-              new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
-              return;
-            }
-            new WorksheetModal(this.app, items).open();
-          })
-      );
-
-    // ==========================================
-    // 8. РУБИ-РАЗМЕТКА (RUBY / FURIGANA)
-    // ==========================================
-    new Setting(containerEl)
-      .setName(t("settings.ruby_heading"))
-      .setHeading();
-
-    new Setting(containerEl)
-      .setName(t("settings.ruby_dialect"))
-      .setDesc(t("settings.ruby_dialect_desc"))
-      .addDropdown((dropdown) =>
-        dropdown
-          .addOption("pinyin", t("settings.ruby_pinyin"))
-          .addOption("jyutping", t("settings.ruby_jyutping"))
-          .setValue(this.plugin.settings.rubyDialect)
-          .onChange(async (val) => {
-            this.plugin.settings.rubyDialect = val as "pinyin" | "jyutping";
-            await this.plugin.saveSettings();
-          })
-      );
-
-    // ==========================================
-    // СБРОС НАСТРОЕК
+    // 7. СБРОС НАСТРОЕК И КУРСЫ АВТОРА
     // ==========================================
     containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
 
@@ -1308,65 +889,53 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       .setName(t("settings.reset_title"))
       .setDesc(t("settings.reset_desc"))
       .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.reset_btn"))
-          .setClass("mod-warning")
-          .onClick(async () => {
-            this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as ChineseDictSettings;
-            await this.plugin.saveSettings();
-            if (this.plugin.tooltip.getIsOpen()) {
-              this.plugin.tooltip.refresh(this.plugin.settings);
-            }
-            this.renderSettings();
-          })
+        btn.setButtonText(t("settings.reset_btn")).setClass("mod-warning").onClick(async () => {
+          this.plugin.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as ChineseDictSettings;
+          await this.plugin.saveSettings();
+          this.plugin.applyCurrentFont();
+          this.plugin.updateReaderStatusBar();
+          if (this.plugin.tooltip.getIsOpen()) {
+            this.plugin.tooltip.refresh(this.plugin.settings);
+          }
+          this.renderSettings();
+        })
       );
 
-    // ==========================================
-    // 9. FREE CHINESE COURSES BY AUTHOR (YOUTUBE)
-    // ==========================================
-    containerEl.createDiv({ cls: "ch-dict-settings-spacer" });
-
-    new Setting(containerEl)
-      .setName(t("settings.courses_heading"))
-      .setHeading();
-
+    new Setting(containerEl).setName(t("settings.courses_heading")).setHeading();
     const aboutBox = containerEl.createDiv({ cls: "ch-dict-about-box" });
-    aboutBox.createEl("p", {
-      text: t("settings.courses_desc"),
-    });
+    aboutBox.createEl("p", { text: t("settings.courses_desc") });
 
     const channelRow = aboutBox.createDiv({ cls: "ch-dict-channels-row" });
-
-    // English YouTube Channel
-    const engCard = channelRow.createEl("a", {
-      cls: "ch-dict-channel-card",
-      href: "https://www.youtube.com/@ChineseWithKantulaev",
-    });
-    engCard.setAttribute("target", "_blank");
-    engCard.setAttribute("rel", "noopener noreferrer");
-    engCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇬🇧" });
-    const engInfo = engCard.createDiv({ cls: "ch-dict-channel-info" });
-    engInfo.createSpan({ cls: "ch-dict-channel-title", text: t("settings.courses_channel_eng") });
-    engInfo.createSpan({ cls: "ch-dict-channel-sub", text: t("settings.courses_channel_eng_sub") });
-
-    // Russian YouTube Channel
-    const ruCard = channelRow.createEl("a", {
-      cls: "ch-dict-channel-card",
-      href: "https://www.youtube.com/@kantulaevCN",
-    });
-    ruCard.setAttribute("target", "_blank");
-    ruCard.setAttribute("rel", "noopener noreferrer");
-    ruCard.createSpan({ cls: "ch-dict-channel-icon", text: "🇷🇺" });
-    const ruInfo = ruCard.createDiv({ cls: "ch-dict-channel-info" });
-    ruInfo.createSpan({ cls: "ch-dict-channel-title", text: t("settings.courses_channel_ru") });
-    ruInfo.createSpan({ cls: "ch-dict-channel-sub", text: t("settings.courses_channel_ru_sub") });
+    const channels = [
+      { url: "https://www.youtube.com/@ChineseWithKantulaev", icon: "🇬🇧", title: t("settings.courses_channel_eng"), sub: t("settings.courses_channel_eng_sub") },
+      { url: "https://www.youtube.com/@kantulaevCN", icon: "🇷🇺", title: t("settings.courses_channel_ru"), sub: t("settings.courses_channel_ru_sub") },
+    ];
+    for (const ch of channels) {
+      const card = channelRow.createEl("a", { cls: "ch-dict-channel-card", href: ch.url });
+      card.setAttribute("target", "_blank");
+      card.setAttribute("rel", "noopener noreferrer");
+      card.createSpan({ cls: "ch-dict-channel-icon", text: ch.icon });
+      const info = card.createDiv({ cls: "ch-dict-channel-info" });
+      info.createSpan({ cls: "ch-dict-channel-title", text: ch.title });
+      info.createSpan({ cls: "ch-dict-channel-sub", text: ch.sub });
+    }
   }
 
   private async renderDictPacksCards(containerEl: HTMLElement): Promise<void> {
     containerEl.empty();
     const activePack = this.plugin.settings.activeDictPack || "en";
+    const q = this.dictFilterQuery;
 
     for (const pack of DICT_PACKS) {
+      if (
+        q &&
+        !pack.id.toLowerCase().includes(q) &&
+        !pack.name.toLowerCase().includes(q) &&
+        !pack.nativeName.toLowerCase().includes(q)
+      ) {
+        continue;
+      }
+
       const isInstalled = await this.plugin.dictionary.isPackInstalled(pack.id);
       const isCantoneseAddon = pack.id === "yue";
       const isActive = isCantoneseAddon ? isInstalled : (activePack === pack.id);
@@ -1375,7 +944,6 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       if (isActive) card.addClass("is-active-pack");
       if (isInstalled) card.addClass("is-installed");
 
-      // Left: Flag & Details
       const leftCol = card.createDiv({ cls: "ch-dict-pack-left" });
       leftCol.createSpan({ cls: "ch-dict-pack-flag", text: pack.flag });
 
@@ -1392,15 +960,11 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       const metaRow = infoCol.createDiv({ cls: "ch-dict-pack-meta" });
       metaRow.createSpan({ text: `${pack.entries} ${t("settings.dict_entries")} • ${pack.approxSize} • ${pack.source}` });
 
-      // Right: Actions (Download / Activate / Delete)
       const actions = card.createDiv({ cls: "ch-dict-pack-actions" });
 
       if (isInstalled) {
         if (!isActive && !isCantoneseAddon) {
-          const activateBtn = actions.createEl("button", {
-            cls: "mod-cta ch-dict-pack-btn",
-            text: t("settings.dict_activate"),
-          });
+          const activateBtn = actions.createEl("button", { cls: "mod-cta ch-dict-pack-btn", text: t("settings.dict_activate") });
           activateBtn.addEventListener("click", () => {
             void (async () => {
               this.plugin.settings.activeDictPack = pack.id;
@@ -1413,10 +977,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           });
         }
 
-        const deleteBtn = actions.createEl("button", {
-          cls: "ch-dict-pack-btn ch-dict-pack-btn-delete",
-          text: t("settings.dict_delete"),
-        });
+        const deleteBtn = actions.createEl("button", { cls: "ch-dict-pack-btn ch-dict-pack-btn-delete", text: t("settings.dict_delete") });
         deleteBtn.addEventListener("click", () => {
           void (async () => {
             const ok = await this.plugin.dictionary.deletePack(pack.id);
@@ -1431,22 +992,15 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           })();
         });
       } else {
-        const downloadBtn = actions.createEl("button", {
-          cls: "ch-dict-pack-btn ch-dict-pack-btn-download",
-          text: `📥 ${t("settings.dict_download")}`,
-        });
+        const downloadBtn = actions.createEl("button", { cls: "ch-dict-pack-btn ch-dict-pack-btn-download", text: `📥 ${t("settings.dict_download")}` });
         downloadBtn.addEventListener("click", () => {
           void (async () => {
             downloadBtn.setText(`⏳ ${t("settings.dict_downloading")}`);
             downloadBtn.setAttribute("disabled", "true");
             const ok = await this.plugin.dictionary.downloadPack(pack.id);
             if (ok) {
-              if (!this.plugin.settings.installedDictPacks) {
-                this.plugin.settings.installedDictPacks = ["en"];
-              }
-              if (!this.plugin.settings.installedDictPacks.includes(pack.id)) {
-                this.plugin.settings.installedDictPacks.push(pack.id);
-              }
+              if (!this.plugin.settings.installedDictPacks) this.plugin.settings.installedDictPacks = ["en"];
+              if (!this.plugin.settings.installedDictPacks.includes(pack.id)) this.plugin.settings.installedDictPacks.push(pack.id);
               if (!isCantoneseAddon) {
                 this.plugin.settings.activeDictPack = pack.id;
                 this.plugin.settings.translationLanguage = pack.id;

@@ -652,6 +652,29 @@ export function getRadicalMeaning(
   return mult?.["en"] || (typeof rad === "object" ? rad.meaningEn : KANGXI_RADICALS[num]?.meaningEn || "");
 }
 
+const RADICAL_DESC_TEMPLATES: Record<string, string> = {
+  ru: "Базовый неделимый иероглиф-ключ #{n} «{r}» («{m}», {s} черт)",
+  de: "Grundlegendes Kangxi-Radikal #{n} «{r}» („{m}“, {s} Striche)",
+  fr: "Radical de base de Kangxi #{n} « {r} » (« {m} », {s} traits)",
+  es: "Radical básico de Kangxi #{n} «{r}» («{m}», {s} trazos)",
+  ja: "基本康熙部首 #{n}「{r}」（{m}、{s}画）",
+  ko: "기본 강희자전 부수 #{n} '{r}' ({m}, {s}획)",
+  vi: "Bộ thủ Khang Hy cơ bản #{n} «{r}» («{m}», {s} nét)",
+  it: "Radicale base di Kangxi #{n} «{r}» («{m}», {s} tratti)",
+  pt: "Radical básico de Kangxi #{n} «{r}» («{m}», {s} traços)",
+  id: "Radikal dasar Kangxi #{n} «{r}» («{m}», {s} guratan)",
+  th: "หมวดนำคังซีพื้นฐาน #{n} «{r}» («{m}», {s} ขีด)",
+  ar: "الجذر الأساسي لكانغ شي #{n} «{r}» («{m}»، {s} ضربات)",
+  tr: "Temel Kangxi kökü #{n} «{r}» («{m}», {s} çizgi)",
+  pl: "Podstawowy pierwiastek Kangxi #{n} «{r}» („{m}”, {s} kresek)",
+  nl: "Basis Kangxi-radicaal #{n} «{r}» («{m}», {s} strepen)",
+  uk: "Базовий неподільний ієрогліф-ключ #{n} «{r}» («{m}», {s} рис)",
+  hi: "मूल कांग्शी मूलक #{n} «{r}» («{m}», {s} स्ट्रोक)",
+  "zh-CN": "基本康熙部首 #{n} “{r}”（{m}，{s}画）",
+  "zh-TW": "基本康熙部首 #{n} 「{r}」（{m}，{s}畫）",
+  en: "Basic Kangxi radical #{n} «{r}» («{m}», {s} strokes)",
+};
+
 export function formatBasicRadicalDesc(
   radNum: number,
   radical: string,
@@ -659,50 +682,12 @@ export function formatBasicRadicalDesc(
   strokeCount: number,
   lang: string = "en"
 ): string {
-  const l = normalizeLangCode(lang);
-  switch (l) {
-    case "ru":
-      return `Базовый неделимый иероглиф-ключ #${radNum} «${radical}» («${meaning}», ${strokeCount} черт)`;
-    case "de":
-      return `Grundlegendes Kangxi-Radikal #${radNum} «${radical}» („${meaning}“, ${strokeCount} Striche)`;
-    case "fr":
-      return `Radical de base de Kangxi #${radNum} « ${radical} » (« ${meaning} », ${strokeCount} traits)`;
-    case "es":
-      return `Radical básico de Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} trazos)`;
-    case "ja":
-      return `基本康熙部首 #${radNum}「${radical}」（${meaning}、${strokeCount}画）`;
-    case "ko":
-      return `기본 강희자전 부수 #${radNum} '${radical}' (${meaning}, ${strokeCount}획)`;
-    case "vi":
-      return `Bộ thủ Khang Hy cơ bản #${radNum} «${radical}» («${meaning}», ${strokeCount} nét)`;
-    case "it":
-      return `Radicale base di Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} tratti)`;
-    case "pt":
-      return `Radical básico de Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} traços)`;
-    case "id":
-      return `Radikal dasar Kangxi #${radNum} «${radical}» («${meaning}», ${strokeCount} guratan)`;
-    case "th":
-      return `หมวดนำคังซีพื้นฐาน #${radNum} «${radical}» («${meaning}», ${strokeCount} ขีด)`;
-    case "ar":
-      return `الجذر الأساسي لكانغ شي #${radNum} «${radical}» («${meaning}»، ${strokeCount} ضربات)`;
-    case "tr":
-      return `Temel Kangxi kökü #${radNum} «${radical}» («${meaning}», ${strokeCount} çizgi)`;
-    case "pl":
-      return `Podstawowy pierwiastek Kangxi #${radNum} «${radical}» („${meaning}”, ${strokeCount} kresek)`;
-    case "nl":
-      return `Basis Kangxi-radicaal #${radNum} «${radical}» («${meaning}», ${strokeCount} strepen)`;
-    case "uk":
-      return `Базовий неподільний ієрогліф-ключ #${radNum} «${radical}» («${meaning}», ${strokeCount} рис)`;
-    case "hi":
-      return `मूल कांग्शी मूलक #${radNum} «${radical}» («${meaning}», ${strokeCount} स्ट्रोक)`;
-    case "zh-CN":
-      return `基本康熙部首 #${radNum} “${radical}”（${meaning}，${strokeCount}画）`;
-    case "zh-TW":
-      return `基本康熙部首 #${radNum} 「${radical}」（${meaning}，${strokeCount}畫）`;
-    case "en":
-    default:
-      return `Basic Kangxi radical #${radNum} «${radical}» («${meaning}», ${strokeCount} strokes)`;
-  }
+  const tpl = RADICAL_DESC_TEMPLATES[normalizeLangCode(lang)] || RADICAL_DESC_TEMPLATES.en;
+  return tpl
+    .replace("{n}", String(radNum))
+    .replace("{r}", radical)
+    .replace("{m}", meaning)
+    .replace("{s}", String(strokeCount));
 }
 
 export function getCharacterRadical(char: string): RadicalInfo | null {

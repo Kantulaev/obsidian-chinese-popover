@@ -23,16 +23,17 @@ import {
 } from "./vocabulary-view.ts";
 import { applyChineseFontToDOM } from "./font.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
-import { addNoteToAnki, generateAnkiTsv } from "./anki.ts";
+import { addNoteToAnki } from "./anki.ts";
 import { formatPinyin } from "./pinyin.ts";
 import { TextAnalyzerModal } from "./analyzer.ts";
 import { createWordNote } from "./word-notes.ts";
 import { convertToSimplified, convertToTraditional } from "./converter.ts";
-import { generatePlecoFlashcards } from "./pleco.ts";
 import { WorksheetModal } from "./worksheet.ts";
 import { HistoryManager } from "./history.ts";
 import { ChineseSearchModal } from "./search-modal.ts";
 import { setActiveLanguage } from "./i18n/index.ts";
+import { exportVocabularyFile, HAN_CHAR_RE, HAN_RUN_GLOBAL_RE } from "./utils.ts";
+import type { MatchResult } from "./dictionary.ts";
 
 interface CodeMirrorEditor extends Editor {
   cm?: EditorView;
@@ -94,17 +95,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.readerStatusBarItem = this.addStatusBarItem();
     this.updateReaderStatusBar();
     this.readerStatusBarItem.addEventListener("click", () => {
-      void (async () => {
-        this.settings.readerMode = !this.settings.readerMode;
-        await this.saveSettings();
-        this.updateReaderStatusBar();
-        this.applyCurrentFont();
-        new Notice(
-          `Режим быстрого чтения: ${
-            this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
-          }`
-        );
-      })();
+      void this.toggleReaderMode();
     });
 
     // Register Right Sidebar View for Vocabulary
@@ -125,10 +116,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // Register CodeMirror 6 extension for Live Preview and Source Mode
     this.registerEditorExtension(this.buildCodeMirrorExtension());
 
-    // Wrap Chinese Hanzi runs in Reading View so Chinese fonts apply strictly to Hanzi only
+    // Wrap Chinese Hanzi runs in Reading View only when entire_editor font scope is active
     this.registerMarkdownPostProcessor((el) => {
-      const hasHan = /\p{Script=Han}/u;
-      if (!hasHan.test(el.textContent || "")) return;
+      if (this.settings.chineseFontScope !== "entire_editor" || !this.hasActiveEditorHanziFont()) return;
+      if (!HAN_CHAR_RE.test(el.textContent || "")) return;
 
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
       const textNodes: Text[] = [];
@@ -137,7 +128,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (
           current.nodeType === Node.TEXT_NODE &&
           current.textContent &&
-          hasHan.test(current.textContent) &&
+          HAN_CHAR_RE.test(current.textContent) &&
           !(current.parentElement?.classList.contains("ch-dict-hanzi-run"))
         ) {
           textNodes.push(current as Text);
@@ -145,11 +136,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
         current = walker.nextNode();
       }
 
-      const hanRunRe = /\p{Script=Han}+/gu;
       for (const node of textNodes) {
         const text = node.textContent || "";
-        hanRunRe.lastIndex = 0;
-        let match = hanRunRe.exec(text);
+        HAN_RUN_GLOBAL_RE.lastIndex = 0;
+        let match = HAN_RUN_GLOBAL_RE.exec(text);
         if (!match) continue;
 
         const frag = document.createDocumentFragment();
@@ -163,7 +153,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
           span.textContent = match[0];
           frag.appendChild(span);
           lastIdx = match.index + match[0].length;
-          match = hanRunRe.exec(text);
+          match = HAN_RUN_GLOBAL_RE.exec(text);
         }
         if (lastIdx < text.length) {
           frag.appendChild(document.createTextNode(text.slice(lastIdx)));
@@ -373,16 +363,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.addCommand({
       id: "toggle-reader-mode",
       name: "Переключить режим быстрого чтения / Toggle Reader Mode",
-      callback: async () => {
-        this.settings.readerMode = !this.settings.readerMode;
-        await this.saveSettings();
-        this.updateReaderStatusBar();
-        this.applyCurrentFont();
-        new Notice(
-          `Режим быстрого чтения: ${
-            this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"
-          }`
-        );
+      callback: () => {
+        void this.toggleReaderMode();
       },
     });
 
@@ -395,25 +377,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
         if (!activeView && !this.tooltip.getIsOpen()) return false;
         if (checking) return true;
 
-        let word = "";
-        if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
-          word = this.tooltip.getCurrentWord()!;
-        } else if (activeView?.editor) {
-          word = activeView.editor.getSelection().trim();
-          if (!word) {
-            const cursor = activeView.editor.getCursor();
-            const line = activeView.editor.getLine(cursor.line);
-            const match = this.dictionary.findWordAtOffset(
-              line,
-              cursor.ch,
-              this.settings.maxWordLength
-            );
-            if (match) word = match.word;
-          }
-        }
-
-        if (word) {
-          new StrokeOrderModal(this.app, word).open();
+        const ctx = this.resolveActiveWordContext();
+        if (ctx?.word) {
+          new StrokeOrderModal(this.app, ctx.word).open();
         } else {
           new Notice("Не найден китайский иероглиф под курсором или в выделении.");
         }
@@ -421,68 +387,31 @@ export default class ChineseHoverDictPlugin extends Plugin {
       },
     });
 
-    // 12. Add Ruby Pinyin / Furigana to selection
-    this.addCommand({
-      id: "add-ruby-pinyin",
-      name: "Добавить пиньинь (Ruby/Furigana) к выделенному тексту / Add Ruby Pinyin",
-      checkCallback: (checking: boolean) => {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!activeView || !activeView.editor) return false;
-        const sel = activeView.editor.getSelection().trim();
-        if (!sel) return false;
-        if (checking) return true;
-
-        const ruby = this.convertTextToRuby(sel, "pinyin");
-        activeView.editor.replaceSelection(ruby);
-        new Notice("Пиньинь (Ruby) добавлен над текстом!");
-        return true;
-      },
-    });
-
-    // 13. Add Ruby Jyutping / Furigana to selection
-    this.addCommand({
-      id: "add-ruby-jyutping",
-      name: "Добавить ютпинг (Ruby/Furigana) к выделенному тексту / Add Ruby Jyutping",
-      checkCallback: (checking: boolean) => {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!activeView || !activeView.editor) return false;
-        const sel = activeView.editor.getSelection().trim();
-        if (!sel) return false;
-        if (checking) return true;
-
-        const ruby = this.convertTextToRuby(sel, "jyutping");
-        activeView.editor.replaceSelection(ruby);
-        new Notice("Ютпинг (Ruby) добавлен над текстом!");
-        return true;
-      },
-    });
+    // 12 & 13. Add Ruby Pinyin / Jyutping to selection
+    const registerRubyCommand = (dialect: "pinyin" | "jyutping", id: string, name: string, msg: string) => {
+      this.addCommand({
+        id,
+        name,
+        checkCallback: (checking: boolean) => {
+          const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const sel = activeView?.editor?.getSelection().trim();
+          if (!activeView?.editor || !sel) return false;
+          if (checking) return true;
+          activeView.editor.replaceSelection(this.convertTextToRuby(sel, dialect));
+          new Notice(msg);
+          return true;
+        },
+      });
+    };
+    registerRubyCommand("pinyin", "add-ruby-pinyin", "Добавить пиньинь (Ruby/Furigana) к выделенному тексту / Add Ruby Pinyin", "Пиньинь (Ruby) добавлен над текстом!");
+    registerRubyCommand("jyutping", "add-ruby-jyutping", "Добавить ютпинг (Ruby/Furigana) к выделенному тексту / Add Ruby Jyutping", "Ютпинг (Ruby) добавлен над текстом!");
 
     // 14. Export Vocabulary to Anki TSV file
     this.addCommand({
       id: "export-vocabulary-anki-tsv",
       name: "Экспорт словарика в файл Anki (.tsv) / Export Vocabulary to Anki TSV",
       callback: () => {
-        const items = this.vocabulary.getItems();
-        if (items.length === 0) {
-          new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
-          return;
-        }
-        const tsv = generateAnkiTsv(items);
-        const blob = new Blob([tsv], {
-          type: "text/tab-separated-values;charset=utf-8;",
-        });
-        const url = URL.createObjectURL(blob);
-        const link = createEl("a", {
-          href: url,
-          attr: {
-            download: `Anki_Chinese_Vocabulary_${new Date()
-              .toISOString()
-              .slice(0, 10)}.tsv`,
-          },
-        });
-        link.click();
-        URL.revokeObjectURL(url);
-        new Notice(`Экспортировано ${items.length} слов в TSV файл для Anki!`);
+        exportVocabularyFile(this.vocabulary.getItems(), "anki");
       },
     });
 
@@ -499,8 +428,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
         new Notice("Начата синхронизация с AnkiConnect...");
         let count = 0;
         for (const item of items) {
-          const ok = await addNoteToAnki(this.settings.anki, item);
-          if (ok) count++;
+          if (await addNoteToAnki(this.settings.anki, item)) count++;
         }
         new Notice(`Синхронизация завершена: ${count} карточек отправлено в Anki.`);
       },
@@ -512,10 +440,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
       name: "Анализатор сложности текста и уровни HSK / Analyze Text Difficulty & HSK",
       callback: () => {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        let text = "";
-        if (activeView?.editor) {
-          text = activeView.editor.getSelection().trim() || activeView.editor.getValue();
-        }
+        const text = activeView?.editor
+          ? (activeView.editor.getSelection().trim() || activeView.editor.getValue())
+          : "";
         if (!text) {
           new Notice("Нет открытого текста для анализа сложности по HSK.");
           return;
@@ -532,92 +459,29 @@ export default class ChineseHoverDictPlugin extends Plugin {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (!activeView && !this.tooltip.getIsOpen()) return false;
         if (checking) return true;
-
-        let word = "";
-        let contextSentence: string | undefined = undefined;
-        if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
-          word = this.tooltip.getCurrentWord()!;
-          contextSentence = this.tooltip.getCurrentContextSentence();
-        } else if (activeView?.editor) {
-          word = activeView.editor.getSelection().trim();
-          if (!word) {
-            const cursor = activeView.editor.getCursor();
-            const line = activeView.editor.getLine(cursor.line);
-            const match = this.dictionary.findWordAtOffset(
-              line,
-              cursor.ch,
-              this.settings.maxWordLength
-            );
-            if (match) {
-              word = match.word;
-              contextSentence = line;
-            }
-          }
-        }
-
-        if (word) {
-          const match = this.dictionary.getExact(word);
-          if (match) {
-            void createWordNote(this.app, match, contextSentence, {
-              folderPath: this.settings.wordNotesFolder || "Chinese/Words",
-              openAfterCreation: true,
-            });
-          } else {
-            const dummyMatch = {
-              word,
-              entries: [{
-                simplified: word,
-                traditional: word,
-                pinyin: "",
-                definitions: [],
-              }],
-              length: Array.from(word).length,
-            };
-            void createWordNote(this.app, dummyMatch, contextSentence, {
-              folderPath: this.settings.wordNotesFolder || "Chinese/Words",
-              openAfterCreation: true,
-            });
-          }
-        } else {
-          new Notice("Поместите курсор на китайское слово или выделите его.");
-        }
+        void this.createActiveWordNote();
         return true;
       },
     });
 
-    // 18. Convert Selection to Traditional Chinese (繁體)
-    this.addCommand({
-      id: "convert-to-traditional",
-      name: "Преобразовать выделенный текст в традиционные иероглифы (繁體) / Convert to Traditional",
-      checkCallback: (checking: boolean) => {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!activeView || !activeView.editor) return false;
-        const sel = activeView.editor.getSelection();
-        if (!sel) return false;
-        if (checking) return true;
-        const converted = convertToTraditional(sel);
-        activeView.editor.replaceSelection(converted);
-        new Notice("Преобразовано в традиционные иероглифы (繁體)!");
-        return true;
-      },
-    });
-
-    // 19. Convert Selection to Simplified Chinese (简体)
-    this.addCommand({
-      id: "convert-to-simplified",
-      name: "Преобразовать выделенный текст в упрощенные иероглифы (简体) / Convert to Simplified",
-      checkCallback: (checking: boolean) => {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!activeView || !activeView.editor) return false;
-        const sel = activeView.editor.getSelection();
-        if (!sel) return false;
-        if (checking) return true;
-        const converted = convertToSimplified(sel);
-        activeView.editor.replaceSelection(converted);
-        new Notice("Преобразовано в упрощенные иероглифы (简体)!");
-        return true;
-      },
-    });
+    // 18 & 19. Convert Selection between Simplified and Traditional Chinese
+    const registerScriptCommand = (id: string, name: string, fn: (s: string) => string, msg: string) => {
+      this.addCommand({
+        id,
+        name,
+        checkCallback: (checking: boolean) => {
+          const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+          const sel = activeView?.editor?.getSelection();
+          if (!activeView?.editor || !sel) return false;
+          if (checking) return true;
+          activeView.editor.replaceSelection(fn(sel));
+          new Notice(msg);
+          return true;
+        },
+      });
+    };
+    registerScriptCommand("convert-to-traditional", "Преобразовать выделенный текст в традиционные иероглифы (繁體) / Convert to Traditional", convertToTraditional, "Преобразовано в традиционные иероглифы (繁體)!");
+    registerScriptCommand("convert-to-simplified", "Преобразовать выделенный текст в упрощенные иероглифы (简体) / Convert to Simplified", convertToSimplified, "Преобразовано в упрощенные иероглифы (简体)!");
 
     // 20. Speak Selected Text (TTS Cantonese / Mandarin)
     this.addCommand({
@@ -625,9 +489,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
       name: "Озвучить выделенный фрагмент текста (TTS) / Speak Selected Text",
       checkCallback: (checking: boolean) => {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        if (!activeView || !activeView.editor) return false;
-        const sel = activeView.editor.getSelection().trim();
-        if (!sel) return false;
+        const sel = activeView?.editor?.getSelection().trim();
+        if (!activeView?.editor || !sel) return false;
         if (checking) return true;
         this.tooltip.playSpeech(sel, this.settings);
         return true;
@@ -639,27 +502,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
       id: "export-pleco-flashcards",
       name: "Экспорт словарика в Pleco (.txt) / Export Pleco Flashcards",
       callback: () => {
-        const items = this.vocabulary.getItems();
-        if (items.length === 0) {
-          new Notice("Словарик пуст! Сначала добавьте слова звёздочкой ⭐.");
-          return;
-        }
-        const txt = generatePlecoFlashcards(items);
-        const blob = new Blob([txt], {
-          type: "text/plain;charset=utf-8;",
-        });
-        const url = URL.createObjectURL(blob);
-        const link = createEl("a", {
-          href: url,
-          attr: {
-            download: `Pleco_Chinese_Vocabulary_${new Date()
-              .toISOString()
-              .slice(0, 10)}.txt`,
-          },
-        });
-        link.click();
-        URL.revokeObjectURL(url);
-        new Notice(`Экспортировано ${items.length} слов для Pleco!`);
+        exportVocabularyFile(this.vocabulary.getItems(), "pleco");
       },
     });
 
@@ -852,6 +695,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * CodeMirror 6 extension for Live Preview and Source mode
    */
   private buildCodeMirrorExtension(): Extension {
+    const isHanziStylingEnabled = () =>
+      this.settings.chineseFontScope === "entire_editor" && this.hasActiveEditorHanziFont();
     return [
       // Mouse selection style facet: intelligently highlights the exact Chinese word / phrase
       // (2-, 3-, or 4-character chengyu / compound word) so the editor selection and dictionary match 100%!
@@ -984,21 +829,23 @@ export default class ChineseHoverDictPlugin extends Plugin {
               this.decorations = this.buildDecorations(update.view);
             }
           }
-          buildDecorations(view: EditorView): DecorationSet {
+          buildDecorations = (view: EditorView): DecorationSet => {
             const builder = new RangeSetBuilder<Decoration>();
+            if (!isHanziStylingEnabled()) {
+              return builder.finish();
+            }
             const mark = Decoration.mark({ class: "ch-dict-hanzi-run" });
-            const hanRe = /\p{Script=Han}+/gu;
             for (const { from, to } of view.visibleRanges) {
               const text = view.state.doc.sliceString(from, to);
-              hanRe.lastIndex = 0;
-              let m = hanRe.exec(text);
+              HAN_RUN_GLOBAL_RE.lastIndex = 0;
+              let m = HAN_RUN_GLOBAL_RE.exec(text);
               while (m) {
                 builder.add(from + m.index, from + m.index + m[0].length, mark);
-                m = hanRe.exec(text);
+                m = HAN_RUN_GLOBAL_RE.exec(text);
               }
             }
             return builder.finish();
-          }
+          };
         },
         { decorations: (v) => v.decorations }
       ),
@@ -2035,35 +1882,74 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   /**
-   * Pronounce currently active or selected word
+   * Resolves the currently active Chinese word & match (open popover -> selection -> cursor word)
    */
-  public pronounceActiveWord(): void {
-    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
-      this.tooltip.playSpeech(this.tooltip.getCurrentWord()!, this.settings);
-      return;
+  private resolveActiveWordContext(): {
+    word: string;
+    match?: MatchResult;
+    contextSentence?: string;
+  } | null {
+    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentMatch()) {
+      const m = this.tooltip.getCurrentMatch()!;
+      return {
+        word: m.word,
+        match: m,
+        contextSentence: this.tooltip.getCurrentContextSentence(),
+      };
     }
 
     const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView && activeView.editor) {
-      const editor = activeView.editor;
-      const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection)) {
-        this.tooltip.playSpeech(selection, this.settings);
-        new Notice(`Озвучивание: ${selection}`);
-        return;
+    if (!activeView?.editor) return null;
+
+    const editor = activeView.editor;
+    const cursor = editor.getCursor();
+    const lineText = editor.getLine(cursor.line);
+    const contextSentence = this.settings.autoSaveContextSentence
+      ? this.extractContextSentence(lineText, cursor.ch)
+      : undefined;
+
+    const selection = editor.getSelection().trim();
+    if (selection && this.dictionary.isChinese(selection)) {
+      const entries = this.dictionary.get(selection);
+      const match: MatchResult | undefined =
+        entries && entries.length > 0
+          ? { word: selection, entries, length: Array.from(selection).length }
+          : undefined;
+      return { word: selection, match, contextSentence: contextSentence ?? lineText };
+    }
+
+    const match = this.dictionary.findWordAtOffset(lineText, cursor.ch, this.settings.maxWordLength);
+    if (match) {
+      return { word: match.word, match, contextSentence: contextSentence ?? lineText };
+    }
+
+    return null;
+  }
+
+  /**
+   * Toggles Reader Mode and updates status bar & fonts immediately
+   */
+  public async toggleReaderMode(): Promise<void> {
+    this.settings.readerMode = !this.settings.readerMode;
+    await this.saveSettings();
+    this.updateReaderStatusBar();
+    this.applyCurrentFont();
+    new Notice(
+      `Режим быстрого чтения: ${this.settings.readerMode ? "ВКЛ (ON) 🏮" : "ВЫКЛ (OFF)"}`
+    );
+  }
+
+  /**
+   * Pronounce currently active or selected word
+   */
+  public pronounceActiveWord(): void {
+    const ctx = this.resolveActiveWordContext();
+    if (ctx?.word) {
+      this.tooltip.playSpeech(ctx.word, this.settings);
+      if (!this.tooltip.getIsOpen()) {
+        new Notice(`Озвучивание: ${ctx.word}`);
       }
-      const cursor = editor.getCursor();
-      const lineText = editor.getLine(cursor.line);
-      const match = this.dictionary.findWordAtOffset(
-        lineText,
-        cursor.ch,
-        this.settings.maxWordLength
-      );
-      if (match) {
-        this.tooltip.playSpeech(match.word, this.settings);
-        new Notice(`Озвучивание: ${match.word}`);
-        return;
-      }
+      return;
     }
     new Notice("Нет слова для озвучивания / No active word to pronounce");
   }
@@ -2076,32 +1962,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
       this.tooltip.copyCurrentEntry(this.settings);
       return;
     }
-
-    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView && activeView.editor) {
-      const editor = activeView.editor;
-      const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection)) {
-        const entries = this.dictionary.get(selection);
-        if (entries && entries.length > 0) {
-          this.tooltip.copyEntryDirect(
-            { word: selection, entries, length: Array.from(selection).length },
-            this.settings
-          );
-          return;
-        }
-      }
-      const cursor = editor.getCursor();
-      const lineText = editor.getLine(cursor.line);
-      const match = this.dictionary.findWordAtOffset(
-        lineText,
-        cursor.ch,
-        this.settings.maxWordLength
-      );
-      if (match) {
-        this.tooltip.copyEntryDirect(match, this.settings);
-        return;
-      }
+    const ctx = this.resolveActiveWordContext();
+    if (ctx?.match) {
+      this.tooltip.copyEntryDirect(ctx.match, this.settings);
+      return;
     }
     new Notice("Нет слова для копирования / No active word to copy");
   }
@@ -2110,58 +1974,29 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * Creates atomic Zettelkasten note for active word
    */
   public async createActiveWordNote(): Promise<void> {
-    let word = "";
-    let contextSentence: string | undefined = undefined;
-    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord()) {
-      word = this.tooltip.getCurrentWord()!;
-      contextSentence = this.tooltip.getCurrentContextSentence();
-    } else {
-      const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-      if (activeView?.editor) {
-        word = activeView.editor.getSelection().trim();
-        if (!word) {
-          const cursor = activeView.editor.getCursor();
-          const line = activeView.editor.getLine(cursor.line);
-          const match = this.dictionary.findWordAtOffset(
-            line,
-            cursor.ch,
-            this.settings.maxWordLength
-          );
-          if (match) {
-            word = match.word;
-            contextSentence = line;
-          }
-        }
-      }
-    }
-
-    if (!word) {
+    const ctx = this.resolveActiveWordContext();
+    if (!ctx?.word) {
       new Notice("Нет активного слова для создания заметки.");
       return;
     }
 
-    const match = this.dictionary.getExact(word);
-    if (match) {
-      await createWordNote(this.app, match, contextSentence, {
-        folderPath: this.settings.wordNotesFolder || "Chinese/Words",
-        openAfterCreation: true,
-      });
-    } else {
-      const dummyMatch = {
-        word,
+    const match =
+      ctx.match ||
+      this.dictionary.getExact(ctx.word) || {
+        word: ctx.word,
         entries: [{
-          simplified: word,
-          traditional: word,
+          simplified: ctx.word,
+          traditional: ctx.word,
           pinyin: "",
           definitions: [],
         }],
-        length: Array.from(word).length,
+        length: Array.from(ctx.word).length,
       };
-      await createWordNote(this.app, dummyMatch, contextSentence, {
-        folderPath: this.settings.wordNotesFolder || "Chinese/Words",
-        openAfterCreation: true,
-      });
-    }
+
+    await createWordNote(this.app, match, ctx.contextSentence, {
+      folderPath: this.settings.wordNotesFolder || "Chinese/Words",
+      openAfterCreation: true,
+    });
   }
 
   /**
@@ -2330,51 +2165,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * Toggle starring of active word (under popover or under cursor)
    */
   public async toggleStarActiveWord(): Promise<void> {
-    if (this.tooltip.getIsOpen() && this.tooltip.getCurrentMatch()) {
-      const match = this.tooltip.getCurrentMatch()!;
-      const context = this.tooltip.getCurrentContextSentence();
-      await this.vocabulary.toggleWord(match, context);
-      this.tooltip.refresh(this.settings);
+    const ctx = this.resolveActiveWordContext();
+    if (ctx?.match) {
+      await this.vocabulary.toggleWord(ctx.match, ctx.contextSentence);
+      if (this.tooltip.getIsOpen()) {
+        this.tooltip.refresh(this.settings);
+      }
       this.refreshVocabularyViews();
       return;
-    }
-
-    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView && activeView.editor) {
-      const editor = activeView.editor;
-      const selection = editor.getSelection().trim();
-      if (selection && this.dictionary.isChinese(selection)) {
-        const entries = this.dictionary.get(selection);
-        if (entries && entries.length > 0) {
-          const cursor = editor.getCursor();
-          const lineText = editor.getLine(cursor.line);
-          const context = this.settings.autoSaveContextSentence
-            ? this.extractContextSentence(lineText, cursor.ch)
-            : undefined;
-          await this.vocabulary.toggleWord(
-            { word: selection, entries, length: selection.length },
-            context
-          );
-          this.refreshVocabularyViews();
-          return;
-        }
-      }
-
-      const cursor = editor.getCursor();
-      const lineText = editor.getLine(cursor.line);
-      const match = this.dictionary.findWordAtOffset(
-        lineText,
-        cursor.ch,
-        this.settings.maxWordLength
-      );
-      if (match) {
-        const context = this.settings.autoSaveContextSentence
-          ? this.extractContextSentence(lineText, cursor.ch)
-          : undefined;
-        await this.vocabulary.toggleWord(match, context);
-        this.refreshVocabularyViews();
-        return;
-      }
     }
     new Notice("Нет слова для добавления в словарик / No active word to star");
   }
@@ -2415,7 +2213,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     while (i < chars.length) {
       const char = chars[i];
-      if (/\p{Script=Han}/u.test(char)) {
+      if (HAN_CHAR_RE.test(char)) {
         // Try matching words up to 4 characters first for correct multi-character polyphonic readings
         let matchedLen = 1;
         let pinyinStr = "";
@@ -2467,6 +2265,17 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     return result;
+  }
+
+  public hasActiveEditorHanziFont(): boolean {
+    const useReaderFont =
+      this.settings.readerMode &&
+      this.settings.readerModeFontFamily &&
+      this.settings.readerModeFontFamily !== "default";
+    const preset = useReaderFont
+      ? this.settings.readerModeFontFamily
+      : this.settings.chineseFontFamily;
+    return Boolean(preset && preset !== "default");
   }
 
   /**

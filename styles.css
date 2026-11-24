@@ -2710,3 +2710,62 @@ a.ch-dict-channel-card,
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* Settings Hero Header */
+.ch-settings-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.ch-settings-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 220px;
+  flex: 1;
+}
+
+.ch-settings-hero-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-normal);
+}
+
+.ch-settings-hero-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ch-settings-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ch-settings-hero-btn {
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
+}
+
+.ch-settings-hero-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.ch-settings-hero-btn:active {
+  transform: scale(0.96);
+}

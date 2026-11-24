@@ -31,7 +31,7 @@ const CHINESE_LOCAL_FONTS: Record<ChineseFontPreset, string[]> = {
 };
 
 const NATIVE_FIRST_CJK_STACK =
-  'var(--font-text), var(--default-font), -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Roboto", "ChDictHanziOnly", sans-serif';
+  '"ChDictHanziOnly", var(--font-text), var(--default-font), -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif';
 
 export const CHINESE_FONT_STACKS: Record<ChineseFontPreset, string> = {
   default: "inherit",

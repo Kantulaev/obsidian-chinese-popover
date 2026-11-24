@@ -66,7 +66,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
       window.setTimeout(() => {
         this.dictionary.ensureDefaultEnglishDictPack().catch(() => {});
         this.dictionary.ensureActiveLanguageDictPack().catch(() => {});
-      }, 5000);
+        if (this.settings.enableReverseLookup) {
+          this.dictionary.ensureReverseIndexReady();
+        }
+      }, 3000);
     });
 
     this.vocabulary = new VocabularyManager(this);

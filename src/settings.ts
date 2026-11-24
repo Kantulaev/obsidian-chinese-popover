@@ -1368,7 +1368,8 @@ export class ChineseDictSettingTab extends PluginSettingTab {
 
     for (const pack of DICT_PACKS) {
       const isInstalled = await this.plugin.dictionary.isPackInstalled(pack.id);
-      const isActive = activePack === pack.id;
+      const isCantoneseAddon = pack.id === "yue";
+      const isActive = isCantoneseAddon ? isInstalled : (activePack === pack.id);
 
       const card = containerEl.createDiv({ cls: "ch-dict-pack-card" });
       if (isActive) card.addClass("is-active-pack");
@@ -1395,7 +1396,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       const actions = card.createDiv({ cls: "ch-dict-pack-actions" });
 
       if (isInstalled) {
-        if (!isActive) {
+        if (!isActive && !isCantoneseAddon) {
           const activateBtn = actions.createEl("button", {
             cls: "mod-cta ch-dict-pack-btn",
             text: t("settings.dict_activate"),
@@ -1446,8 +1447,10 @@ export class ChineseDictSettingTab extends PluginSettingTab {
               if (!this.plugin.settings.installedDictPacks.includes(pack.id)) {
                 this.plugin.settings.installedDictPacks.push(pack.id);
               }
-              this.plugin.settings.activeDictPack = pack.id;
-              this.plugin.settings.translationLanguage = pack.id;
+              if (!isCantoneseAddon) {
+                this.plugin.settings.activeDictPack = pack.id;
+                this.plugin.settings.translationLanguage = pack.id;
+              }
               await this.plugin.saveSettings();
               await this.renderDictPacksCards(containerEl);
             } else {

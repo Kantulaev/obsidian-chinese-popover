@@ -17,6 +17,8 @@ export interface ReverseLookupResult {
 }
 
 const PUNCT_RE = /[?!.,;:'"()[\]{}]/g;
+const PAREN_TAG_RE = /\([^)]*\)|\[[^\]]*\]|<[^>]*>/g;
+const EXAMPLE_TAIL_RE = /;\s*Bsp\.:.*$/i;
 const PACK_SPLIT_RE = /[,;/]/;
 const EN_SPLIT_RE = /[;/]/;
 const LETTER_RE = /[\p{L}]/u;
@@ -67,8 +69,9 @@ export class ReverseDictionaryEngine {
     const idx = this.getOrCreateIndex(langId);
     for (const [chWord, defs] of Object.entries(packData)) {
       if (!defs || !Array.isArray(defs)) continue;
-      for (const def of defs) {
-        const parts = def.split(PACK_SPLIT_RE);
+      for (const rawDef of defs) {
+        const cleanDef = rawDef.replace(EXAMPLE_TAIL_RE, "").replace(PAREN_TAG_RE, " ");
+        const parts = cleanDef.split(PACK_SPLIT_RE);
         for (const rawP of parts) {
           let s = rawP.trim().toLowerCase();
           if (!s) continue;
@@ -304,10 +307,41 @@ export class ReverseDictionaryEngine {
     }
 
     // Plurals & Cases endings
-    const suffixes = ["ами", "ями", "ов", "ев", "ей", "ам", "ям", "ах", "ях", "ом", "ем", "ой", "ей", "ы", "и", "а", "я", "у", "ю", "е"];
+    const suffixes = ["ами", "ями", "ов", "ев", "ей", "ам", "ям", "ах", "ях", "ом", "ем", "ой", "ы", "и", "а", "я", "у", "ю", "е"];
     for (const suf of suffixes) {
       if (w.endsWith(suf) && w.length - suf.length >= 3) {
         forms.push(w.slice(0, -suf.length));
+      }
+    }
+
+    // Adjective endings -> masculine nominative
+    const adjSuffixes = ["ая", "яя", "ое", "ее", "ые", "ие", "ого", "его", "ому", "ему", "ым", "им", "ой", "ую", "юю"];
+    for (const suf of adjSuffixes) {
+      if (w.endsWith(suf) && w.length - suf.length >= 3) {
+        const stem = w.slice(0, -suf.length);
+        forms.push(stem + "ый", stem + "ий", stem + "ой");
+      }
+    }
+
+    // Verb conjugations & past tense -> infinitive (-ть, -ать, -ить, -еть, -ять, -ться)
+    const verbConjugations: Array<[string, string[]]> = [
+      ["аешь", ["ать"]], ["ает", ["ать"]], ["аем", ["ать"]], ["аете", ["ать"]], ["ают", ["ать"]],
+      ["аю", ["ать"]], ["ал", ["ать"]], ["ала", ["ать"]], ["али", ["ать"]], ["ало", ["ать"]],
+      ["яешь", ["ять"]], ["яет", ["ять"]], ["яем", ["ять"]], ["яете", ["ять"]], ["яют", ["ять"]],
+      ["яю", ["ять"]], ["ял", ["ять"]], ["яла", ["ять"]], ["яли", ["ять"]],
+      ["ишь", ["ить", "еть"]], ["ит", ["ить", "еть"]], ["им", ["ить", "еть"]], ["ите", ["ить", "еть"]],
+      ["ат", ["ить", "еть"]], ["ят", ["ить", "еть"]],
+      ["ил", ["ить"]], ["ила", ["ить"]], ["или", ["ить"]], ["ел", ["еть"]], ["ела", ["еть"]], ["ели", ["еть"]],
+      ["ется", ["аться", "ться", "еться"]], ["ются", ["аться", "ться", "яться"]],
+      ["ится", ["иться"]], ["ятся", ["иться", "яться"]],
+      ["ю", ["ть", "ать", "ить", "еть", "ять"]], ["у", ["ть", "ать", "ить"]],
+    ];
+    for (const [suf, infs] of verbConjugations) {
+      if (w.endsWith(suf) && w.length - suf.length >= 2) {
+        const stem = w.slice(0, -suf.length);
+        for (const inf of infs) {
+          forms.push(stem + inf);
+        }
       }
     }
 

@@ -704,6 +704,11 @@ export class DictionaryManager {
       if (effectiveLang && effectiveLang !== "en" && effectiveLang !== "both" && !this.loadedPacks.has(effectiveLang)) {
         await this.loadPack(effectiveLang);
       }
+
+      // Always preload Cantonese pack if installed so English + Cantonese work together
+      if (!this.loadedPacks.has("yue") && await isDictPackInstalled(adapter, this.getPluginDir(), "yue")) {
+        await this.loadPack("yue");
+      }
     } catch (err) {
       console.error("[Chinese Dict] Failed to load dictionary:", err);
       this.data = Object.assign({}, FALLBACK_DICT, CANTONESE_CORE_DICT);
@@ -866,6 +871,26 @@ export class DictionaryManager {
     const data = await loadDictPackData(this.plugin.app.vault.adapter, this.getPluginDir(), packId);
     if (data) {
       this.loadedPacks.set(packId, data);
+      if (packId === "yue") {
+        // Merge Cantonese-specific slang/entries into base dictionary so English + Cantonese work together
+        for (const [word, defs] of Object.entries(data)) {
+          if (!this.data[word] && defs && defs.length > 0) {
+            const entries: DictEntry[] = defs.map((d) => {
+              const sepIdx = d.indexOf(" • ");
+              const jyutping = sepIdx !== -1 ? d.slice(0, sepIdx).trim() : "";
+              const meaning = sepIdx !== -1 ? d.slice(sepIdx + 3).trim() : d;
+              return {
+                simplified: word,
+                traditional: word,
+                pinyin: "",
+                jyutping,
+                definitions: meaning.split(/;\s*/).filter(Boolean),
+              };
+            });
+            this.data[word] = entries;
+          }
+        }
+      }
       return true;
     }
     return false;
@@ -948,6 +973,7 @@ export class DictionaryManager {
   }
 
   lookupReverse(query: string, preferredLang: string = "auto"): MatchResult | null {
+    this.ensureReverseIndexReady();
     const rev = reverseDictionary.lookup(query, this.data, preferredLang);
     if (!rev) return null;
     const entries = this.getOrSynthesize(rev.primaryWord) || this.get(rev.primaryWord);

@@ -1074,21 +1074,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const matchEnd = line.from + (lineMatch.end ?? (lineOffset + lineMatch.length));
       const targetRect = this.getEditorTargetRect(view, matchStart, matchEnd);
 
-      if (isHover && targetRect) {
-        const HORIZONTAL_MARGIN = 16;
-        const VERTICAL_MARGIN = 10;
-        const isOverWord =
-          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
-          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
-          clientY >= targetRect.top - VERTICAL_MARGIN &&
-          clientY <= targetRect.bottom + VERTICAL_MARGIN;
-
-        if (!isOverWord) {
-          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-            this.scheduleHoverHide();
-          }
-          return;
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
         }
+        return;
       }
 
       if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === lineMatch.word) {
@@ -1130,21 +1120,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const wordTo = selEnd ?? (pos + Array.from(selectedText).length);
       const targetRect = this.getEditorTargetRect(view, wordFrom, wordTo);
 
-      if (isHover && targetRect) {
-        const HORIZONTAL_MARGIN = 16;
-        const VERTICAL_MARGIN = 10;
-        const isOverWord =
-          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
-          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
-          clientY >= targetRect.top - VERTICAL_MARGIN &&
-          clientY <= targetRect.bottom + VERTICAL_MARGIN;
-
-        if (!isOverWord) {
-          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-            this.scheduleHoverHide();
-          }
-          return;
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
         }
+        return;
       }
 
       if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === selectedText) {
@@ -1200,6 +1180,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const wordFrom = selStart ?? pos;
       const wordTo = selEnd ?? (pos + selectedText.length);
       const targetRect = this.getEditorTargetRect(view, wordFrom, wordTo);
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
+        }
+        return;
+      }
       const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
       if (rev) {
         this.cancelHoverHide();
@@ -1228,21 +1214,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const absEnd = match.end !== undefined ? line.from + match.end : (absStart + match.length);
       const targetRect = this.getEditorTargetRect(view, absStart, absEnd);
 
-      if (isHover && targetRect) {
-        const HORIZONTAL_MARGIN = 16;
-        const VERTICAL_MARGIN = 10;
-        const isOverWord =
-          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
-          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
-          clientY >= targetRect.top - VERTICAL_MARGIN &&
-          clientY <= targetRect.bottom + VERTICAL_MARGIN;
-
-        if (!isOverWord) {
-          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-            this.scheduleHoverHide();
-          }
-          return;
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
         }
+        return;
       }
 
       if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === match.word) {
@@ -1268,11 +1244,25 @@ export default class ChineseHoverDictPlugin extends Plugin {
       );
       return;
     } else if (this.settings.enableReverseLookup) {
-      const foreignWord = this.extractForeignWordAtOffset(lineText, lineOffset);
-      if (foreignWord) {
-        const targetRect = this.getEditorTargetRect(view, pos, pos + foreignWord.length);
-        const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
+      const foreignMatch = this.extractForeignWordRangeAtOffset(lineText, lineOffset);
+      if (foreignMatch) {
+        const targetRect = this.getEditorTargetRect(
+          view,
+          line.from + foreignMatch.start,
+          line.from + foreignMatch.end
+        );
+        if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+        const rev = this.dictionary.lookupReverse(foreignMatch.word, this.settings.reverseLookupLanguage);
         if (rev) {
+          if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === rev.word) {
+            this.cancelHoverHide();
+            return;
+          }
           this.cancelHoverHide();
           this.tooltip.show(
             rev,
@@ -1422,21 +1412,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
     }
 
     if (selectedText && this.dictionary.isChinese(selectedText)) {
-      if (isHover && selTargetRect) {
-        const HORIZONTAL_MARGIN = 16;
-        const VERTICAL_MARGIN = 10;
-        const isOverWord =
-          clientX >= selTargetRect.left - HORIZONTAL_MARGIN &&
-          clientX <= selTargetRect.right + HORIZONTAL_MARGIN &&
-          clientY >= selTargetRect.top - VERTICAL_MARGIN &&
-          clientY <= selTargetRect.bottom + VERTICAL_MARGIN;
-
-        if (!isOverWord) {
-          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-            this.scheduleHoverHide();
-          }
-          return;
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, selTargetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
         }
+        return;
       }
 
       if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === selectedText) {
@@ -1509,6 +1489,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
         return;
       }
     } else if (selectedText && this.settings.enableReverseLookup) {
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, selTargetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
+        }
+        return;
+      }
       const rev = this.dictionary.lookupReverse(selectedText, this.settings.reverseLookupLanguage);
       if (rev) {
         this.cancelHoverHide();
@@ -1564,21 +1550,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
       if (cantoMatch && cantoMatch.start !== undefined && cantoMatch.end !== undefined) {
         const targetRect = this.getReadingViewTargetRect(textNode, cantoMatch.start, cantoMatch.end);
 
-        if (isHover && targetRect) {
-          const HORIZONTAL_MARGIN = 16;
-          const VERTICAL_MARGIN = 10;
-          const isOverWord =
-            clientX >= targetRect.left - HORIZONTAL_MARGIN &&
-            clientX <= targetRect.right + HORIZONTAL_MARGIN &&
-            clientY >= targetRect.top - VERTICAL_MARGIN &&
-            clientY <= targetRect.bottom + VERTICAL_MARGIN;
-
-          if (!isOverWord) {
-            if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-              this.scheduleHoverHide();
-            }
-            return;
+        if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
           }
+          return;
         }
 
         if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === cantoMatch.word) {
@@ -1621,21 +1597,11 @@ export default class ChineseHoverDictPlugin extends Plugin {
       const wordEnd = match.end ?? (offset + match.length);
       const targetRect = this.getReadingViewTargetRect(textNode, wordStart, wordEnd);
 
-      if (isHover && targetRect) {
-        const HORIZONTAL_MARGIN = 16;
-        const VERTICAL_MARGIN = 10;
-        const isOverWord =
-          clientX >= targetRect.left - HORIZONTAL_MARGIN &&
-          clientX <= targetRect.right + HORIZONTAL_MARGIN &&
-          clientY >= targetRect.top - VERTICAL_MARGIN &&
-          clientY <= targetRect.bottom + VERTICAL_MARGIN;
-
-        if (!isOverWord) {
-          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
-            this.scheduleHoverHide();
-          }
-          return;
+      if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+        if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+          this.scheduleHoverHide();
         }
+        return;
       }
 
       if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === match.word) {
@@ -1650,11 +1616,21 @@ export default class ChineseHoverDictPlugin extends Plugin {
       this.tooltip.show(match, clientX, clientY, this.settings, resolvedBounds, context, targetRect);
       return;
     } else if (this.settings.enableReverseLookup) {
-      const foreignWord = this.extractForeignWordAtOffset(fullText, offset);
-      if (foreignWord) {
-        const targetRect = this.getReadingViewTargetRect(textNode, offset, offset + foreignWord.length);
-        const rev = this.dictionary.lookupReverse(foreignWord, this.settings.reverseLookupLanguage);
+      const foreignMatch = this.extractForeignWordRangeAtOffset(fullText, offset);
+      if (foreignMatch) {
+        const targetRect = this.getReadingViewTargetRect(textNode, foreignMatch.start, foreignMatch.end);
+        if (isHover && !this.isPointOverTargetRect(clientX, clientY, targetRect)) {
+          if (this.tooltip.getIsOpen() && !this.tooltip.getIsPinned()) {
+            this.scheduleHoverHide();
+          }
+          return;
+        }
+        const rev = this.dictionary.lookupReverse(foreignMatch.word, this.settings.reverseLookupLanguage);
         if (rev) {
+          if (this.tooltip.getIsOpen() && this.tooltip.getCurrentWord() === rev.word) {
+            this.cancelHoverHide();
+            return;
+          }
           const context = this.settings.autoSaveContextSentence
             ? this.extractContextSentence(fullText, offset)
             : undefined;
@@ -1700,7 +1676,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.lastHoverCoords = { x, y };
     this.cancelHoverLookup();
 
-    this.hoverTimeout = window.setTimeout(() => {
+    const runLookup = () => {
       this.hoverTimeout = null;
       if (!this.lastHoverCoords) return;
       if (!this.settings.enabled || !this.dictionary.isReady()) return;
@@ -1726,7 +1702,15 @@ export default class ChineseHoverDictPlugin extends Plugin {
           true
         );
       }
-    }, this.settings.hoverDelayMs || 300);
+    };
+
+    // Instant 0ms lookup in Reader Mode; configurable delay otherwise
+    if (this.settings.readerMode) {
+      runLookup();
+      return;
+    }
+
+    this.hoverTimeout = window.setTimeout(runLookup, this.settings.hoverDelayMs || 300);
   }
 
   public scheduleHoverHide(delayMs: number = 250): void {
@@ -2211,9 +2195,26 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   /**
-   * Extracts a foreign word (English, Russian, etc.) at the specified character offset
+   * Checks if cursor coordinates are strictly over the target word bounding box (2px subpixel tolerance)
    */
-  public extractForeignWordAtOffset(text: string, offset: number): string | null {
+  private isPointOverTargetRect(clientX: number, clientY: number, rect?: TargetRect): boolean {
+    if (!rect) return true;
+    const MARGIN = 2;
+    return (
+      clientX >= rect.left - MARGIN &&
+      clientX <= rect.right + MARGIN &&
+      clientY >= rect.top - MARGIN &&
+      clientY <= rect.bottom + MARGIN
+    );
+  }
+
+  /**
+   * Extracts a foreign word and its [start, end] range at the specified character offset
+   */
+  public extractForeignWordRangeAtOffset(
+    text: string,
+    offset: number
+  ): { word: string; start: number; end: number } | null {
     if (!text || offset < 0 || offset > text.length) return null;
     const isWordChar = (c: string) => /[\p{L}\p{N}'\-_]/u.test(c);
     let idx = offset;
@@ -2230,7 +2231,14 @@ export default class ChineseHoverDictPlugin extends Plugin {
     while (end < text.length && isWordChar(text[end])) end++;
     const word = text.slice(start, end).replace(/^['\-_]+|['\-_]+$/g, "").trim();
     if (!word || this.dictionary.isChinese(word)) return null;
-    return word;
+    return { word, start, end };
+  }
+
+  /**
+   * Extracts a foreign word (English, Russian, etc.) at the specified character offset
+   */
+  public extractForeignWordAtOffset(text: string, offset: number): string | null {
+    return this.extractForeignWordRangeAtOffset(text, offset)?.word || null;
   }
 
   /**

@@ -1,5 +1,11 @@
-import { EditorView } from "@codemirror/view";
-import { EditorSelection, Extension } from "@codemirror/state";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  ViewPlugin,
+  ViewUpdate,
+} from "@codemirror/view";
+import { EditorSelection, Extension, RangeSetBuilder } from "@codemirror/state";
 import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
 import { DictionaryManager } from "./dictionary.ts";
 import {
@@ -118,6 +124,53 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // Register CodeMirror 6 extension for Live Preview and Source Mode
     this.registerEditorExtension(this.buildCodeMirrorExtension());
+
+    // Wrap Chinese Hanzi runs in Reading View so Chinese fonts apply strictly to Hanzi only
+    this.registerMarkdownPostProcessor((el) => {
+      const hasHan = /\p{Script=Han}/u;
+      if (!hasHan.test(el.textContent || "")) return;
+
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      const textNodes: Text[] = [];
+      let current = walker.nextNode();
+      while (current) {
+        if (
+          current.nodeType === Node.TEXT_NODE &&
+          current.textContent &&
+          hasHan.test(current.textContent) &&
+          !(current.parentElement?.classList.contains("ch-dict-hanzi-run"))
+        ) {
+          textNodes.push(current as Text);
+        }
+        current = walker.nextNode();
+      }
+
+      const hanRunRe = /\p{Script=Han}+/gu;
+      for (const node of textNodes) {
+        const text = node.textContent || "";
+        hanRunRe.lastIndex = 0;
+        let match = hanRunRe.exec(text);
+        if (!match) continue;
+
+        const frag = document.createDocumentFragment();
+        let lastIdx = 0;
+        while (match) {
+          if (match.index > lastIdx) {
+            frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
+          }
+          const span = document.createElement("span");
+          span.className = "ch-dict-hanzi-run";
+          span.textContent = match[0];
+          frag.appendChild(span);
+          lastIdx = match.index + match[0].length;
+          match = hanRunRe.exec(text);
+        }
+        if (lastIdx < text.length) {
+          frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+        }
+        node.parentNode?.replaceChild(frag, node);
+      }
+    });
 
     // Register Double-Click listener for Reading View (rendered Markdown)
     this.registerDomEvent(
@@ -920,6 +973,35 @@ export default class ChineseHoverDictPlugin extends Plugin {
           }
         },
       }),
+      ViewPlugin.fromClass(
+        class {
+          decorations: DecorationSet;
+          constructor(view: EditorView) {
+            this.decorations = this.buildDecorations(view);
+          }
+          update(update: ViewUpdate) {
+            if (update.docChanged || update.viewportChanged) {
+              this.decorations = this.buildDecorations(update.view);
+            }
+          }
+          buildDecorations(view: EditorView): DecorationSet {
+            const builder = new RangeSetBuilder<Decoration>();
+            const mark = Decoration.mark({ class: "ch-dict-hanzi-run" });
+            const hanRe = /\p{Script=Han}+/gu;
+            for (const { from, to } of view.visibleRanges) {
+              const text = view.state.doc.sliceString(from, to);
+              hanRe.lastIndex = 0;
+              let m = hanRe.exec(text);
+              while (m) {
+                builder.add(from + m.index, from + m.index + m[0].length, mark);
+                m = hanRe.exec(text);
+              }
+            }
+            return builder.finish();
+          }
+        },
+        { decorations: (v) => v.decorations }
+      ),
     ];
   }
 
@@ -2410,5 +2492,6 @@ export default class ChineseHoverDictPlugin extends Plugin {
     if (this.tooltip?.getIsOpen()) {
       this.tooltip.refresh(this.settings);
     }
+    this.app.workspace.updateOptions();
   }
 }

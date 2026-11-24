@@ -1773,8 +1773,7 @@ div.menu {
   font-family: var(--ch-dict-font-hanzi-family, inherit);
 }
 
-.ch-dict-font-entire-editor .cm-content,
-.ch-dict-font-entire-editor .markdown-rendered {
+.ch-dict-font-entire-editor .ch-dict-hanzi-run {
   font-family: var(--ch-dict-font-hanzi-family, inherit);
 }
 

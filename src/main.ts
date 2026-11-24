@@ -142,21 +142,18 @@ export default class ChineseHoverDictPlugin extends Plugin {
         let match = HAN_RUN_GLOBAL_RE.exec(text);
         if (!match) continue;
 
-        const frag = document.createDocumentFragment();
+        const frag = createFragment();
         let lastIdx = 0;
         while (match) {
           if (match.index > lastIdx) {
-            frag.appendChild(document.createTextNode(text.slice(lastIdx, match.index)));
+            frag.appendText(text.slice(lastIdx, match.index));
           }
-          const span = document.createElement("span");
-          span.className = "ch-dict-hanzi-run";
-          span.textContent = match[0];
-          frag.appendChild(span);
+          frag.createSpan({ cls: "ch-dict-hanzi-run", text: match[0] });
           lastIdx = match.index + match[0].length;
           match = HAN_RUN_GLOBAL_RE.exec(text);
         }
         if (lastIdx < text.length) {
-          frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+          frag.appendText(text.slice(lastIdx));
         }
         node.parentNode?.replaceChild(frag, node);
       }

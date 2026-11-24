@@ -258,8 +258,7 @@ export class DictTooltip {
     }
 
     // Always reset any manual resize dimensions so each word opens at optimal auto-fit size
-    this.el.style.width = "";
-    this.el.style.height = "";
+    this.el.setCssProps({ width: "", height: "" });
 
     this.applyDynamicStyles(settings);
     this.render(match, settings, contextSentence);
@@ -310,8 +309,7 @@ export class DictTooltip {
 
     this.el.removeClass("ch-dict-visible");
     this.el.removeClass("ch-dict-pinned");
-    this.el.style.width = "";
-    this.el.style.height = "";
+    this.el.setCssProps({ width: "", height: "" });
     this.isVisible = false;
     this.isPinned = false;
     this.hasCustomPosition = false;

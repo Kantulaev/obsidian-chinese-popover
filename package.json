@@ -1,6 +1,6 @@
 {
   "name": "chinese-popover-dict",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Liquid Glass Chinese popup dictionary & translator: Mandarin Pinyin, Cantonese Jyutping, Hanzi, HSK, 214 Kangxi radicals, stroke order, tone colors, Reader Mode, TTS audio, offline CEDICT/BKRS, 20-language reverse lookup, Anki & Pleco SRS flashcards.",
   "homepage": "https://github.com/Kantulaev/obsidian-chinese-popover#readme",
   "repository": {

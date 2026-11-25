@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.5%2B-7C3AED?logo=obsidian&logoColor=white" alt="Obsidian v1.5+" /></a>
-  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-2.3.1-blue.svg" alt="Version 2.3.1" /></a>
+  <a href="https://github.com/Kantulaev/obsidian-chinese-popover/releases"><img src="https://img.shields.io/badge/Release-2.3.2-blue.svg" alt="Version 2.3.2" /></a>
   <a href="https://www.youtube.com/@ChineseWithKantulaev"><img src="https://img.shields.io/badge/YouTube-@ChineseWithKantulaev-FF0000?logo=youtube&logoColor=white" alt="English YouTube Channel" /></a>
   <a href="https://www.youtube.com/@kantulaevCN"><img src="https://img.shields.io/badge/YouTube-@kantulaevCN-FF0000?logo=youtube&logoColor=white" alt="Russian YouTube Channel" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT" /></a>

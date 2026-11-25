@@ -73,6 +73,7 @@ export interface ChineseDictSettings {
   chineseFontScope: ChineseFontScope;
   readerModeFontFamily: ChineseFontPreset;
   readerModeCustomFont: string;
+  readerModeFontScale: number;
 
   // Learning & Visual Aids
   showHskBadge: boolean;
@@ -161,6 +162,7 @@ export const DEFAULT_SETTINGS: ChineseDictSettings = {
   chineseFontScope: "popover_and_sidebar",
   readerModeFontFamily: "default",
   readerModeCustomFont: "",
+  readerModeFontScale: 100,
 
   showHskBadge: false,
   showCharacterBreakdown: false,
@@ -612,6 +614,7 @@ export class ChineseDictSettingTab extends PluginSettingTab {
       s.readerModeFontFamily || "default",
       (val) => {
         s.readerModeFontFamily = val as ChineseFontPreset;
+        this.plugin.updateReaderStatusBar();
         this.plugin.applyCurrentFont();
       },
       false,
@@ -626,10 +629,27 @@ export class ChineseDictSettingTab extends PluginSettingTab {
           text.setPlaceholder("LXGW WenKai").setValue(s.readerModeCustomFont).onChange(async (val) => {
             s.readerModeCustomFont = val.trim();
             await this.plugin.saveSettings();
+            this.plugin.updateReaderStatusBar();
             this.plugin.applyCurrentFont();
           })
         );
     }
+
+    this.addSlider(
+      containerEl,
+      "Размер иероглифов в режиме чтения (%)",
+      "Увеличивает только китайские иероглифы в режиме чтения (русский, английский и пиньинь остаются обычного размера).",
+      80,
+      220,
+      10,
+      s.readerModeFontScale ?? 100,
+      (val) => {
+        s.readerModeFontScale = val;
+        this.plugin.updateReaderStatusBar();
+        this.plugin.applyCurrentFont();
+      },
+      false
+    );
 
     this.addDropdown(
       containerEl,

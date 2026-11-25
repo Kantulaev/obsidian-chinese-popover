@@ -6,7 +6,7 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { EditorSelection, Extension, RangeSetBuilder } from "@codemirror/state";
-import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
+import { Editor, MarkdownView, Menu, Notice, Plugin } from "obsidian";
 import { DictionaryManager } from "./dictionary.ts";
 import {
   ChineseDictSettings,
@@ -21,7 +21,12 @@ import {
   ChineseVocabularyView,
   VIEW_TYPE_CHINESE_VOCABULARY,
 } from "./vocabulary-view.ts";
-import { applyChineseFontToDOM } from "./font.ts";
+import {
+  applyChineseFontToDOM,
+  CHINESE_FONT_MENU_ITEMS,
+  CHINESE_FONT_SHORT_LABELS,
+  ChineseFontPreset,
+} from "./font.ts";
 import { StrokeOrderModal } from "./stroke-order.ts";
 import { addNoteToAnki } from "./anki.ts";
 import { formatPinyin } from "./pinyin.ts";
@@ -91,12 +96,10 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     this.tooltip = new DictTooltip(this);
 
-    // Register Status Bar item for Reader Mode
+    // Register Status Bar item for Reader Mode (visible only when Reader Mode is active)
     this.readerStatusBarItem = this.addStatusBarItem();
+    this.readerStatusBarItem.addClass("ch-reader-status-bar");
     this.updateReaderStatusBar();
-    this.readerStatusBarItem.addEventListener("click", () => {
-      void this.toggleReaderMode();
-    });
 
     // Register Right Sidebar View for Vocabulary
     this.registerView(
@@ -116,9 +119,9 @@ export default class ChineseHoverDictPlugin extends Plugin {
     // Register CodeMirror 6 extension for Live Preview and Source Mode
     this.registerEditorExtension(this.buildCodeMirrorExtension());
 
-    // Wrap Chinese Hanzi runs in Reading View only when entire_editor font scope is active
+    // Wrap Chinese Hanzi runs in Reading View when editor font scope or Reader Mode styling is active
     this.registerMarkdownPostProcessor((el) => {
-      if (this.settings.chineseFontScope !== "entire_editor" || !this.hasActiveEditorHanziFont()) return;
+      if (!this.shouldWrapEditorHanzi()) return;
       if (!HAN_CHAR_RE.test(el.textContent || "")) return;
 
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
@@ -692,8 +695,7 @@ export default class ChineseHoverDictPlugin extends Plugin {
    * CodeMirror 6 extension for Live Preview and Source mode
    */
   private buildCodeMirrorExtension(): Extension {
-    const isHanziStylingEnabled = () =>
-      this.settings.chineseFontScope === "entire_editor" && this.hasActiveEditorHanziFont();
+    const isHanziStylingEnabled = () => this.shouldWrapEditorHanzi();
     return [
       // Mouse selection style facet: intelligently highlights the exact Chinese word / phrase
       // (2-, 3-, or 4-character chengyu / compound word) so the editor selection and dictionary match 100%!
@@ -818,11 +820,15 @@ export default class ChineseHoverDictPlugin extends Plugin {
       ViewPlugin.fromClass(
         class {
           decorations: DecorationSet;
+          wasEnabled: boolean;
           constructor(view: EditorView) {
+            this.wasEnabled = isHanziStylingEnabled();
             this.decorations = this.buildDecorations(view);
           }
           update(update: ViewUpdate) {
-            if (update.docChanged || update.viewportChanged) {
+            const nowEnabled = isHanziStylingEnabled();
+            if (nowEnabled !== this.wasEnabled || update.docChanged || update.viewportChanged) {
+              this.wasEnabled = nowEnabled;
               this.decorations = this.buildDecorations(update.view);
             }
           }
@@ -2175,25 +2181,111 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   /**
-   * Updates text and visual style of status bar reader indicator
+   * Updates status bar Reader Mode controls (hidden in normal mode, visible in Reader Mode)
    */
   public updateReaderStatusBar(): void {
     if (!this.readerStatusBarItem) return;
-    if (this.settings.readerMode) {
-      this.readerStatusBarItem.setText("🏮 Чтение: ВКЛ");
-      this.readerStatusBarItem.setAttribute(
-        "title",
-        "Режим быстрого чтения ВКЛЮЧЕН (Наведите на китайское слово без зажатия клавиш). Нажмите для выключения."
-      );
-      this.readerStatusBarItem.addClass("ch-dict-status-reader-active");
-    } else {
-      this.readerStatusBarItem.setText("🏮 Чтение: ВЫКЛ");
-      this.readerStatusBarItem.setAttribute(
-        "title",
-        "Режим быстрого чтения ВЫКЛЮЧЕН. Нажмите для включения (быстрый перевод при наведении мыши)."
-      );
+    this.readerStatusBarItem.empty();
+
+    if (!this.settings.readerMode) {
+      this.readerStatusBarItem.addClass("ch-reader-status-hidden");
       this.readerStatusBarItem.removeClass("ch-dict-status-reader-active");
+      return;
     }
+
+    this.readerStatusBarItem.removeClass("ch-reader-status-hidden");
+    this.readerStatusBarItem.addClass("ch-dict-status-reader-active");
+
+    const pill = this.readerStatusBarItem.createSpan({
+      cls: "ch-reader-sb-pill",
+      text: "🏮 Чтение",
+      attr: { title: "Режим чтения включён. Нажмите, чтобы выключить." },
+    });
+    pill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void this.toggleReaderMode();
+    });
+
+    const decBtn = this.readerStatusBarItem.createEl("button", {
+      cls: "ch-reader-sb-btn",
+      text: "A−",
+      attr: { type: "button", title: "Уменьшить размер китайских иероглифов" },
+    });
+    decBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void this.adjustReaderFontScale(-10);
+    });
+
+    const scale = Math.min(220, Math.max(80, Math.round(this.settings.readerModeFontScale ?? 100)));
+    const scaleBtn = this.readerStatusBarItem.createEl("button", {
+      cls: "ch-reader-sb-scale",
+      text: `${scale}%`,
+      attr: { type: "button", title: "Сбросить размер китайского шрифта (100%)" },
+    });
+    scaleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void this.adjustReaderFontScale("reset");
+    });
+
+    const incBtn = this.readerStatusBarItem.createEl("button", {
+      cls: "ch-reader-sb-btn",
+      text: "A+",
+      attr: { type: "button", title: "Увеличить размер китайских иероглифов" },
+    });
+    incBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      void this.adjustReaderFontScale(10);
+    });
+
+    const activePreset: ChineseFontPreset = this.settings.readerModeFontFamily || "default";
+    const fontLabel =
+      activePreset === "custom" && this.settings.readerModeCustomFont?.trim()
+        ? this.settings.readerModeCustomFont.trim()
+        : CHINESE_FONT_SHORT_LABELS[activePreset] || "Обычный";
+
+    const fontBtn = this.readerStatusBarItem.createEl("button", {
+      cls: "ch-reader-sb-font",
+      text: `${fontLabel} ▾`,
+      attr: { type: "button", title: "Выбрать вид китайского шрифта для режима чтения" },
+    });
+    fontBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const menu = new Menu();
+      for (const item of CHINESE_FONT_MENU_ITEMS) {
+        menu.addItem((mi) => {
+          const title =
+            item.id === "custom" && this.settings.readerModeCustomFont?.trim()
+              ? `${item.label} (${this.settings.readerModeCustomFont.trim()})`
+              : item.label;
+          mi.setTitle(title)
+            .setChecked(activePreset === item.id)
+            .onClick(() => {
+              void this.setReaderFontPreset(item.id);
+            });
+        });
+      }
+      menu.showAtMouseEvent(e);
+    });
+  }
+
+  private async adjustReaderFontScale(deltaOrReset: number | "reset"): Promise<void> {
+    const current = this.settings.readerModeFontScale ?? 100;
+    const next =
+      deltaOrReset === "reset"
+        ? 100
+        : Math.min(220, Math.max(80, Math.round(current + deltaOrReset)));
+    if (next === current) return;
+    this.settings.readerModeFontScale = next;
+    await this.saveSettings();
+    this.updateReaderStatusBar();
+    this.applyCurrentFont();
+  }
+
+  private async setReaderFontPreset(preset: ChineseFontPreset): Promise<void> {
+    this.settings.readerModeFontFamily = preset;
+    await this.saveSettings();
+    this.updateReaderStatusBar();
+    this.applyCurrentFont();
   }
 
   /**
@@ -2264,6 +2356,19 @@ export default class ChineseHoverDictPlugin extends Plugin {
     return result;
   }
 
+  public shouldWrapEditorHanzi(): boolean {
+    if (this.settings.chineseFontScope === "entire_editor" && this.hasActiveEditorHanziFont()) {
+      return true;
+    }
+    if (
+      this.settings.readerMode &&
+      (this.hasActiveEditorHanziFont() || (this.settings.readerModeFontScale ?? 100) !== 100)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   public hasActiveEditorHanziFont(): boolean {
     const useReaderFont =
       this.settings.readerMode &&
@@ -2276,9 +2381,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   /**
-   * Applies the active Chinese font preset to the workspace DOM:
-   * uses the separate Reader Mode font when Reader Mode is active and configured,
-   * and restores the normal font when Reader Mode is turned off.
+   * Applies the active Chinese font preset and Reader Mode scale to the workspace DOM,
+   * restoring the normal font and scale automatically when Reader Mode is turned off.
    */
   public applyCurrentFont(): void {
     const useReaderFont =
@@ -2293,11 +2397,25 @@ export default class ChineseHoverDictPlugin extends Plugin {
       ? this.settings.readerModeCustomFont
       : this.settings.customChineseFont;
 
-    applyChineseFontToDOM(preset, this.settings.chineseFontScope, customFont);
+    applyChineseFontToDOM(
+      preset,
+      this.settings.chineseFontScope,
+      customFont,
+      this.settings.readerMode,
+      this.settings.readerModeFontScale ?? 100
+    );
 
     if (this.tooltip?.getIsOpen()) {
       this.tooltip.refresh(this.settings);
     }
     this.app.workspace.updateOptions();
+
+    if (this.shouldWrapEditorHanzi()) {
+      const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (activeView?.getMode() === "preview") {
+        (activeView as unknown as { previewMode?: { rerender?: (force?: boolean) => void } })
+          .previewMode?.rerender?.(true);
+      }
+    }
   }
 }

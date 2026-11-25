@@ -2181,30 +2181,37 @@ export default class ChineseHoverDictPlugin extends Plugin {
   }
 
   /**
-   * Updates status bar Reader Mode controls (hidden in normal mode, visible in Reader Mode)
+   * Updates status bar Reader Mode controls:
+   * - Normal mode: compact icon only (no text) to toggle Reader Mode on
+   * - Reader Mode: active icon + Chinese font size and font preset controls
    */
   public updateReaderStatusBar(): void {
     if (!this.readerStatusBarItem) return;
     this.readerStatusBarItem.empty();
-
-    if (!this.settings.readerMode) {
-      this.readerStatusBarItem.addClass("ch-reader-status-hidden");
-      this.readerStatusBarItem.removeClass("ch-dict-status-reader-active");
-      return;
-    }
-
     this.readerStatusBarItem.removeClass("ch-reader-status-hidden");
-    this.readerStatusBarItem.addClass("ch-dict-status-reader-active");
 
-    const pill = this.readerStatusBarItem.createSpan({
-      cls: "ch-reader-sb-pill",
-      text: "🏮 Чтение",
-      attr: { title: "Режим чтения включён. Нажмите, чтобы выключить." },
+    const isReader = this.settings.readerMode;
+    this.readerStatusBarItem.toggleClass("ch-dict-status-reader-active", isReader);
+
+    const iconBtn = this.readerStatusBarItem.createEl("button", {
+      cls: isReader ? "ch-reader-sb-icon is-active" : "ch-reader-sb-icon",
+      text: "🏮",
+      attr: {
+        type: "button",
+        "aria-label": isReader ? "Выключить режим чтения" : "Включить режим чтения",
+        title: isReader
+          ? "Режим чтения ВКЛ. Нажмите, чтобы выключить."
+          : "Режим чтения ВЫКЛ. Нажмите, чтобы включить.",
+      },
     });
-    pill.addEventListener("click", (e) => {
+    iconBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       void this.toggleReaderMode();
     });
+
+    if (!isReader) {
+      return;
+    }
 
     const decBtn = this.readerStatusBarItem.createEl("button", {
       cls: "ch-reader-sb-btn",

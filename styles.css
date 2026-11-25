@@ -1789,14 +1789,14 @@ body.ch-dict-reader-active .ch-dict-hanzi-run {
   display: none !important;
 }
 
-.ch-reader-status-bar.ch-dict-status-reader-active {
+.ch-reader-status-bar {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
-.ch-reader-sb-pill,
+.ch-reader-sb-icon,
 .ch-reader-sb-btn,
 .ch-reader-sb-scale,
 .ch-reader-sb-font {
@@ -1818,11 +1818,24 @@ body.ch-dict-reader-active .ch-dict-hanzi-run {
   transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
-.ch-reader-sb-pill {
-  border-color: rgba(124, 58, 237, 0.35);
-  background: rgba(124, 58, 237, 0.12);
-  color: var(--text-accent);
-  font-weight: 600;
+.ch-reader-sb-icon {
+  padding: 0 5px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 13px;
+  opacity: 0.78;
+}
+
+.ch-reader-sb-icon:hover {
+  opacity: 1;
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border);
+}
+
+.ch-reader-sb-icon.is-active {
+  opacity: 1;
+  border-color: rgba(124, 58, 237, 0.4);
+  background: rgba(124, 58, 237, 0.14);
 }
 
 .ch-reader-sb-scale {
@@ -1830,7 +1843,6 @@ body.ch-dict-reader-active .ch-dict-hanzi-run {
   font-variant-numeric: tabular-nums;
 }
 
-.ch-reader-sb-pill:hover,
 .ch-reader-sb-btn:hover,
 .ch-reader-sb-scale:hover,
 .ch-reader-sb-font:hover {

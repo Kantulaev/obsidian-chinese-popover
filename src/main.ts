@@ -75,6 +75,8 @@ export default class ChineseHoverDictPlugin extends Plugin {
 
     // Schedule lazy background download of default English CC-CEDICT pack after layout is fully ready
     this.app.workspace.onLayoutReady(() => {
+      this.applyCurrentFont();
+      this.updateReaderStatusBar();
       window.setTimeout(() => {
         this.dictionary.ensureDefaultEnglishDictPack().catch(() => {});
         this.dictionary.ensureActiveLanguageDictPack().catch(() => {});
@@ -558,6 +560,12 @@ export default class ChineseHoverDictPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
     if (loaded && loaded.toneColoring === "phonetics" && !loaded.toneColoringExplicit) {
       this.settings.toneColoring = "off";
+    }
+    if (
+      typeof this.settings.readerModeFontScale !== "number" ||
+      Number.isNaN(this.settings.readerModeFontScale)
+    ) {
+      this.settings.readerModeFontScale = DEFAULT_SETTINGS.readerModeFontScale;
     }
     setActiveLanguage(this.settings.uiLanguage);
   }
